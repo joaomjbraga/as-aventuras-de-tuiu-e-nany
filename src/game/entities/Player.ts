@@ -20,6 +20,8 @@ export interface PlayerConfig {
  * controles (P1 = setas/espaço, P2 = A/D/W), então dá para ter vários
  * em cena simultaneamente (co-op local).
  */
+const FOOT_INSET = 4
+
 export class Player {
   readonly id: string
   readonly name: string
@@ -56,12 +58,14 @@ export class Player {
     this.sprite.setDepth(1)
 
     if (config.bodyWidth && config.bodyHeight) {
-      // Corpo de colisão menor que o frame (margem transparente) e alinhado
-      // embaixo, porque os pés ficam na base do frame.
+      // Corpo de colisão menor que o frame (margem transparente) e ancorado
+      // na LINHA DOS PÉS, não no fundo do frame: os sprites têm 4px de
+      // margem transparente abaixo dos pés, e ancorar no frame deixava o
+      // personagem flutuando ~4px acima do chão.
       this.sprite.setBodySize(config.bodyWidth, config.bodyHeight, false)
       this.sprite.body!.setOffset(
         (this.sprite.width - config.bodyWidth) / 2,
-        this.sprite.height - config.bodyHeight,
+        this.sprite.height - config.bodyHeight - FOOT_INSET,
       )
     }
 
