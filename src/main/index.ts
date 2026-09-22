@@ -3,12 +3,20 @@ import { join } from 'path'
 
 const isDev = !!process.env['ELECTRON_RENDERER_URL']
 
+// Ícone da janela (barra, taskbar, alt+tab): .ico no Windows, .png no Linux.
+// Busca dentro do app (dev = raiz do projeto; empacotado = recursos do app).
+function windowIconPath(): string {
+  const name = process.platform === 'win32' ? 'icon.ico' : 'Icon.png'
+  return join(app.getAppPath(), 'public', name)
+}
+
 function createWindow(): void {
   const win = new BrowserWindow({
     width: 1280,
     height: 720,
     title: 'As Aventuras de Tuiu e Nany',
     backgroundColor: '#151a22',
+    icon: windowIconPath(),
     resizable: false,
     autoHideMenuBar: true,
     webPreferences: {
