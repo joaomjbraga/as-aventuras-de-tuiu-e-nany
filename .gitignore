@@ -7,3 +7,6 @@ out/
 .vite/
 # Ícones/arte órfãos gerados localmente (não referenciados em src)
 build/
+
+assets/sprites/boy_zombie/
+assets/sprites/girl_zombie/
