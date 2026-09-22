@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import { CHARACTERS } from '../sprites'
+import { AUDIO } from '../audio'
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -22,6 +23,12 @@ export class PreloadScene extends Phaser.Scene {
     // Se algum carregar falhar (arquivo ainda não existe / dimensões erradas),
     // cria um placeholder em runtime para o jogo não quebrar em dev.
     this.load.once('loaderror', () => this.createPlaceholderSpritesheets(sprites))
+
+    // Áudio: música de fundo + efeitos dos zumbis
+    this.load.audio(AUDIO.BGM, 'audio/background.mp3')
+    this.load.audio(AUDIO.ZOMBIE_GROWL, 'audio/zumbi-gemendo.mp3')
+    this.load.audio(AUDIO.ZOMBIE_ATTACK, 'audio/Small-Monster-Attack.mp3')
+    this.load.audio(AUDIO.GAME_OVER, 'audio/game-over.mp3')
   }
 
   create(): void {

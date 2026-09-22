@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import { CHARACTERS } from '../sprites'
+import { playBgm } from '../audio'
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -9,6 +10,8 @@ export class TitleScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale
     const cx = width / 2
+
+    playBgm(this)
 
     // Fundo
     this.add.rectangle(cx, height / 2, width, height, 0x151a22)
@@ -35,7 +38,7 @@ export class TitleScene extends Phaser.Scene {
       .setOrigin(0.5)
 
     this.add
-      .text(cx, 78, 'TUIO & NANY', {
+      .text(cx, 78, 'TUIU & NANY', {
         fontFamily: 'monospace',
         fontSize: '22px',
         color: '#ffd54f',

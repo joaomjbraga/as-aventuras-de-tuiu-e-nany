@@ -51,7 +51,7 @@ export const FRAME_LAYOUT = {
 export const CHARACTERS = {
   tuio: {
     key: 'tuio',
-    name: 'Tuio',
+    name: 'Tuiu',
     path: 'sprites/tuio.png', // gerado de assets/sprites/boy
     frameWidth: 43,
     frameHeight: 74,

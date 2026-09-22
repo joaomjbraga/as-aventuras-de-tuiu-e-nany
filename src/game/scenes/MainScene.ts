@@ -4,6 +4,7 @@ import { Zombie } from '../entities/Zombie'
 import { CHARACTERS } from '../sprites'
 import { getSession } from '../session'
 import { buildGraveyard, type GraveyardResult } from '../scenery'
+import { AUDIO, playBgm } from '../audio'
 
 export class MainScene extends Phaser.Scene {
   private players: Player[] = []
@@ -16,6 +17,8 @@ export class MainScene extends Phaser.Scene {
   private killsText!: Phaser.GameObjects.Text
   private heartsByPlayer = new Map<string, Phaser.GameObjects.Rectangle[]>()
   private pendingRespawn = new Set<string>()
+  private gameOver = false
+  private spawnerTimer?: Phaser.Time.TimerEvent
 
   constructor() {
     super({ key: 'MainScene' })
@@ -30,6 +33,14 @@ export class MainScene extends Phaser.Scene {
     this.createPlayers()
     this.createCombat()
     this.createHud()
+
+    // Música de fundo em volume baixo (continua se já estava tocando)
+    playBgm(this)
+  }
+
+  shutdown(): void {
+    this.sound.stopByKey(AUDIO.BGM)
+    this.sound.stopByKey(AUDIO.GAME_OVER)
   }
 
   update(): void {
@@ -41,11 +52,17 @@ export class MainScene extends Phaser.Scene {
         this.pendingRespawn.add(player.id)
         const { x, y } = this.spawnPointFor(player.id)
         this.time.delayedCall(1800, () => {
+          if (this.gameOver) return
           player.revive(x, y)
           this.pendingRespawn.delete(player.id)
         })
       }
     })
+
+    // Fim de jogo: todos os jogadores caíram ao mesmo tempo
+    if (!this.gameOver && this.players.length > 0 && this.players.every((p) => !p.isAlive)) {
+      this.triggerGameOver()
+    }
 
     this.refreshHud()
   }
@@ -118,7 +135,7 @@ export class MainScene extends Phaser.Scene {
 
     const { width } = this.scale
 
-    this.time.addEvent({
+    this.spawnerTimer = this.time.addEvent({
       delay: 2600,
       loop: true,
       callback: () => {
@@ -135,10 +152,12 @@ export class MainScene extends Phaser.Scene {
       players: this.players,
       onKilled: () => {
         this.kills += 1
+        this.sound.play(AUDIO.ZOMBIE_ATTACK, { volume: 0.7 })
       },
     })
 
     this.zombieGroup.add(zombie)
+    this.sound.play(AUDIO.ZOMBIE_GROWL, { volume: 0.5 })
   }
 
   private onPlayerZombieContact(object1: unknown, object2: unknown): void {
@@ -165,8 +184,47 @@ export class MainScene extends Phaser.Scene {
       }
     } else if (playerBody.velocity.y >= -20) {
       // Contato lateral (ou queda lateral): zumbi machuca o jogador
-      player.damage(1)
+      if (player.damage(1)) {
+        this.sound.play(AUDIO.ZOMBIE_ATTACK, { volume: 0.7 })
+      }
     }
+  }
+
+  private triggerGameOver(): void {
+    this.gameOver = true
+    this.pendingRespawn.clear()
+    this.spawnerTimer?.remove(false)
+
+    this.sound.stopByKey(AUDIO.BGM)
+    this.sound.play(AUDIO.GAME_OVER, { volume: 0.75 })
+
+    const { width, height } = this.scale
+    this.add
+      .rectangle(width / 2, height / 2, width, height, 0x000000, 0.55)
+      .setDepth(20)
+    this.add
+      .text(width / 2, height / 2 - 10, 'FIM DE JOGO', {
+        fontFamily: 'monospace',
+        fontSize: '18px',
+        fontStyle: 'bold',
+        color: '#e8385a',
+      })
+      .setOrigin(0.5)
+      .setStroke('#0d101b', 4)
+      .setDepth(21)
+    this.add
+      .text(width / 2, height / 2 + 16, `ZOMBIES: ${this.kills}`, {
+        fontFamily: 'monospace',
+        fontSize: '9px',
+        color: '#e8edf7',
+      })
+      .setOrigin(0.5)
+      .setStroke('#0d101b', 3)
+      .setDepth(21)
+
+    this.time.delayedCall(2500, () => {
+      this.scene.restart()
+    })
   }
 
   // ------------------------------------------------------------------

@@ -7,7 +7,7 @@ function createWindow(): void {
   const win = new BrowserWindow({
     width: 1280,
     height: 720,
-    title: 'As Aventuras de Tuio e Nany',
+    title: 'As Aventuras de Tuiu e Nany',
     backgroundColor: '#151a22',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
