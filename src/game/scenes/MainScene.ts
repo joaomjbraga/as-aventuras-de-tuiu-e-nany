@@ -1,7 +1,7 @@
 import Phaser from 'phaser'
 import { Player } from '../entities/Player'
 import { Zombie } from '../entities/Zombie'
-import { CHARACTERS, type CharacterKey } from '../sprites'
+import { CHARACTERS, ZOMBIE_TARGET_HEIGHT, type CharacterKey } from '../sprites'
 import { getSession, setSessionPlayers, type PlayerId } from '../session'
 import { buildGraveyard, type GraveyardResult } from '../scenery'
 import { AUDIO, playBgm } from '../audio'
@@ -49,6 +49,10 @@ export class MainScene extends Phaser.Scene {
   }
 
   shutdown(): void {
+    // Evita vazamento de memória: remove o timer de spawn na saída da cena
+    // (restart/replay criava um novo addEvent sem remover o anterior,
+    // acumulando timers a cada "JOGAR NOVAMENTE").
+    this.spawnerTimer?.remove()
     this.sound.stopByKey(AUDIO.BGM)
     this.sound.stopByKey(AUDIO.GAME_OVER)
   }
@@ -224,6 +228,7 @@ export class MainScene extends Phaser.Scene {
 
     const { width } = this.scale
 
+    this.spawnerTimer?.remove()
     this.spawnerTimer = this.time.addEvent({
       delay: 2600,
       loop: true,
@@ -237,7 +242,7 @@ export class MainScene extends Phaser.Scene {
   private spawnZombie(x: number): void {
     const zombie = new Zombie(this, {
       x,
-      y: this.groundTop - 20,
+      y: this.groundTop - ZOMBIE_TARGET_HEIGHT / 2,
       players: this.players,
       onKilled: () => {
         this.kills += 1

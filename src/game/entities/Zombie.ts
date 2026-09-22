@@ -1,11 +1,14 @@
 import Phaser from 'phaser'
 import { Player } from './Player'
+import { ZOMBIE_VARIANTS } from '../sprites'
 
 export interface ZombieConfig {
   x: number
   y: number
   hp?: number
   moveSpeed?: number
+  /** Sorteia automaticamente a variante visual (1-3) se omitida. */
+  variant?: number
   players: Player[]
   onKilled?: () => void
 }
@@ -26,9 +29,23 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
   private onKilled?: () => void
   private hurtCooldownUntil = 0
   private bobPhase: number
+  private readonly variant: 1 | 2 | 3
+  private readonly textureKey: string
 
   constructor(scene: Phaser.Scene, config: ZombieConfig) {
-    super(scene, config.x, config.y, 'zombie', 0)
+    // Sorteia a variante (1-3) se não vier definida no spawn. Calculado em
+    // constante local pois não podemos tocar 'this' antes do super().
+    const variant = (config.variant ?? Phaser.Math.Between(1, 3)) as 1 | 2 | 3
+
+    // Textura real normalizada (zombie1/2/3) se tiver sido montada pela
+    // PreloadScene; caso contrário usa o placeholder procedural 'zombie'.
+    const textureKey = scene.textures.exists(`zombie${variant}`) ? `zombie${variant}` : 'zombie'
+
+    super(scene, config.x, config.y, textureKey, 0)
+
+    // Agora que o super foi chamado, gravamos a variante/textura nos campos.
+    this.variant = variant
+    this.textureKey = textureKey
 
     this.hpMax = config.hp ?? 3
     this.hp = this.hpMax
@@ -41,10 +58,15 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this)
     scene.physics.add.existing(this)
 
+    // O mundo tem gravidade global (y=1000) para o jogador; o zumbi é
+    // terrestre e anda no próprio par — zera a gravidade para não despencar
+    // ao entrar em cena (e eleva só o X no preUpdate).
+    this.setGravityY(0)
+
     this.setCollideWorldBounds(true)
     this.setDepth(1)
     this.createAnimations()
-    this.play('zombie-walk', true)
+    this.play(`${this.textureKey}-walk`, true)
   }
 
   preUpdate(time: number, delta: number): void {
@@ -130,11 +152,17 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
   }
 
   private createAnimations(): void {
-    if (!this.scene.anims.exists('zombie-walk')) {
+    const real = ZOMBIE_VARIANTS[this.variant - 1]
+    const walkKey = `${this.textureKey}-walk`
+
+    if (!this.scene.anims.exists(walkKey)) {
       this.scene.anims.create({
-        key: 'zombie-walk',
-        frames: this.scene.anims.generateFrameNumbers('zombie', { start: 0, end: 3 }),
-        frameRate: 8,
+        key: walkKey,
+        frames: this.scene.anims.generateFrameNumbers(this.textureKey, {
+          start: 0,
+          end: real ? real.frames - 1 : 3,
+        }),
+        frameRate: real ? Math.min(12, real.frames) : 8,
         repeat: -1,
       })
     }

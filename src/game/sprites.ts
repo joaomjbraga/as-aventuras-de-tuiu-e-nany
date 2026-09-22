@@ -72,6 +72,26 @@ export const CHARACTERS = {
 export type CharacterKey = keyof typeof CHARACTERS
 
 /**
+ * Zumbis reais: cada variante é uma pasta com N frames individuais (PNGs
+ * de tamanhos variados). Eles são empacotados em runtime (PreloadScene)
+ * num spritesheet normalizado, para caber no pipeline de animações do Phaser.
+ */
+export interface ZombieVariantDef {
+  key: string
+  path: string
+  frames: number
+}
+
+export const ZOMBIE_VARIANTS: ZombieVariantDef[] = [
+  { key: 'zombie1', path: 'sprites/zombie1_frames/zombie1_', frames: 15 },
+  { key: 'zombie2', path: 'sprites/zombie2_frames/zombie2_', frames: 17 },
+  { key: 'zombie3', path: 'sprites/zombie3_frames/zombie3_', frames: 17 },
+]
+
+/** Altura alvo (px) do zumbi normalizado, na mesma escala do placeholder antigo (40px). */
+export const ZOMBIE_TARGET_HEIGHT = 64
+
+/**
  * Configuração das animações por personagem.
  * frameRate pode ser ajustado por personagem se necessário.
  */

@@ -37,8 +37,25 @@ function createWindow(): void {
   }
 }
 
+// Instância única: se já houver outro processo rodando, a 2ª tentativa
+// foca a janela existente em vez de abrir uma cópia (evita jogar com som
+// duplicado / 2 janelas).
+const gotTheLock = app.requestSingleInstanceLock()
+
+if (!gotTheLock) {
+  app.quit()
+}
+
 app.whenReady().then(() => {
   createWindow()
+
+  app.on('second-instance', () => {
+    const win = BrowserWindow.getAllWindows()[0]
+    if (win) {
+      if (win.isMinimized()) win.restore()
+      win.focus()
+    }
+  })
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

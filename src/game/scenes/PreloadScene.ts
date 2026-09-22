@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import { CHARACTERS } from '../sprites'
+import { CHARACTERS, ZOMBIE_VARIANTS, ZOMBIE_TARGET_HEIGHT } from '../sprites'
 import { AUDIO } from '../audio'
 
 export class PreloadScene extends Phaser.Scene {
@@ -29,10 +29,19 @@ export class PreloadScene extends Phaser.Scene {
     this.load.audio(AUDIO.ZOMBIE_GROWL, 'audio/zumbi-gemendo.mp3')
     this.load.audio(AUDIO.ZOMBIE_ATTACK, 'audio/Small-Monster-Attack.mp3')
     this.load.audio(AUDIO.GAME_OVER, 'audio/game-over.mp3')
+
+    // Carrega os frames individuais (PNGs) dos 3 zumbis reais para montar
+    // os spritesheets normalizados em runtime (create).
+    ZOMBIE_VARIANTS.forEach((def) => {
+      for (let i = 1; i <= def.frames; i++) {
+        const n = String(i).padStart(2, '0')
+        this.load.image(`${def.key}_${n}`, `${def.path}${n}.png`)
+      }
+    })
   }
 
   create(): void {
-    this.generateZombiePlaceholder()
+    this.buildRealZombieSpritesheets()
     this.scene.start('TitleScene')
   }
 
@@ -87,8 +96,58 @@ export class PreloadScene extends Phaser.Scene {
    * Gera um spritesheet placeholder de zumbi (4 frames de caminhada,
    * 32x40 cada). Substituir por arte real quando existir.
    */
-  private generateZombiePlaceholder(): void {
-    if (this.textures.exists('zombie')) return
+  /**
+   * Monta os 3 spritesheets reais de zumbi (zombie1/2/3) a partir dos frames
+   * individuais pré-carregados (ZOMBIE_VARIANTS: PNGs de tamanhos variados).
+   * Cada frame é normalizado para a altura-alvo (ZOMBIE_TARGET_HEIGHT), com
+   * os pés ancorados na base — preservando a colisão de pisão (stomp).
+   * Se algum frame faltar, mantém o placeholder procedural já existente.
+   */
+  private buildRealZombieSpritesheets(): void {
+    ZOMBIE_VARIANTS.forEach((def) => {
+      if (this.textures.exists(def.key)) return
+
+      const frames: HTMLImageElement[] = []
+      for (let i = 1; i <= def.frames; i++) {
+        const n = String(i).padStart(2, '0')
+        const img = this.textures.get(`${def.key}_${n}`).getSourceImage() as HTMLImageElement | undefined
+        if (!img || !img.width) return // frame ausente → fallback placeholder
+        frames.push(img)
+      }
+
+      const targetH = ZOMBIE_TARGET_HEIGHT
+      const maxW = Math.max(...frames.map((im) => (im.width * targetH) / im.height))
+      const frameW = Math.ceil(maxW)
+
+      const canvas = document.createElement('canvas')
+      canvas.width = frameW * def.frames
+      canvas.height = targetH
+      const ctx = canvas.getContext('2d')!
+
+      frames.forEach((im, f) => {
+        const h = targetH
+        const w = (im.width * h) / im.height
+        const x = f * frameW + (frameW - w) / 2
+        ctx.drawImage(im, x, 0, w, h)
+      })
+
+      this.textures.addSpriteSheet(def.key, canvas as unknown as HTMLImageElement, {
+        frameWidth: frameW,
+        frameHeight: targetH,
+      })
+
+      if (!this.anims.exists(`${def.key}-walk`)) {
+        this.anims.create({
+          key: `${def.key}-walk`,
+          frames: this.anims.generateFrameNumbers(def.key, { start: 0, end: def.frames - 1 }),
+          frameRate: 8,
+          repeat: -1,
+        })
+      }
+    })
+  }
+
+  private generateZombiePlaceholder(): void {    if (this.textures.exists('zombie')) return
 
     const frameWidth = 32
     const frameHeight = 40
