@@ -1,10 +1,11 @@
 import Phaser from 'phaser'
 import { Player } from '../entities/Player'
 import { Zombie } from '../entities/Zombie'
-import { CHARACTERS } from '../sprites'
-import { getSession } from '../session'
+import { CHARACTERS, type CharacterKey } from '../sprites'
+import { getSession, setSessionPlayers, type PlayerId } from '../session'
 import { buildGraveyard, type GraveyardResult } from '../scenery'
 import { AUDIO, playBgm } from '../audio'
+import { createButton } from '../ui'
 
 export class MainScene extends Phaser.Scene {
   private players: Player[] = []
@@ -19,6 +20,10 @@ export class MainScene extends Phaser.Scene {
   private pendingRespawn = new Set<string>()
   private gameOver = false
   private spawnerTimer?: Phaser.Time.TimerEvent
+  private enterKey!: Phaser.Input.Keyboard.Key
+  private escKey!: Phaser.Input.Keyboard.Key
+  private p2JoinKey?: Phaser.Input.Keyboard.Key
+  private joinButton?: Phaser.GameObjects.Container
 
   constructor() {
     super({ key: 'MainScene' })
@@ -36,6 +41,11 @@ export class MainScene extends Phaser.Scene {
 
     // Música de fundo em volume baixo (continua se já estava tocando)
     playBgm(this)
+
+    this.enterKey = this.input.keyboard!.addKey('ENTER')
+    this.escKey = this.input.keyboard!.addKey('ESC')
+
+    this.setupJoinP2()
   }
 
   shutdown(): void {
@@ -44,10 +54,31 @@ export class MainScene extends Phaser.Scene {
   }
 
   update(): void {
+    // Pausa (ESC): abre o menu de pausa
+    if (!this.gameOver && Phaser.Input.Keyboard.JustDown(this.escKey)) {
+      this.scene.pause()
+      this.scene.launch('PauseScene')
+      return
+    }
+
+    // Game over: atalhos de teclado para os botões
+    if (this.gameOver) {
+      if (Phaser.Input.Keyboard.JustDown(this.enterKey)) {
+        this.scene.restart()
+      } else if (Phaser.Input.Keyboard.JustDown(this.escKey)) {
+        this.scene.start('TitleScene')
+      }
+      this.refreshHud()
+      return
+    }
+
+    // P2 pode entrar numa partida já iniciada (tecla W = mesma da confirmação na seleção)
+    if (this.p2JoinKey && Phaser.Input.Keyboard.JustDown(this.p2JoinKey)) {
+      this.tryJoinP2()
+    }
+
     this.players.forEach((player) => {
       player.update()
-
-      // Ressuscita o jogador morto após um tempo
       if (!player.isAlive && !this.pendingRespawn.has(player.id)) {
         this.pendingRespawn.add(player.id)
         const { x, y } = this.spawnPointFor(player.id)
@@ -108,6 +139,64 @@ export class MainScene extends Phaser.Scene {
     }
 
     this.physics.world.setBounds(0, 0, this.scale.width, this.scale.height)
+  }
+
+  /**
+   * Prepara a entrada do P2 numa partida já iniciada: botão + tecla W.
+   */
+  private setupJoinP2(): void {
+    this.p2JoinKey = this.input.keyboard!.addKey('W')
+
+    if (this.players.length === 1) {
+      this.joinButton = createButton(
+        this,
+        this.scale.width / 2,
+        this.scale.height - 22,
+        'J2: ENTRAR  [W]',
+        () => this.tryJoinP2(),
+        { width: 150, height: 26, fontSize: '9px', color: '#ffe082', bgColor: 0x2a2f22, bgHover: 0x3a4230, strokeColor: 0x8a7a3a },
+      ).setDepth(12)
+    }
+  }
+
+  private tryJoinP2(): void {
+    if (this.gameOver) return
+    if (this.players.some((p) => p.id === 'P2')) return
+
+    const p1Char = this.players[0].spriteKey
+    const remainingKey = (Object.keys(CHARACTERS) as CharacterKey[]).find((k) => k !== p1Char)!
+    const def = CHARACTERS[remainingKey]
+
+    const { x } = this.spawnPointFor('P2', 1)
+    const player = new Player(this, {
+      id: 'P2',
+      name: def.name,
+      x,
+      y: this.groundTop - (def.bodyHeight ?? 0) / 2,
+      spriteKey: def.key,
+      controls: 'p2',
+      bodyWidth: def.bodyWidth,
+      bodyHeight: def.bodyHeight,
+    })
+
+    this.players.push(player)
+    this.playerGroup.add(player.sprite)
+    this.addPlayerHud(player, 1)
+    this.physics.add.collider(this.players[0].sprite, player.sprite)
+
+    // Mantém o P2 também nos restarts
+    setSessionPlayers(
+      this.players.map((p, i) => ({
+        id: p.id as PlayerId,
+        characterKey: p.spriteKey as CharacterKey,
+        controls: i === 0 ? 'p1' : 'p2',
+      })),
+    )
+
+    this.joinButton?.destroy(true)
+    this.joinButton = undefined
+
+    this.sound.play(AUDIO.ZOMBIE_GROWL, { volume: 0.5 })
   }
 
   private spawnPointFor(playerId: string, index?: number): { x: number; y: number } {
@@ -200,10 +289,10 @@ export class MainScene extends Phaser.Scene {
 
     const { width, height } = this.scale
     this.add
-      .rectangle(width / 2, height / 2, width, height, 0x000000, 0.55)
+      .rectangle(width / 2, height / 2, width, height, 0x000000, 0.6)
       .setDepth(20)
     this.add
-      .text(width / 2, height / 2 - 10, 'FIM DE JOGO', {
+      .text(width / 2, height / 2 - 46, 'FIM DE JOGO', {
         fontFamily: 'monospace',
         fontSize: '18px',
         fontStyle: 'bold',
@@ -213,7 +302,7 @@ export class MainScene extends Phaser.Scene {
       .setStroke('#0d101b', 4)
       .setDepth(21)
     this.add
-      .text(width / 2, height / 2 + 16, `ZOMBIES: ${this.kills}`, {
+      .text(width / 2, height / 2 - 22, `ZOMBIES: ${this.kills}`, {
         fontFamily: 'monospace',
         fontSize: '9px',
         color: '#e8edf7',
@@ -222,9 +311,23 @@ export class MainScene extends Phaser.Scene {
       .setStroke('#0d101b', 3)
       .setDepth(21)
 
-    this.time.delayedCall(2500, () => {
+    // Reiniciar / menu
+    createButton(this, width / 2, height / 2 + 16, 'JOGAR NOVAMENTE', () => {
       this.scene.restart()
-    })
+    }, { width: 180 }).setDepth(21)
+
+    createButton(this, width / 2, height / 2 + 62, 'MENU INICIAL', () => {
+      this.scene.start('TitleScene')
+    }, { width: 170 }).setDepth(21)
+
+    this.add
+      .text(width / 2, height - 10, 'ENTER: jogar novamente   ESC: menu', {
+        fontFamily: 'monospace',
+        fontSize: '8px',
+        color: '#7a89a0',
+      })
+      .setOrigin(0.5, 0.5)
+      .setDepth(21)
   }
 
   // ------------------------------------------------------------------
@@ -234,45 +337,7 @@ export class MainScene extends Phaser.Scene {
   private createHud(): void {
     const { width } = this.scale
 
-    this.players.forEach((player, i) => {
-      const isP1 = i === 0
-      const nameColor = isP1 ? '#8fd8ff' : '#ff9fc2'
-      const hearts: Phaser.GameObjects.Rectangle[] = []
-      const originX = isP1 ? 12 : width - 12
-      const dir = isP1 ? 1 : -1
-
-      // Nome do personagem (medido antes para posicionar os corações)
-      const name = this.add
-        .text(originX, 4, player.name.toUpperCase(), {
-          fontFamily: 'monospace',
-          fontSize: '9px',
-          fontStyle: 'bold',
-          color: nameColor,
-        })
-        .setOrigin(isP1 ? 0 : 1, 0)
-        .setDepth(11)
-      name.setStroke('#0d101b', 3)
-
-      // Painel atrás do nome + corações
-      const panelW = name.width + player.maxHp * 11 + 20
-      this.add
-        .rectangle(isP1 ? 0 : width, 0, panelW, 26, 0x0a0c14, 0.6)
-        .setOrigin(isP1 ? 0 : 1, 0)
-        .setStrokeStyle(1, isP1 ? 0x2c3350 : 0x4a2c3e, 0.9)
-        .setDepth(9)
-
-      // Corações lado a lado com o nome
-      const heartStart = originX + dir * (name.width + 9)
-      for (let h = 0; h < player.maxHp; h++) {
-        const heart = this.add
-          .rectangle(heartStart + dir * (h * 11), 13, 7, 7, 0xff4d5d, 1)
-          .setOrigin(0.5)
-          .setDepth(11)
-        hearts.push(heart)
-      }
-
-      this.heartsByPlayer.set(player.id, hearts)
-    })
+    this.players.forEach((player, i) => this.addPlayerHud(player, i))
 
     // Placar de abates (topo central)
     this.killsText = this.add
@@ -308,5 +373,47 @@ export class MainScene extends Phaser.Scene {
     })
 
     this.killsText.setText(`ZUMBIES: ${this.kills}`)
+  }
+
+  /**
+   * Cria o painel (nome + corações) de um jogador no HUD.
+   * Reutilizado na entrada do P2 em partida já iniciada.
+   */
+  private addPlayerHud(player: Player, index: number): void {
+    const { width } = this.scale
+    const isP1 = index === 0
+    const nameColor = isP1 ? '#8fd8ff' : '#ff9fc2'
+    const hearts: Phaser.GameObjects.Rectangle[] = []
+    const originX = isP1 ? 12 : width - 12
+    const dir = isP1 ? 1 : -1
+
+    const name = this.add
+      .text(originX, 4, player.name.toUpperCase(), {
+        fontFamily: 'monospace',
+        fontSize: '9px',
+        fontStyle: 'bold',
+        color: nameColor,
+      })
+      .setOrigin(isP1 ? 0 : 1, 0)
+      .setDepth(11)
+    name.setStroke('#0d101b', 3)
+
+    const panelW = name.width + player.maxHp * 11 + 20
+    this.add
+      .rectangle(isP1 ? 0 : width, 0, panelW, 26, 0x0a0c14, 0.6)
+      .setOrigin(isP1 ? 0 : 1, 0)
+      .setStrokeStyle(1, isP1 ? 0x2c3350 : 0x4a2c3e, 0.9)
+      .setDepth(9)
+
+    const heartStart = originX + dir * (name.width + 9)
+    for (let h = 0; h < player.maxHp; h++) {
+      const heart = this.add
+        .rectangle(heartStart + dir * (h * 11), 13, 7, 7, 0xff4d5d, 1)
+        .setOrigin(0.5)
+        .setDepth(11)
+      hearts.push(heart)
+    }
+
+    this.heartsByPlayer.set(player.id, hearts)
   }
 }

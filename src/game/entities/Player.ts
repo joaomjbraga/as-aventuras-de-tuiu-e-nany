@@ -23,6 +23,7 @@ export interface PlayerConfig {
 export class Player {
   readonly id: string
   readonly name: string
+  readonly spriteKey: string
   readonly sprite: Phaser.Physics.Arcade.Sprite
 
   readonly maxHp = 3
@@ -30,7 +31,6 @@ export class Player {
   isAlive = true
 
   private scene: Phaser.Scene
-  private spriteKey: string
   private keys: {
     left: Phaser.Input.Keyboard.Key
     right: Phaser.Input.Keyboard.Key

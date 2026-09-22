@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, Menu } from 'electron'
 import { join } from 'path'
 
 const isDev = !!process.env['ELECTRON_RENDERER_URL']
@@ -9,6 +9,8 @@ function createWindow(): void {
     height: 720,
     title: 'As Aventuras de Tuiu e Nany',
     backgroundColor: '#151a22',
+    resizable: false,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -16,6 +18,8 @@ function createWindow(): void {
       sandbox: false,
     },
   })
+
+  win.setMenu(null)
 
   if (isDev) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL']!)

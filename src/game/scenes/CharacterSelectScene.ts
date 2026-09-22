@@ -18,10 +18,15 @@ interface PlayerCursor {
   }
 }
 
+interface OptionState {
+  key: CharacterKey
+  panel: Phaser.GameObjects.Rectangle
+  sprite: Phaser.GameObjects.Sprite
+  confirmedLabel: Phaser.GameObjects.Text
+}
+
 export class CharacterSelectScene extends Phaser.Scene {
-  private optionSprites: Phaser.GameObjects.Sprite[] = []
-  private optionPositions: { x: number; y: number }[] = []
-  private confirmedLabels: Record<string, Phaser.GameObjects.Text> = {}
+  private options: OptionState[] = []
   private takenBy: Record<string, PlayerId | undefined> = {}
   private cursors: PlayerCursor[] = []
   private prompt!: Phaser.GameObjects.Text
@@ -40,45 +45,62 @@ export class CharacterSelectScene extends Phaser.Scene {
     this.add.rectangle(cx, height / 2, width, height, 0x181d29)
 
     this.add
-      .text(cx, 24, 'ESCOLHA SEU PERSONAGEM', {
+      .text(cx, 16, 'ESCOLHA SEU PERSONAGEM', {
         fontFamily: 'monospace',
         fontSize: '13px',
         color: '#e0e8f0',
         fontStyle: 'bold',
       })
       .setOrigin(0.5)
+      .setStroke('#0d101b', 3)
 
-    // Opções lado a lado
+    // Cartões com personagem (sprites normalizados, alinhados pelos pés)
+    const targetHeight = 104
+    const feetY = 140
+
     OPTIONS.forEach((key, i) => {
       const def = CHARACTERS[key]
       const x = cx - 64 + i * 128
-      const sprite = this.add.sprite(x, 96, def.key, 0)
-      sprite.setScale(1.4)
 
-      this.optionSprites.push(sprite)
-      this.optionPositions.push({ x, y: sprite.y })
+      const panel = this.add.rectangle(x, 92, 118, 124, 0x131720)
+      panel.setStrokeStyle(1, 0x2c3350)
+
+      // Seleção com o mouse: clicar em um cartão seleciona o personagem (J1)
+      panel.setInteractive({ useHandCursor: true })
+      panel.on('pointerover', () => {
+        if (!this.takenBy[key]) panel.setStrokeStyle(1, 0x4fc3f7, 0.5)
+      })
+      panel.on('pointerout', () => this.refreshSelectionVisuals())
+      panel.on('pointerdown', () => this.selectWithMouse(i))
+
+      const scale = targetHeight / def.frameHeight
+      const sprite = this.add.sprite(x, feetY - targetHeight / 2, def.key, 0)
+      sprite.setScale(scale)
 
       this.add
-        .text(x, 150, def.name.toUpperCase(), {
+        .text(x, 166, def.name.toUpperCase(), {
           fontFamily: 'monospace',
           fontSize: '10px',
           color: '#c8d6e5',
           fontStyle: 'bold',
         })
         .setOrigin(0.5)
+        .setStroke('#0d101b', 3)
 
-      this.confirmedLabels[key] = this.add
-        .text(x, 164, '', {
+      const confirmedLabel = this.add
+        .text(x, 180, '', {
           fontFamily: 'monospace',
           fontSize: '8px',
           color: '#7bed9f',
           fontStyle: 'bold',
         })
         .setOrigin(0.5)
+
+      this.options.push({ key, panel, sprite, confirmedLabel })
     })
 
     this.prompt = this.add
-      .text(cx, height - 22, '', {
+      .text(cx, 190, '', {
         fontFamily: 'monospace',
         fontSize: '9px',
         color: '#ffe082',
@@ -87,9 +109,10 @@ export class CharacterSelectScene extends Phaser.Scene {
         lineSpacing: 2,
       })
       .setOrigin(0.5)
+      .setStroke('#0d101b', 2)
 
     this.add
-      .text(cx, 190, 'J1: ←/→ + ENTER    J2: A/D + W    [ESC] voltar', {
+      .text(cx, 206, 'J1: ←/→ + ENTER    J2: A/D + W    [ESC] voltar', {
         fontFamily: 'monospace',
         fontSize: '8px',
         color: '#6b7a8f',
@@ -99,8 +122,8 @@ export class CharacterSelectScene extends Phaser.Scene {
 
     // Cursores dos dois jogadores
     this.cursors = [
-      this.makeCursor('P1', 'p1', 0x4fc3f7, 78),
-      this.makeCursor('P2', 'p2', 0xffb74d, 106),
+      this.makeCursor('P1', 'p1', 0x4fc3f7),
+      this.makeCursor('P2', 'p2', 0xffb74d),
     ]
     this.cursors.forEach((cursor) => this.placeMarker(cursor))
 
@@ -108,6 +131,7 @@ export class CharacterSelectScene extends Phaser.Scene {
     this.escKey = this.input.keyboard!.addKey('ESC')
     this.p2ConfirmKey = this.input.keyboard!.addKey('W')
 
+    this.refreshSelectionVisuals()
     this.updatePrompt()
   }
 
@@ -147,13 +171,8 @@ export class CharacterSelectScene extends Phaser.Scene {
     }
   }
 
-  private makeCursor(
-    playerId: PlayerId,
-    scheme: ControlSchemeId,
-    color: number,
-    y: number,
-  ): PlayerCursor {
-    const marker = this.add.rectangle(0, y, 2, 6, color, 1).setOrigin(0.5)
+  private makeCursor(playerId: PlayerId, scheme: ControlSchemeId, color: number): PlayerCursor {
+    const marker = this.add.rectangle(0, 0, 14, 4, color, 1).setOrigin(0.5).setDepth(5)
     return {
       playerId,
       scheme,
@@ -169,8 +188,45 @@ export class CharacterSelectScene extends Phaser.Scene {
   }
 
   private placeMarker(cursor: PlayerCursor): void {
-    const pos = this.optionPositions[cursor.index]
-    cursor.marker.x = pos.x
+    const panelX = this.options[cursor.index].panel.x
+    const offset = cursor.playerId === 'P1' ? -9 : 9
+    cursor.marker.setPosition(panelX + offset, 157)
+    this.refreshSelectionVisuals()
+  }
+
+  /**
+   * Destaca o personagem selecionado e deixa os demais em preto e branco.
+   */
+  private refreshSelectionVisuals(): void {
+    this.options.forEach((opt, i) => {
+      const isP1Here = this.cursors[0].index === i
+      const isP2Here = this.cursors[1].index === i
+      const confirmed = this.takenBy[opt.key]
+
+      let borderColor: number
+      if (confirmed) borderColor = 0x3fd07a
+      else if (isP1Here && isP2Here) borderColor = 0x9adcff
+      else if (isP1Here) borderColor = 0x4fc3f7
+      else if (isP2Here) borderColor = 0xffb74d
+      else borderColor = 0x2c3350
+
+      opt.panel.setStrokeStyle(confirmed ? 2 : 1, borderColor, confirmed ? 1 : 0.85)
+
+      const active = !!confirmed || isP1Here || isP2Here
+      if (active) {
+        opt.sprite.preFX?.clear()
+        opt.sprite.setAlpha(1)
+      } else {
+        this.grayscaleSprite(opt.sprite)
+        opt.sprite.setAlpha(0.85)
+      }
+    })
+  }
+
+  private grayscaleSprite(sprite: Phaser.GameObjects.Sprite): void {
+    sprite.preFX?.clear()
+    const fx = sprite.preFX?.addColorMatrix()
+    fx?.grayscale(1)
   }
 
   private tryConfirm(cursor: PlayerCursor): void {
@@ -182,20 +238,55 @@ export class CharacterSelectScene extends Phaser.Scene {
     this.takenBy[key] = cursor.playerId
     cursor.confirmed = true
 
-    this.confirmedLabels[key].setText(`${cursor.playerId} OK`)
-    cursor.marker.setFillStyle(cursor.color, 0.5)
-    cursor.marker.width = 12
+    const optState = this.options[cursor.index]
+    optState.confirmedLabel.setText(`${cursor.playerId} OK`)
+    cursor.marker.setAlpha(0.25)
 
+    this.refreshSelectionVisuals()
     this.updatePrompt()
   }
 
   private updatePrompt(): void {
     const p1 = this.cursors.find((c) => c.playerId === 'P1')
     if (p1?.confirmed) {
-      this.prompt.setText('ENTER para começar\n(J2: escolha com A/D e confirme com W)')
+      this.prompt.setText('ENTER para começar · clique de novo no personagem e joga\n(J2: escolha com A/D e confirme com W)')
     } else {
-      this.prompt.setText('J1: escolha com ←/→ e confirme com ENTER')
+      this.prompt.setText('J1: escolha com ←/→ e confirme com ENTER (ou clique no personagem)')
     }
+  }
+
+  /**
+   * Seleção por mouse (J1): um clique escolhe/confirma o personagem;
+   * um segundo clique no mesmo personagem inicia a partida.
+   */
+  private selectWithMouse(index: number): void {
+    const p1 = this.cursors.find((c) => c.playerId === 'P1')
+    if (!p1) return
+
+    const key = OPTIONS[index]
+
+    // Card já reservado pelo J2: ignora
+    if (this.takenBy[key] && this.takenBy[key] !== 'P1') return
+
+    // Segundo clique no personagem já confirmado pelo J1 → começa
+    if (p1.confirmed && p1.index === index) {
+      this.startGame()
+      return
+    }
+
+    // Se o J1 já tinha confirmado e está trocando de personagem, desfaz a escolha anterior
+    if (p1.confirmed) {
+      const prevKey = OPTIONS[p1.index]
+      if (this.takenBy[prevKey] === 'P1') {
+        delete this.takenBy[prevKey]
+        this.options.find((o) => o.key === prevKey)!.confirmedLabel.setText('')
+      }
+      p1.confirmed = false
+    }
+
+    p1.index = index
+    this.placeMarker(p1)
+    this.tryConfirm(p1)
   }
 
   private startGame(): void {

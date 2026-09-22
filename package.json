@@ -2,6 +2,11 @@
   "name": "as-aventuras-de-tuiu-e-nany",
   "version": "0.0.1",
   "description": "Jogo 2D em pixel art - As Aventuras de Tuiu e Nany",
+  "author": {
+    "name": "João M J Braga",
+    "email": "joaomarcos.jbraga@gmail.com",
+    "url": "https://github.com/joaomjbraga"
+  },
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
