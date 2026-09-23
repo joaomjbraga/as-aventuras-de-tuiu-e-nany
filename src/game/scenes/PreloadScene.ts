@@ -40,6 +40,8 @@ export class PreloadScene extends Phaser.Scene {
     this.load.audio(AUDIO.ZOMBIE_GROWL, 'audio/zumbi-gemendo.mp3')
     this.load.audio(AUDIO.ZOMBIE_ATTACK, 'audio/Small-Monster-Attack.mp3')
     this.load.audio(AUDIO.EXPLOSION, 'audio/explosion-with-debris.mp3')
+    this.load.audio(AUDIO.MAN_DEATH, 'audio/man-death.mp3')
+    this.load.audio(AUDIO.FEMALE_DEATH, 'audio/female-death.mp3')
     this.load.audio(AUDIO.GAME_OVER, 'audio/game-over.mp3')
 
     // Carrega os frames individuais (PNGs) dos 3 zumbis reais para montar

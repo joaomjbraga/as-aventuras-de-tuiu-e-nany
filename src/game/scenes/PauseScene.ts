@@ -34,6 +34,13 @@ export class PauseScene extends Phaser.Scene {
 
     applyMute(this)
 
+    // A cena é reutilizada a cada pausa: limpa as listas da abertura anterior
+    // (objetos destruídos) e zera o cursor, senão o highlight/atualização de SOM
+    // passam a operar em entradas antigas e não afetam os elementos visíveis.
+    this.optionRects = []
+    this.optionTexts = []
+    this.selectedIndex = 0
+
     this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.6).setDepth(10)
 
     this.add

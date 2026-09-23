@@ -42,6 +42,12 @@ export class CharacterSelectScene extends Phaser.Scene {
     const { width, height } = this.scale
     const cx = width / 2
 
+    // A cena é reutilizada entre partidas: reseta os registros antes de
+    // reconstruir, senão entradas antigas (objetos destruídos) continuam no
+    // array e desalinham os índices na reentrada.
+    this.options = []
+    this.takenBy = {}
+
     this.add.rectangle(cx, height / 2, width, height, 0x181d29)
 
     this.add

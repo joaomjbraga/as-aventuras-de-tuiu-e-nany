@@ -33,6 +33,8 @@ export class LevelSelectScene extends Phaser.Scene {
     const { width, height } = this.scale
     const cx = width / 2
 
+    this.selectedIndex = 0
+
     this.add.rectangle(cx, height / 2, width, height, 0x181d29)
 
     this.add
@@ -84,6 +86,9 @@ export class LevelSelectScene extends Phaser.Scene {
   }
 
   private buildCards(): void {
+    // Cena reutilizada entre partidas: descarta os cards da visita anterior.
+    this.cards = []
+
     const { width } = this.scale
     const cx = width / 2
     const cardW = 132

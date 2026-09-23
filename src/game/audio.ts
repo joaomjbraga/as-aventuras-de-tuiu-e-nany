@@ -12,6 +12,8 @@ export const AUDIO = {
   ZOMBIE_GROWL: 'zombie-growl',
   ZOMBIE_ATTACK: 'zombie-attack',
   EXPLOSION: 'explosion',
+  MAN_DEATH: 'man-death',
+  FEMALE_DEATH: 'female-death',
   GAME_OVER: 'game-over',
 } as const
 
@@ -20,6 +22,12 @@ const BGM_VOLUME = 0.4
 
 /** Inicia a música (loop) se ainda não estiver tocando ou ajusta o volume. */
 function playLooping(scene: Phaser.Scene, key: string, volume: number): void {
+  // stopByKey não remove o som do gerenciador: sons parados da mesma chave
+  // (ex.: bgm silenciado no game over) "bloqueariam" um novo play. Descarta-os.
+  for (const stale of scene.sound.getAll(key)) {
+    if (!stale.isPlaying) scene.sound.remove(stale)
+  }
+
   const playing = scene.sound.getAll(key)
   if (playing.length === 0) {
     scene.sound.play(key, { loop: true, volume })

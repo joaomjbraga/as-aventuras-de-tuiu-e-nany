@@ -670,7 +670,8 @@ export class MainScene extends Phaser.Scene {
       player.bounce(-90) // continua "quicando" mesmo no cooldown de dano
     } else if (outcome === 'hit') {
       if (player.damage(1)) {
-        this.sound.play(AUDIO.ZOMBIE_ATTACK, { volume: 0.7 })
+        // Som de ferido específico por personagem (Tuiu/Nany)
+        this.sound.play(player.spriteKey === 'nany' ? AUDIO.FEMALE_DEATH : AUDIO.MAN_DEATH, { volume: 0.7 })
         // Dano quebra a sequência de abates sem levar dano (combo)
         this.breakCombo()
       }
