@@ -12,6 +12,8 @@ import { canSpawnZombie, hasWon, spawnIntervalMs } from '../difficulty'
 import { randomNextLevel, type LevelConfig } from '../levels'
 import { loadBestKills, markLevelCompleted, saveBestKills, loadBestScore, saveBestScore } from '../storage'
 import { multiplierFor } from '../score'
+import { resolvePlayerZombieContact } from '../combat'
+import { buildGameOverScreen, buildVictoryScreen } from '../ui/endScreen'
 import {
   PICKUP_EFFECT_DURATION_MS,
   PICKUP_EFFECTS,
@@ -643,22 +645,30 @@ export class MainScene extends Phaser.Scene {
     const playerBody = playerSpr.body as Phaser.Physics.Arcade.Body
     const zombieBody = zombieSpr.body as Phaser.Physics.Arcade.Body
 
-    // Pés do jogador vs cabeça do zumbi (o jogador é mais alto que o zumbi,
-    // então comparar os centros fazia todo contato virar pisão).
-    const playerFeet = playerSpr.y + playerBody.halfHeight
-    const zombieHead = zombieSpr.y - zombieBody.halfHeight
+    // Regras de pisão × contato lateral ficam na lógica pura (combat.ts),
+    // testável sem Phaser; aqui só traduzimos o desfecho em efeitos.
+    const outcome = resolvePlayerZombieContact(
+      {
+        x: playerSpr.x,
+        feetY: playerSpr.y + playerBody.halfHeight,
+        velocityY: playerBody.velocity.y,
+      },
+      {
+        isDying: zombie.isDying,
+        x: zombieSpr.x,
+        headY: zombieSpr.y - zombieBody.halfHeight,
+        damageAmount: player.hasDamageBoost() ? 4 : 2,
+        stomp: (fromX, amount) => zombie.stompDamage(fromX, amount),
+      },
+    )
 
-    // Pisão (stomp): os pés estão acima da cabeça do zumbi
-    if (playerFeet <= zombieHead + 6 && playerBody.velocity.y >= -20) {
-      if (zombie.stompDamage(playerSpr.x, player.hasDamageBoost() ? 4 : 2)) {
-        player.bounce(-160)
-        this.cameras.main.shake(90, 0.012)
-        this.hitStop()
-      } else {
-        player.bounce(-90) // continua "quicando" mesmo no cooldown de dano
-      }
-    } else if (playerBody.velocity.y >= -20) {
-      // Contato lateral (ou queda lateral): zumbi machuca o jogador
+    if (outcome === 'stomp-kill') {
+      player.bounce(-160)
+      this.cameras.main.shake(90, 0.012)
+      this.hitStop()
+    } else if (outcome === 'stomp') {
+      player.bounce(-90) // continua "quicando" mesmo no cooldown de dano
+    } else if (outcome === 'hit') {
       if (player.damage(1)) {
         this.sound.play(AUDIO.ZOMBIE_ATTACK, { volume: 0.7 })
         // Dano quebra a sequência de abates sem levar dano (combo)
@@ -725,49 +735,6 @@ export class MainScene extends Phaser.Scene {
     })
   }
 
-  /**
-   * Botões da tela final (game over / vitória).
-   * Na vitória com fase seguinte, o botão principal avança a campanha.
-   */
-  private createEndButtons(offsetY: number, showNextLevel: boolean): void {
-    const { width, height } = this.scale
-    const hasNextLevel = showNextLevel && !!randomNextLevel(this.level)
-
-    createButton(
-      this,
-      width / 2,
-      height / 2 + offsetY,
-      hasNextLevel ? 'PRÓXIMA FASE' : 'JOGAR NOVAMENTE',
-      () => this.retryOrAdvance(),
-      { width: 180 },
-    ).setDepth(21)
-
-    createButton(
-      this,
-      width / 2,
-      height / 2 + offsetY + 46,
-      'MENU INICIAL',
-      () => {
-        this.scene.start('TitleScene')
-      },
-      { width: 170 },
-    ).setDepth(21)
-
-    this.add
-      .text(
-        width / 2,
-        height - 10,
-        hasNextLevel ? 'ENTER: próxima fase   ESC: menu' : 'ENTER: jogar novamente   ESC: menu',
-        {
-          fontFamily: 'monospace',
-          fontSize: '8px',
-          color: '#7a89a0',
-        },
-      )
-      .setOrigin(0.5, 0.5)
-      .setDepth(21)
-  }
-
   /** ENTER no fim de partida: avança para a próxima fase (vitória) ou rejoga. */
   private retryOrAdvance(): void {
     if (this.victory && randomNextLevel(this.level)) {
@@ -794,33 +761,14 @@ export class MainScene extends Phaser.Scene {
     this.sound.play(AUDIO.GAME_OVER, { volume: 0.75 })
 
     const { width, height } = this.scale
-    this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.6).setDepth(20)
-    this.add
-      .text(width / 2, height / 2 - 46, 'FIM DE JOGO', {
-        fontFamily: 'monospace',
-        fontSize: '18px',
-        fontStyle: 'bold',
-        color: '#e8385a',
-      })
-      .setOrigin(0.5)
-      .setStroke('#0d101b', 4)
-      .setDepth(21)
-    this.add
-      .text(
-        width / 2,
-        height / 2 - 22,
-        `ABATES: ${this.kills}    PONTOS: ${this.score}    RECORDE: ${this.bestScore}`,
-        {
-          fontFamily: 'monospace',
-          fontSize: '9px',
-          color: '#e8edf7',
-        },
-      )
-      .setOrigin(0.5)
-      .setStroke('#0d101b', 3)
-      .setDepth(21)
-
-    this.createEndButtons(16, false)
+    buildGameOverScreen({
+      scene: this,
+      width,
+      height,
+      stats: { kills: this.kills, score: this.score, bestScore: this.bestScore },
+      onPrimary: () => this.retryOrAdvance(),
+      onMenu: () => this.scene.start('TitleScene'),
+    })
   }
 
   /** Condição de vitória alcançada (meta de abates da fase): overlay verde. */
@@ -834,82 +782,17 @@ export class MainScene extends Phaser.Scene {
     this.staticEndScreen()
 
     const { width, height } = this.scale
-    this.add.rectangle(width / 2, height / 2, width, height, 0x0a2318, 0.75).setDepth(20)
-    this.add
-      .text(width / 2, height / 2 - 52, 'VITÓRIA!', {
-        fontFamily: 'monospace',
-        fontSize: '18px',
-        fontStyle: 'bold',
-        color: '#7cfc8a',
-      })
-      .setOrigin(0.5)
-      .setStroke('#0d101b', 4)
-      .setDepth(21)
-    this.add
-      .text(width / 2, height / 2 - 32, `${this.level.name} CONCLUÍDA — ${this.level.victoryKills} ZUMBIS`, {
-        fontFamily: 'monospace',
-        fontSize: '9px',
-        color: '#c8e6c9',
-      })
-      .setOrigin(0.5)
-      .setDepth(21)
-    this.add
-      .text(
-        width / 2,
-        height / 2 - 16,
-        `ABATES: ${this.kills}    PONTOS: ${this.score}    RECORDE: ${this.bestScore}`,
-        {
-          fontFamily: 'monospace',
-          fontSize: '9px',
-          color: '#e8edf7',
-        },
-      )
-      .setOrigin(0.5)
-      .setStroke('#0d101b', 3)
-      .setDepth(21)
-
-    // Celebração de aniversário: confete caindo + recado na vitória
-    this.spawnConfetti(width)
-    this.add
-      .text(width / 2, height / 2 - 2, 'FELIZ 5 ANOS, ANNE C C BRAGA!', {
-        fontFamily: 'monospace',
-        fontSize: '9px',
-        fontStyle: 'bold',
-        color: '#ffd54f',
-      })
-      .setOrigin(0.5)
-      .setStroke('#0d101b', 3)
-      .setDepth(21)
-    this.add
-      .text(width / 2, height / 2 + 8, 'COM AMOR, TUIU & NANY', {
-        fontFamily: 'monospace',
-        fontSize: '8px',
-        color: '#ff9fc2',
-      })
-      .setOrigin(0.5)
-      .setStroke('#0d101b', 3)
-      .setDepth(21)
-
-    this.createEndButtons(22, true)
-  }
-
-  /** Chuva de confete colorido cobrindo a arena na vitória. */
-  private spawnConfetti(width: number): void {
-    const confetti = this.add.particles(width / 2, 0, 'pixel', {
-      x: { min: 10, max: width - 10 },
-      y: -10,
-      speedY: { min: 40, max: 110 },
-      speedX: { min: -30, max: 30 },
-      gravityY: 60,
-      angle: { min: 0, max: 360 },
-      rotate: { min: -180, max: 180 },
-      lifespan: 2800,
-      frequency: 70,
-      quantity: 2,
-      scale: { start: 1.6, end: 0.8 },
-      tint: [0xff5d8f, 0xffd54f, 0x7cfc8a, 0x53c1ff, 0xff9fc2],
+    buildVictoryScreen({
+      scene: this,
+      width,
+      height,
+      levelName: this.level.name,
+      levelVictoryKills: this.level.victoryKills,
+      hasNextLevel: !!randomNextLevel(this.level),
+      stats: { kills: this.kills, score: this.score, bestScore: this.bestScore },
+      onPrimary: () => this.retryOrAdvance(),
+      onMenu: () => this.scene.start('TitleScene'),
     })
-    confetti.setDepth(22)
   }
 
   // ------------------------------------------------------------------
