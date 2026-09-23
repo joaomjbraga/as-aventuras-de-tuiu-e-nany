@@ -38,8 +38,7 @@ window.__state = function () {
     muted: __game.sound ? __game.sound.mute : null,
     prompts: s.revivePrompts ? s.revivePrompts.size : null,
     bossPhase: !!s.bossPhase,
-    boss: s.boss ? { hp: s.boss.hp, max: s.boss.hpMax, dying: s.boss.isDying } : null,
-    anniversary: s.children.list.some(function (o) { return o && o.text && String(o.text).indexOf('ANNE C C BRAGA') >= 0; })
+    boss: s.boss ? { hp: s.boss.hp, max: s.boss.hpMax, dying: s.boss.isDying } : null
   };
 };
 window.__goMain = function () {
@@ -242,7 +241,6 @@ app.whenReady().then(async () => {
     await sleep(400)
     st = await js('window.__state()')
     check('partida parada após vitória', st && st.victory, { victory: st && st.victory })
-    check('recado de aniversário na vitória', !!st && st.anniversary, { anniversary: !!st && st.anniversary })
 
     // Menu Sobre (por que o jogo existe)
     await js('window.__about()')

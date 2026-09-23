@@ -56,9 +56,8 @@ export function buildGameOverScreen(opts: EndScreenOptions): void {
 }
 
 /**
- * Overlay de vitória (verde): VITÓRIA + placar + confete + recado de
- * aniversário (homenagem ao casal Tuiu & Nany). O botão principal avança
- * para a próxima fase quando existe.
+ * Overlay de vitória (verde): VITÓRIA + placar + confete. O botão principal
+ * avança para a próxima fase quando existe.
  */
 export function buildVictoryScreen(opts: EndScreenOptions): void {
   const { scene, width, height, levelName, levelVictoryKills, stats, hasNextLevel, onPrimary, onMenu } = opts
@@ -100,27 +99,6 @@ export function buildVictoryScreen(opts: EndScreenOptions): void {
     .setOrigin(0.5)
     .setStroke('#0d101b', 3)
     .setDepth(21)
-
-  // Recados acima dos botões (depth 22) para nunca ficarem por baixo deles
-  scene.add
-    .text(width / 2, height / 2 - 14, 'FELIZ 5 ANOS, ANNE C C BRAGA!', {
-      fontFamily: 'monospace',
-      fontSize: '9px',
-      fontStyle: 'bold',
-      color: '#ffd54f',
-    })
-    .setOrigin(0.5)
-    .setStroke('#0d101b', 3)
-    .setDepth(22)
-  scene.add
-    .text(width / 2, height / 2 - 3, 'COM AMOR, JOÃO M J BRAGA', {
-      fontFamily: 'monospace',
-      fontSize: '8px',
-      color: '#ff9fc2',
-    })
-    .setOrigin(0.5)
-    .setStroke('#0d101b', 3)
-    .setDepth(22)
 
   spawnConfetti(scene, width)
   const hasNext = hasNextLevel ?? false
