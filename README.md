@@ -37,6 +37,17 @@ Para adicionar uma nova fase:
 2. Adicione um novo `LevelConfig` ao array `LEVELS` em `src/game/levels.ts` (use a fase "Casa" como modelo), informando `id`, `name`, `art`, cores do chão/névoa, `victoryKills` e `difficulty`.
 3. Nada mais muda: a `PreloadScene` carrega os assets pelas chaves `bg-<id>`/`bg-<id>-img`, a `LevelSelectScene` lista o cenário automaticamente e a `MainScene` usa a fase da sessão.
 
+## Distribuir
+
+Empacota o app em instaladores/executáveis prontos (os artefatos saem em `dist/`):
+
+```sh
+npm run dist:linux   # AppImage + .deb (Linux)
+npm run dist:win     # portable .exe (Windows)
+```
+
+O Windows pode ser gerado no Linux (o electron-builder cuida do resto); os comandos exigem as ferramentas baixadas na primeira execução.
+
 ## Autor
 
 [![João M J Braga](https://github.com/joaomjbraga.png?size=100)](https://github.com/joaomjbraga)
