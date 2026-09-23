@@ -494,8 +494,11 @@ export class MainScene extends Phaser.Scene {
 
     this.sound.play(AUDIO.ZOMBIE_DEATH, { volume: 0.7 })
 
-    // Chance de derrubar um power-up no local do abate
-    if (killed) this.maybeDropPickup(killed.x, killed.y)
+    // Popup do quanto o abate valeu (multiplicado pelo combo) no local da morte
+    if (killed) {
+      this.maybeDropPickup(killed.x, killed.y)
+      this.showFloatingScore(killed.x, killed.y, this.mult)
+    }
 
     if (hasWon(this.kills, this.level.victoryKills)) this.triggerVictory()
   }
@@ -505,6 +508,28 @@ export class MainScene extends Phaser.Scene {
     if (this.mult === 1) return
     this.combo = 0
     this.mult = 1
+  }
+
+  /** Popup flutuante no local do abate com os pontos ganhos (× combo). */
+  private showFloatingScore(x: number, y: number, value: number): void {
+    const label = this.add
+      .text(x, y - 22, `+${value}`, {
+        fontFamily: 'monospace',
+        fontSize: '9px',
+        fontStyle: 'bold',
+        color: '#ffe082',
+      })
+      .setOrigin(0.5)
+      .setDepth(3)
+      .setStroke('#0d101b', 2)
+    this.tweens.add({
+      targets: label,
+      y: y - 46,
+      alpha: 0,
+      duration: 650,
+      ease: 'Cubic.easeOut',
+      onComplete: () => label.destroy(),
+    })
   }
 
   private onPlayerZombieContact(object1: ArcadeObject, object2: ArcadeObject): void {
@@ -741,7 +766,48 @@ export class MainScene extends Phaser.Scene {
       .setStroke('#0d101b', 3)
       .setDepth(21)
 
-    this.createEndButtons(16, true)
+    // Celebração de aniversário: confete caindo + recado na vitória
+    this.spawnConfetti(width)
+    this.add
+      .text(width / 2, height / 2 - 2, 'FELIZ 5 ANOS, ANNE C C BRAGA!', {
+        fontFamily: 'monospace',
+        fontSize: '9px',
+        fontStyle: 'bold',
+        color: '#ffd54f',
+      })
+      .setOrigin(0.5)
+      .setStroke('#0d101b', 3)
+      .setDepth(21)
+    this.add
+      .text(width / 2, height / 2 + 8, 'COM AMOR, TUIU & NANY', {
+        fontFamily: 'monospace',
+        fontSize: '8px',
+        color: '#ff9fc2',
+      })
+      .setOrigin(0.5)
+      .setStroke('#0d101b', 3)
+      .setDepth(21)
+
+    this.createEndButtons(22, true)
+  }
+
+  /** Chuva de confete colorido cobrindo a arena na vitória. */
+  private spawnConfetti(width: number): void {
+    const confetti = this.add.particles(width / 2, 0, 'pixel', {
+      x: { min: 10, max: width - 10 },
+      y: -10,
+      speedY: { min: 40, max: 110 },
+      speedX: { min: -30, max: 30 },
+      gravityY: 60,
+      angle: { min: 0, max: 360 },
+      rotate: { min: -180, max: 180 },
+      lifespan: 2800,
+      frequency: 70,
+      quantity: 2,
+      scale: { start: 1.6, end: 0.8 },
+      tint: [0xff5d8f, 0xffd54f, 0x7cfc8a, 0x53c1ff, 0xff9fc2],
+    })
+    confetti.setDepth(22)
   }
 
   // ------------------------------------------------------------------
@@ -749,9 +815,23 @@ export class MainScene extends Phaser.Scene {
   // ------------------------------------------------------------------
 
   private createHud(): void {
-    const { width } = this.scale
+    const { width, height } = this.scale
 
     this.players.forEach((player, i) => this.addPlayerHud(player, i))
+
+    // Vinheta de perigo: pulsa quando alguém está com o último coração
+    this.vignette = this.add
+      .rectangle(width / 2, height / 2, width, height, 0xff1a2e, 0.14)
+      .setDepth(8)
+      .setVisible(false)
+    this.tweens.add({
+      targets: this.vignette,
+      alpha: 0.05,
+      duration: 460,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    })
 
     // Placar de abates (topo central) com o multiplicador de combo
     this.killsText = this.add
@@ -792,6 +872,14 @@ export class MainScene extends Phaser.Scene {
     const text = `ZOMBIES: ${this.kills}${boosted ? `  x${this.mult}` : ''}`
     if (this.killsText.text !== text) this.killsText.setText(text)
     this.killsText.setColor(isRecord || boosted ? '#ffe082' : '#e8edf7')
+
+    // Vinheta apenas durante o combate e com algum jogador no último coração
+    const lowHp = this.players.some((p) => p.isAlive && p.hp <= 1)
+    if (!this.gameOver && !this.victory && lowHp) {
+      if (this.vignette && !this.vignette.visible) this.vignette.setVisible(true)
+    } else if (this.vignette && this.vignette.visible) {
+      this.vignette.setVisible(false)
+    }
 
     this.refreshEffectIcons()
   }

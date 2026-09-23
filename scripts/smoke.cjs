@@ -36,7 +36,8 @@ window.__state = function () {
     zombies: s.zombieGroup ? s.zombieGroup.countActive(true) : 0,
     hasHeart: __game.textures.exists('heart'),
     muted: __game.sound ? __game.sound.mute : null,
-    prompts: s.revivePrompts ? s.revivePrompts.size : null
+    prompts: s.revivePrompts ? s.revivePrompts.size : null,
+    anniversary: s.children.list.some(function (o) { return o && o.text && String(o.text).indexOf('ANNE C C BRAGA') >= 0; })
   };
 };
 window.__goMain = function () {
@@ -227,6 +228,7 @@ app.whenReady().then(async () => {
     await sleep(400)
     st = await js('window.__state()')
     check('partida parada após vitória', st && st.victory, { victory: st && st.victory })
+    check('recado de aniversário na vitória', !!st && st.anniversary, { anniversary: !!st && st.anniversary })
 
     const failed = results.filter((r) => !r.ok)
     console.log(`SMOKE ${failed.length === 0 ? 'OK' : 'FALHOU'} (${results.length - failed.length}/${results.length})`)
