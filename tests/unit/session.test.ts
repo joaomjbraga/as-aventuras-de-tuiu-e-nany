@@ -14,8 +14,10 @@ describe('session (fase atual)', () => {
     expect(getSessionLevel().id).toBe(HOUSE_LEVEL_ID)
   })
 
-  it('advanceSessionLevel retorna null enquanto houver só uma fase (fim da campanha hoje)', () => {
+  it('advanceSessionLevel avança para outra fase aleatória (campanha tem 4 fases)', () => {
     resetSession()
-    expect(advanceSessionLevel()).toBeNull()
+    const next = advanceSessionLevel()
+    expect(next).not.toBeNull()
+    expect(next!.id).not.toBe(HOUSE_LEVEL_ID)
   })
 })

@@ -61,6 +61,63 @@ export const LEVELS: LevelConfig[] = [
     difficulty: DEFAULT_DIFFICULTY,
     boss: { name: 'ZUMBI-CHEFE', hp: 20, moveSpeed: 26 },
   },
+  {
+    id: 'ieab',
+    name: 'IEAB',
+    art: {
+      video: 'scenes/IEAB.mp4',
+      image: 'scenes/IEAB.jpg',
+    },
+    groundColor: 0x1e2a3a,
+    groundStrokeColor: 0x2a3f5a,
+    fogColor: 0x8ab4d8,
+    victoryKills: 25,
+    difficulty: {
+      maxSimultaneousZombies: 14,
+      spawnStartDelay: 2200,
+      spawnMinDelay: 400,
+      difficultyRampMs: 100_000,
+    },
+    boss: { name: 'GUARDIÃO DO IEAB', hp: 28, moveSpeed: 28 },
+  },
+  {
+    id: 'castro-alves',
+    name: 'CASTRO ALVES',
+    art: {
+      video: 'scenes/Castro_Alves.mp4',
+      image: 'scenes/Castro_Alves.jpg',
+    },
+    groundColor: 0x2d1e2a,
+    groundStrokeColor: 0x4a2a3f,
+    fogColor: 0xd8a8c8,
+    victoryKills: 30,
+    difficulty: {
+      maxSimultaneousZombies: 16,
+      spawnStartDelay: 1800,
+      spawnMinDelay: 350,
+      difficultyRampMs: 90_000,
+    },
+    boss: { name: 'POETA SOMBRIO', hp: 35, moveSpeed: 30 },
+  },
+  {
+    id: 'cetep',
+    name: 'CETEP',
+    art: {
+      video: 'scenes/CETEP.mp4',
+      image: 'scenes/CETEP.jpg',
+    },
+    groundColor: 0x1a2a1e,
+    groundStrokeColor: 0x2a4a2f,
+    fogColor: 0xa8d8b8,
+    victoryKills: 35,
+    difficulty: {
+      maxSimultaneousZombies: 18,
+      spawnStartDelay: 1500,
+      spawnMinDelay: 300,
+      difficultyRampMs: 80_000,
+    },
+    boss: { name: 'MESTRE TÉCNICO', hp: 42, moveSpeed: 32 },
+  },
 ]
 
 /** Resolve a fase pelo id; ids desconhecidos caem na primeira fase. */

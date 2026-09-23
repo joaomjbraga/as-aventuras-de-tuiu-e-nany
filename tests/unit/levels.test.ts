@@ -81,7 +81,9 @@ describe('levels', () => {
   it('retorna null quando não há outra fase para sortear', () => {
     const singlePool = [fakePool[0]]
     expect(pickRandomLevel(singlePool[0], singlePool)).toBeNull()
-    // Só existe a "Casa" hoje: o avanço aleatório legítimo é null.
-    expect(randomNextLevel(LEVELS[0])).toBeNull()
+    // Com múltiplas fases, o avanço aleatório pode retornar outra fase.
+    const picked = randomNextLevel(LEVELS[0])
+    expect(picked).not.toBeNull()
+    expect(picked!.id).not.toBe(LEVELS[0].id)
   })
 })

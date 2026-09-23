@@ -239,11 +239,11 @@ export class Player {
     this.hp = this.maxHp
     this.isAlive = true
     this.immuneUntil = this.scene.time.now + 1500
-    this.sprite.setPosition(x, y)
-    this.sprite.setVelocity(0, 0)
     this.sprite.setVisible(true)
-    this.sprite.body!.enable = true
     this.sprite.alpha = 1
+    // Usa reset() para sincronizar sprite e body (body desabilitado não rastreia setPosition)
+    this.sprite.body!.reset(x, y)
+    this.sprite.setVelocity(0, 0)
     this.setState('idle')
   }
 
