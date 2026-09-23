@@ -65,7 +65,7 @@ export function buildVictoryScreen(opts: EndScreenOptions): void {
 
   scene.add.rectangle(width / 2, height / 2, width, height, 0x0a2318, 0.75).setDepth(20)
   scene.add
-    .text(width / 2, height / 2 - 52, 'VITÓRIA!', {
+    .text(width / 2, height / 2 - 56, 'VITÓRIA!', {
       fontFamily: 'monospace',
       fontSize: '18px',
       fontStyle: 'bold',
@@ -77,7 +77,7 @@ export function buildVictoryScreen(opts: EndScreenOptions): void {
 
   if (levelName != null && levelVictoryKills != null) {
     scene.add
-      .text(width / 2, height / 2 - 32, `${levelName} CONCLUÍDA — ${levelVictoryKills} ZUMBIS`, {
+      .text(width / 2, height / 2 - 40, `${levelName} CONCLUÍDA — ${levelVictoryKills} ZUMBIS`, {
         fontFamily: 'monospace',
         fontSize: '9px',
         color: '#c8e6c9',
@@ -89,7 +89,7 @@ export function buildVictoryScreen(opts: EndScreenOptions): void {
   scene.add
     .text(
       width / 2,
-      height / 2 - 16,
+      height / 2 - 27,
       `ABATES: ${stats.kills}    PONTOS: ${stats.score}    RECORDE: ${stats.bestScore}`,
       {
         fontFamily: 'monospace',
@@ -101,8 +101,9 @@ export function buildVictoryScreen(opts: EndScreenOptions): void {
     .setStroke('#0d101b', 3)
     .setDepth(21)
 
+  // Recados acima dos botões (depth 22) para nunca ficarem por baixo deles
   scene.add
-    .text(width / 2, height / 2 - 2, 'FELIZ 5 ANOS, ANNE C C BRAGA!', {
+    .text(width / 2, height / 2 - 14, 'FELIZ 5 ANOS, ANNE C C BRAGA!', {
       fontFamily: 'monospace',
       fontSize: '9px',
       fontStyle: 'bold',
@@ -110,20 +111,20 @@ export function buildVictoryScreen(opts: EndScreenOptions): void {
     })
     .setOrigin(0.5)
     .setStroke('#0d101b', 3)
-    .setDepth(21)
+    .setDepth(22)
   scene.add
-    .text(width / 2, height / 2 + 8, 'COM AMOR, JOÃO M J BRAGA', {
+    .text(width / 2, height / 2 - 3, 'COM AMOR, JOÃO M J BRAGA', {
       fontFamily: 'monospace',
       fontSize: '8px',
       color: '#ff9fc2',
     })
     .setOrigin(0.5)
     .setStroke('#0d101b', 3)
-    .setDepth(21)
+    .setDepth(22)
 
   spawnConfetti(scene, width)
   const hasNext = hasNextLevel ?? false
-  createEndButtons(scene, width, height, 22, hasNext, onPrimary, onMenu)
+  createEndButtons(scene, width, height, 26, hasNext, onPrimary, onMenu)
 }
 
 /** Botões da tela final (mesma dupla "principal + menu inicial" em ambos). */
