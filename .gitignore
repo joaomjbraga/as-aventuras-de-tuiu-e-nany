@@ -5,7 +5,3 @@ out/
 *.tsbuildinfo
 .DS_Store
 .vite/
-
-# Pastas de sprites órfãos (não referenciados no código)
-assets/sprites/boy_zombie/
-assets/sprites/girl_zombie/

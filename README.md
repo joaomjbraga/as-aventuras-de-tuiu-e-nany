@@ -43,7 +43,7 @@ Para adicionar uma nova fase:
 Empacota o app em instaladores/executáveis prontos (os artefatos saem em `dist/`):
 
 ```sh
-npm run dist:linux   # AppImage + .deb (Linux)
+npm run dist:linux   # AppImage (Linux)
 npm run dist:win     # portable .exe (Windows)
 ```
 
