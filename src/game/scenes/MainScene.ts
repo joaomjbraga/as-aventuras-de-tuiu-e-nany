@@ -149,7 +149,6 @@ export class MainScene extends Phaser.Scene {
     })
 
     this.physics.add.collider(this.playerGroup, this.ground)
-    this.physics.add.collider(this.playerGroup, this.scenery.tombstones)
 
     if (this.players.length === 2) {
       this.physics.add.collider(this.players[0].sprite, this.players[1].sprite)
@@ -219,9 +218,8 @@ export class MainScene extends Phaser.Scene {
   private spawnPointFor(playerId: string, index?: number): { x: number; y: number } {
     const { width } = this.scale
     const i = index ?? this.players.findIndex((p) => p.id === playerId)
-    // Deixa os spawns fora das faixas das lápides (20–32, 102–118, 193–207,
-    // 283–301): um personagem que renasce em cima de uma lápide fica preso na
-    // colisão (e zumbis empurram contra ela depois do revive).
+    // Spawns com margem segura, longe das bordas e do meio da arena, para um
+    // personagem não nascer em cima de nenhum obstáculo do cenário.
     const x = width * (i === 0 ? 0.15 : 0.85)
     // A altura do corpo é por personagem (Nany é maior que Tuiu); usar sempre
     // a do Tuiu afundava a Nany 6px dentro do chão.
@@ -242,7 +240,6 @@ export class MainScene extends Phaser.Scene {
     this.zombieGroup = this.physics.add.group()
 
     this.physics.add.collider(this.zombieGroup, this.ground)
-    // Zumbis atravessam as lápides (não colidem com elas)
     this.physics.add.collider(this.zombieGroup, this.zombieGroup)
     this.physics.add.collider(this.playerGroup, this.zombieGroup, (a, b) => this.onPlayerZombieContact(a, b))
 

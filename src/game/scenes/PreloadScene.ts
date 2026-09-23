@@ -10,6 +10,9 @@ export class PreloadScene extends Phaser.Scene {
   preload(): void {
     this.drawLoadingBar()
 
+    // Cenário de fundo (arte da casa)
+    this.load.image('bg-home', 'scenes/scenes-my-home.jpg')
+
     const sprites = Object.values(CHARACTERS)
 
     // Carrega os spritesheets dos personagens
