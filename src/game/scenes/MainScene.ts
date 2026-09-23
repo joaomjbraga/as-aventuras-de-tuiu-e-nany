@@ -2,17 +2,19 @@ import Phaser from 'phaser'
 import { Player } from '../entities/Player'
 import { Zombie } from '../entities/Zombie'
 import { CHARACTERS, ZOMBIE_TARGET_HEIGHT, ZOMBIE_VARIANTS, type CharacterKey } from '../sprites'
-import { getSession, setSessionPlayers, type PlayerId } from '../session'
+import { advanceSessionLevel, getSession, getSessionLevel, setSessionPlayers, type PlayerId } from '../session'
 import { buildScene, type SceneResult } from '../scenery'
 import { AUDIO, applyMute, playBgm, toggleMute } from '../audio'
 import { createButton } from '../ui'
 import { groundCenterYFor, groundTopFor, spawnXFor } from '../layout'
-import { canSpawnZombie, hasWon, spawnIntervalMs, VICTORY_KILLS } from '../difficulty'
+import { canSpawnZombie, hasWon, spawnIntervalMs } from '../difficulty'
+import { randomNextLevel, type LevelConfig } from '../levels'
 import { loadBestKills, saveBestKills } from '../storage'
 
 type ArcadeObject = Phaser.Types.Physics.Arcade.GameObjectWithBody
 
 export class MainScene extends Phaser.Scene {
+  private level!: LevelConfig
   private players: Player[] = []
   private ground!: Phaser.GameObjects.Rectangle
   private playerGroup!: Phaser.Physics.Arcade.Group
@@ -56,6 +58,9 @@ export class MainScene extends Phaser.Scene {
     this.spawnerTimer = undefined
     this.joinButton = undefined
 
+    // Fase atual da campanha (vinda da sessão: seleção/avanço de fase).
+    this.level = getSessionLevel()
+
     // Restaura o relógio da cena: um hit-stop (timeScale 0.25) pode ter sido
     // cancelado por um restart/shutdown antes do reset; sem isso a nova
     // partida rodaria inteira em câmera lenta (Clock.shutdown não zera o
@@ -68,7 +73,7 @@ export class MainScene extends Phaser.Scene {
 
     applyMute(this)
 
-    this.scenery = buildScene(this, width, height)
+    this.scenery = buildScene(this, width, height, this.level)
     this.ground = this.scenery.ground
 
     this.createPlayers()
@@ -114,7 +119,7 @@ export class MainScene extends Phaser.Scene {
     // Fim de jogo / vitória: atalhos de teclado para os botões
     if (this.gameOver || this.victory) {
       if (Phaser.Input.Keyboard.JustDown(this.enterKey)) {
-        this.scene.restart()
+        this.retryOrAdvance()
       } else if (Phaser.Input.Keyboard.JustDown(this.escKey)) {
         this.scene.start('TitleScene')
       }
@@ -300,25 +305,26 @@ export class MainScene extends Phaser.Scene {
     })
 
     const { width } = this.scale
+    const diff = this.level.difficulty
 
     this.spawnerTimer?.remove()
 
     // Dificuldade progressiva: o intervalo de spawn começa devagar e acelera
     // ao longo da PARTIDA (relativo a matchStartTime, não ao relógio global —
     // do contrário a 2ª partida já abriria no teto de dificuldade). O próximo
-    // ciclo re-agenda com o delay novo.
+    // ciclo re-agenda com o delay novo. Os parâmetros vêm da fase atual.
     const tick = () => {
-      if (!canSpawnZombie(this.zombieGroup.countActive(true))) return
+      if (!canSpawnZombie(this.zombieGroup.countActive(true), diff.maxSimultaneousZombies)) return
       const side = Phaser.Math.Between(0, 1)
       this.spawnZombie(side === 0 ? -16 : width + 16)
       this.spawnerTimer?.reset({
-        delay: spawnIntervalMs(this.time.now - this.matchStartTime),
+        delay: spawnIntervalMs(this.time.now - this.matchStartTime, diff),
         loop: true,
         callback: tick,
       })
     }
 
-    this.spawnerTimer = this.time.addEvent({ delay: spawnIntervalMs(0), loop: true, callback: tick })
+    this.spawnerTimer = this.time.addEvent({ delay: spawnIntervalMs(0, diff), loop: true, callback: tick })
   }
 
   private spawnZombie(x: number): void {
@@ -348,7 +354,7 @@ export class MainScene extends Phaser.Scene {
     }
     this.sound.play(AUDIO.ZOMBIE_DEATH, { volume: 0.7 })
 
-    if (hasWon(this.kills)) this.triggerVictory()
+    if (hasWon(this.kills, this.level.victoryKills)) this.triggerVictory()
   }
 
   private onPlayerZombieContact(object1: ArcadeObject, object2: ArcadeObject): void {
@@ -441,16 +447,20 @@ export class MainScene extends Phaser.Scene {
     })
   }
 
-  private createEndButtons(offsetY: number): void {
+  /**
+   * Botões da tela final (game over / vitória).
+   * Na vitória com fase seguinte, o botão principal avança a campanha.
+   */
+  private createEndButtons(offsetY: number, showNextLevel: boolean): void {
     const { width, height } = this.scale
+    const hasNextLevel = showNextLevel && !!randomNextLevel(this.level)
+
     createButton(
       this,
       width / 2,
       height / 2 + offsetY,
-      'JOGAR NOVAMENTE',
-      () => {
-        this.scene.restart()
-      },
+      hasNextLevel ? 'PRÓXIMA FASE' : 'JOGAR NOVAMENTE',
+      () => this.retryOrAdvance(),
       { width: 180 },
     ).setDepth(21)
 
@@ -466,13 +476,32 @@ export class MainScene extends Phaser.Scene {
     ).setDepth(21)
 
     this.add
-      .text(width / 2, height - 10, 'ENTER: jogar novamente   ESC: menu', {
-        fontFamily: 'monospace',
-        fontSize: '8px',
-        color: '#7a89a0',
-      })
+      .text(
+        width / 2,
+        height - 10,
+        hasNextLevel ? 'ENTER: próxima fase   ESC: menu' : 'ENTER: jogar novamente   ESC: menu',
+        {
+          fontFamily: 'monospace',
+          fontSize: '8px',
+          color: '#7a89a0',
+        },
+      )
       .setOrigin(0.5, 0.5)
       .setDepth(21)
+  }
+
+  /** ENTER no fim de partida: avança para a próxima fase (vitória) ou rejoga. */
+  private retryOrAdvance(): void {
+    if (this.victory && randomNextLevel(this.level)) {
+      this.startNextLevel()
+      return
+    }
+    this.scene.restart()
+  }
+
+  /** Avança a sessão para a próxima fase e recomeça a arena nela. */
+  private startNextLevel(): void {
+    if (advanceSessionLevel()) this.scene.restart()
   }
 
   private triggerGameOver(): void {
@@ -508,10 +537,10 @@ export class MainScene extends Phaser.Scene {
       .setStroke('#0d101b', 3)
       .setDepth(21)
 
-    this.createEndButtons(16)
+    this.createEndButtons(16, false)
   }
 
-  /** Condição de vitória alcançada (VICTORY_KILLS abates): overlay verde. */
+  /** Condição de vitória alcançada (meta de abates da fase): overlay verde. */
   private triggerVictory(): void {
     if (this.victory || this.gameOver) return
     this.victory = true
@@ -533,7 +562,7 @@ export class MainScene extends Phaser.Scene {
       .setStroke('#0d101b', 4)
       .setDepth(21)
     this.add
-      .text(width / 2, height / 2 - 32, `MISSÃO CUMPRIDA — ${VICTORY_KILLS} ZUMBIS`, {
+      .text(width / 2, height / 2 - 32, `${this.level.name} CONCLUÍDA — ${this.level.victoryKills} ZUMBIS`, {
         fontFamily: 'monospace',
         fontSize: '9px',
         color: '#c8e6c9',
@@ -547,9 +576,10 @@ export class MainScene extends Phaser.Scene {
         color: '#e8edf7',
       })
       .setOrigin(0.5)
+      .setStroke('#0d101b', 3)
       .setDepth(21)
 
-    this.createEndButtons(16)
+    this.createEndButtons(16, true)
   }
 
   // ------------------------------------------------------------------

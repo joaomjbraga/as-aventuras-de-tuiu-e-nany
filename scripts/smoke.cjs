@@ -41,10 +41,12 @@ window.__state = function () {
 };
 window.__goMain = function () {
   if (!__game.textures.exists('tuio')) return { waiting: true };
-  ['TitleScene','CharacterSelectScene'].forEach(function (k) { var sc = __game.scene.getScene(k); if (sc && sc.scene.isActive()) __game.scene.stop(k); });
+  ['TitleScene','LevelSelectScene','CharacterSelectScene'].forEach(function (k) { var sc = __game.scene.getScene(k); if (sc && sc.scene.isActive()) __game.scene.stop(k); });
   __game.scene.start('MainScene');
   return window.__state();
 };
+window.__levels = function () { __game.scene.stop('TitleScene'); __game.scene.start('LevelSelectScene'); return true; };
+window.__levelState = function () { var s = __game.scene.getScene('LevelSelectScene'); return { active: !!s && s.scene.isActive(), cards: s ? s.cards.length : null, selected: s ? s.selectedIndex : null, name: s && s.cards[0] ? s.cards[0].level.name : null }; };
 window.__join = function () { var s = __game.scene.getScene('MainScene'); s.tryJoinP2(); return window.__state(); };
 window.__zombiesOff = function () { var s = __game.scene.getScene('MainScene'); if (s.spawnerTimer) s.spawnerTimer.remove(false); return window.__state(); };
 window.__killP = function (pid) {
@@ -132,6 +134,13 @@ app.whenReady().then(async () => {
     // Boot: alguma cena ativa
     let st = await js('window.__state()')
     check('boot com cena ativa', !!st && typeof st.scene === 'string' && st.scene.length > 0, st)
+
+    // Seleção de cenário na tela inicial (abre e lista LEVELS)
+    await js('window.__levels()')
+    await sleep(400)
+    st = await js('window.__levelState()')
+    check('seleção de cenário abre', st && st.active && st.cards === 1, st)
+    check('cenário "Casa" listado na seleção', st && st.name === 'CASA', st)
 
     // Entra direto na arena com 1 jogador
     await js('window.__goMain()')

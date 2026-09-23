@@ -153,7 +153,7 @@ export class CharacterSelectScene extends Phaser.Scene {
       if (!p1?.confirmed) {
         if (p1) this.tryConfirm(p1)
       } else {
-        this.startGame()
+        this.startMatch()
       }
     }
 
@@ -269,7 +269,7 @@ export class CharacterSelectScene extends Phaser.Scene {
 
     // Segundo clique no personagem já confirmado pelo J1 → começa
     if (p1.confirmed && p1.index === index) {
-      this.startGame()
+      this.startMatch()
       return
     }
 
@@ -288,7 +288,7 @@ export class CharacterSelectScene extends Phaser.Scene {
     this.tryConfirm(p1)
   }
 
-  private startGame(): void {
+  private startMatch(): void {
     const players: SessionPlayer[] = this.cursors
       .filter((c) => c.confirmed)
       .map((c) => ({
@@ -300,6 +300,8 @@ export class CharacterSelectScene extends Phaser.Scene {
     if (players.length === 0) return
 
     setSessionPlayers(players)
-    this.scene.start('MainScene')
+
+    // Personagens definidos → escolha do cenário da partida
+    this.scene.start('LevelSelectScene')
   }
 }

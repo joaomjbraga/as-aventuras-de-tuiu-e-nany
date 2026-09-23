@@ -31,4 +31,23 @@ describe('difficulty', () => {
     expect(hasWon(VICTORY_KILLS - 1)).toBe(false)
     expect(hasWon(VICTORY_KILLS)).toBe(true)
   })
+
+  it('aceita parâmetros de dificuldade por fase', () => {
+    const params = {
+      maxSimultaneousZombies: 3,
+      spawnStartDelay: 1000,
+      spawnMinDelay: 200,
+      difficultyRampMs: 10_000,
+    }
+    expect(spawnIntervalMs(0, params)).toBe(1000)
+    expect(spawnIntervalMs(10_000, params)).toBe(200)
+    expect(canSpawnZombie(3, params.maxSimultaneousZombies)).toBe(false)
+    expect(canSpawnZombie(2, params.maxSimultaneousZombies)).toBe(true)
+  })
+
+  it('hasWon aceita meta de vitória por fase', () => {
+    expect(hasWon(19, 20)).toBe(false)
+    expect(hasWon(20, 20)).toBe(true)
+    expect(hasWon(10, 10)).toBe(true)
+  })
 })

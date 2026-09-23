@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import { BootScene } from './scenes/BootScene'
 import { PreloadScene } from './scenes/PreloadScene'
 import { TitleScene } from './scenes/TitleScene'
+import { LevelSelectScene } from './scenes/LevelSelectScene'
 import { CharacterSelectScene } from './scenes/CharacterSelectScene'
 import { MainScene } from './scenes/MainScene'
 import { PauseScene } from './scenes/PauseScene'
@@ -41,5 +42,5 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     height: BASE_HEIGHT,
   },
 
-  scene: [BootScene, PreloadScene, TitleScene, CharacterSelectScene, MainScene, PauseScene],
+  scene: [BootScene, PreloadScene, TitleScene, LevelSelectScene, CharacterSelectScene, MainScene, PauseScene],
 }

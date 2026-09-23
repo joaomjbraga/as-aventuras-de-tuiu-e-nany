@@ -1,25 +1,26 @@
 import Phaser from 'phaser'
 import { GROUND_HEIGHT, groundTopFor } from './layout'
+import { bgImageKey, bgVideoKey, type LevelConfig } from './levels'
 
 export interface SceneResult {
   ground: Phaser.GameObjects.Rectangle
 }
 
 /**
- * Cenário do jogo: arte de fundo (scenes-my-home.jpg) cobrindo a tela,
- * chão jogável com física e névoa ambiente.
+ * Cenário da fase: arte de fundo (vídeo com fallback de imagem) cobrindo a
+ * tela, chão jogável com física e névoa ambiente — tudo vindo do `LevelConfig`.
  */
-export function buildScene(scene: Phaser.Scene, width: number, height: number): SceneResult {
+export function buildScene(scene: Phaser.Scene, width: number, height: number, level: LevelConfig): SceneResult {
   const groundTop = groundTopFor(height)
   const cx = width / 2
 
-  // ---- Fundo: vídeo da casa em tela cheia (fallback: imagem) ----
+  // ---- Fundo: vídeo em tela cheia (fallback: imagem) ----
   // O Phaser guarda vídeos no CacheManager.video (a textura só existe após o
   // add.video), então a checagem de disponibilidade é cache.video, não textures.
-  const hasVideo = scene.cache.video.exists('bg-home')
+  const hasVideo = !!level.art.video && scene.cache.video.exists(bgVideoKey(level))
   const bg: Phaser.GameObjects.Image | Phaser.GameObjects.Video = hasVideo
-    ? scene.add.video(cx, height / 2, 'bg-home')
-    : scene.add.image(cx, height / 2, 'bg-home-img')
+    ? scene.add.video(cx, height / 2, bgVideoKey(level))
+    : scene.add.image(cx, height / 2, bgImageKey(level))
   bg.setDepth(0)
 
   if (hasVideo) {
@@ -36,8 +37,8 @@ export function buildScene(scene: Phaser.Scene, width: number, height: number): 
   }
 
   // ---- Chão jogável ----
-  const ground = scene.add.rectangle(cx, height - GROUND_HEIGHT / 2, width, GROUND_HEIGHT, 0x232633)
-  ground.setStrokeStyle(2, 0x2f3245)
+  const ground = scene.add.rectangle(cx, height - GROUND_HEIGHT / 2, width, GROUND_HEIGHT, level.groundColor)
+  ground.setStrokeStyle(2, level.groundStrokeColor)
   ground.setDepth(0)
   scene.physics.add.existing(ground, true)
 
@@ -48,7 +49,7 @@ export function buildScene(scene: Phaser.Scene, width: number, height: number): 
       groundTop - 12 + (i % 2) * 10,
       170,
       12,
-      0xd8d8c8,
+      level.fogColor,
       0.05 + i * 0.02,
     )
     fog.setDepth(2)

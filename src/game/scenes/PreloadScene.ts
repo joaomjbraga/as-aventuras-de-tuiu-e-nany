@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import { CHARACTERS, ZOMBIE_VARIANTS, ZOMBIE_TARGET_HEIGHT } from '../sprites'
 import { AUDIO } from '../audio'
+import { LEVELS, bgImageKey, bgVideoKey } from '../levels'
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -10,10 +11,14 @@ export class PreloadScene extends Phaser.Scene {
   preload(): void {
     this.drawLoadingBar()
 
-    // Cenário de fundo: vídeo da casa (noAudio habilita autoplay) com
+    // Cenário das fases: carrega o vídeo (noAudio habilita autoplay) com
     // fallback para a arte estática caso o codec não esteja disponível.
-    this.load.video('bg-home', 'scenes/scenes-my-home.mp4', true)
-    this.load.image('bg-home-img', 'scenes/scenes-my-home.jpg')
+    // Chaves derivadas do id da fase (bg-<id> / bg-<id>-img) — futuras fases
+    // entram automaticamente ao serem adicionadas em LEVELS.
+    LEVELS.forEach((level) => {
+      if (level.art.video) this.load.video(bgVideoKey(level), level.art.video, true)
+      this.load.image(bgImageKey(level), level.art.image)
+    })
 
     const sprites = Object.values(CHARACTERS)
 

@@ -20,8 +20,22 @@ Este jogo foi desenvolvido para **comemorar os 5 anos de união de mim e minha e
 ## Mecânica
 
 - Pise em cima do zumbi para derrotá-lo; contato lateral tira vida.
-- Cada jogador tem 3 corações; sem vida, o jogador ressuscita após um tempo.
+- Cada jogador tem 3 corações; ao cair, o jogador reviverá quando **escolher** (pulo do próprio personagem) se ainda houver companheiro em pé.
 - Todos os jogadores caídos ao mesmo tempo = fim de jogo.
+- A dificuldade aumenta ao longo de cada partida (os zumbis spawnam mais rápido) e a vitória da fase fecha em 20 abates.
+
+## Fases
+
+O jogo é dirigido por um registro de fases (`src/game/levels.ts`), cada uma com sua arte de fundo, visual do chão, meta de abates e curva de dificuldade.
+
+- Na seleção de personagem, após confirmar, o jogo abre a **seleção de cenário** (cards com a miniatura da fase).
+- Na vitória, o jogo oferece **PRÓXIMA FASE** (ENTER): a próxima fase é **sorteada** entre os cenários disponíveis, sem repetir a atual. Quando só existe um cenário, não há próxima fase.
+
+Para adicionar uma nova fase:
+
+1. Coloque a arte em `assets/scenes/` (vídeo opcional + imagem de fallback).
+2. Adicione um novo `LevelConfig` ao array `LEVELS` em `src/game/levels.ts` (use a fase "Casa" como modelo), informando `id`, `name`, `art`, cores do chão/névoa, `victoryKills` e `difficulty`.
+3. Nada mais muda: a `PreloadScene` carrega os assets pelas chaves `bg-<id>`/`bg-<id>-img`, a `LevelSelectScene` lista o cenário automaticamente e a `MainScene` usa a fase da sessão.
 
 ## Autor
 
