@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import { CHARACTERS, ZOMBIE_VARIANTS, ZOMBIE_TARGET_HEIGHT } from '../sprites'
+import { CHARACTERS, EXPLOSION, ZOMBIE_VARIANTS, ZOMBIE_TARGET_HEIGHT } from '../sprites'
 import { AUDIO } from '../audio'
 import { LEVELS, bgImageKey, bgVideoKey } from '../levels'
 
@@ -35,10 +35,11 @@ export class PreloadScene extends Phaser.Scene {
     this.load.once('loaderror', () => this.createPlaceholderSpritesheets(sprites))
 
     // Áudio: música de fundo + efeitos dos zumbis
+    this.load.audio(AUDIO.INTRO, 'audio/intro.mp3')
     this.load.audio(AUDIO.BGM, 'audio/background.mp3')
     this.load.audio(AUDIO.ZOMBIE_GROWL, 'audio/zumbi-gemendo.mp3')
     this.load.audio(AUDIO.ZOMBIE_ATTACK, 'audio/Small-Monster-Attack.mp3')
-    this.load.audio(AUDIO.ZOMBIE_DEATH, 'audio/zumbie-morre.mp3')
+    this.load.audio(AUDIO.EXPLOSION, 'audio/explosion-with-debris.mp3')
     this.load.audio(AUDIO.GAME_OVER, 'audio/game-over.mp3')
 
     // Carrega os frames individuais (PNGs) dos 3 zumbis reais para montar
@@ -49,6 +50,11 @@ export class PreloadScene extends Phaser.Scene {
         this.load.image(`${def.key}_${n}`, `${def.path}${n}.png`)
       }
     })
+
+    // Frames da explosão de abate (empacotados em spritesheet em create).
+    for (let i = 1; i <= EXPLOSION.frames; i++) {
+      this.load.image(`${EXPLOSION.key}_${i}`, `${EXPLOSION.path}${i}.png`)
+    }
   }
 
   create(): void {
@@ -57,6 +63,7 @@ export class PreloadScene extends Phaser.Scene {
     this.generateZombiePlaceholder()
     this.buildRealZombieSpritesheets()
     this.generateBossPlaceholder()
+    this.buildExplosionSpritesheet()
     this.createUiTextures()
     this.scene.start('TitleScene')
   }
@@ -160,15 +167,56 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   /**
-   * Texturas auxiliares de UI/efeitos: um coração (HUD) e um ponto 1x1
-   * (partículas). Brancas — a cor é aplicada por tint/tintFill no uso.
+   * Empacota os frames da explosão (EXPLOSION) num spritesheet quadrado
+   * normalizado, centralizado, preservando a proporção de cada frame.
+   * Se algum frame faltar, não cria nada e o abate cai no fallback de
+   * partículas no Zombie.die().
    */
+  private buildExplosionSpritesheet(): void {
+    if (this.textures.exists(EXPLOSION.key)) return
+
+    const frames: HTMLImageElement[] = []
+    for (let i = 1; i <= EXPLOSION.frames; i++) {
+      const img = this.textures.get(`${EXPLOSION.key}_${i}`).getSourceImage() as HTMLImageElement | undefined
+      if (!img || !img.width) return
+      frames.push(img)
+    }
+
+    const size = EXPLOSION.frameSize
+    const canvas = document.createElement('canvas')
+    canvas.width = size * frames.length
+    canvas.height = size
+    const ctx = canvas.getContext('2d')!
+
+    frames.forEach((im, f) => {
+      const scale = Math.min(size / im.width, size / im.height)
+      const w = Math.floor(im.width * scale)
+      const h = Math.floor(im.height * scale)
+      ctx.drawImage(im, f * size + Math.floor((size - w) / 2), Math.floor((size - h) / 2), w, h)
+    })
+
+    this.textures.addSpriteSheet(EXPLOSION.key, canvas as unknown as HTMLImageElement, {
+      frameWidth: size,
+      frameHeight: size,
+    })
+
+    if (!this.anims.exists(`${EXPLOSION.key}-boom`)) {
+      this.anims.create({
+        key: `${EXPLOSION.key}-boom`,
+        frames: this.anims.generateFrameNumbers(EXPLOSION.key, { start: 0, end: frames.length - 1 }),
+        frameRate: 18,
+        repeat: 0,
+      })
+    }
+  }
   private createUiTextures(): void {
     if (!this.textures.exists('pixel')) {
       const px = document.createElement('canvas')
       px.width = 1
       px.height = 1
-      px.getContext('2d')!.fillRect(0, 0, 1, 1)
+      const pg = px.getContext('2d')!
+      pg.fillStyle = '#fff'
+      pg.fillRect(0, 0, 1, 1)
       this.textures.addCanvas('pixel', px)
     }
 
@@ -188,6 +236,7 @@ export class PreloadScene extends Phaser.Scene {
     c.width = heartRows[0].length
     c.height = heartRows.length
     const g = c.getContext('2d')!
+    g.fillStyle = '#fff'
     heartRows.forEach((row, y) => {
       for (let x = 0; x < row.length; x++) {
         if (row[x] === '#') g.fillRect(x, y, 1, 1)
@@ -226,6 +275,7 @@ export class PreloadScene extends Phaser.Scene {
       c.width = rows[0].length
       c.height = rows.length
       const g = c.getContext('2d')!
+      g.fillStyle = '#fff'
       rows.forEach((row, y) => {
         for (let x = 0; x < row.length; x++) {
           if (row[x] === '#') g.fillRect(x, y, 1, 1)
@@ -233,6 +283,49 @@ export class PreloadScene extends Phaser.Scene {
       })
       this.textures.addCanvas(key, c)
     }
+
+    this.createPickupHeartTexture()
+  }
+
+  /**
+   * Coração de power-up: desenhado maior (16x16) e já na cor vermelha,
+   * com um brilho no canto superior para dar volume. Ao contrário das outras
+   * texturas de power-up, não precisa de tint no uso.
+   */
+  private createPickupHeartTexture(): void {
+    if (this.textures.exists('pickup-heart')) return
+
+    const rows = [
+      '......####......',
+      '....##++####....',
+      '...##++++####...',
+      '..####+++#####..',
+      '.#####++######..',
+      '.###############',
+      '################',
+      '################',
+      '.##############.',
+      '..############..',
+      '...##########...',
+      '....########....',
+      '.....######.....',
+      '......####......',
+      '.......##.......',
+      '........#.......',
+    ]
+    const c = document.createElement('canvas')
+    c.width = rows[0].length
+    c.height = rows.length
+    const g = c.getContext('2d')!
+    rows.forEach((row, y) => {
+      for (let x = 0; x < row.length; x++) {
+        const px = row[x]
+        if (px === '.') continue
+        g.fillStyle = px === '+' ? '#ff9aa8' : '#ff4d5d'
+        g.fillRect(x, y, 1, 1)
+      }
+    })
+    this.textures.addCanvas('pickup-heart', c)
   }
 
   private generateZombiePlaceholder(): void {

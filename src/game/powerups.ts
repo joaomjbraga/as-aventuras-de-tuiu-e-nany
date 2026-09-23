@@ -51,7 +51,7 @@ export function randomPickupKind(rng: () => number = Math.random): PickupKind {
   return 'heart'
 }
 
-/** Chave da textura branca de cada power-up (a cor é aplicada por tint). */
+/** Chave da textura de cada power-up (cor aplicada por tint no uso). */
 export function pickupTextureKey(kind: PickupKind): string {
-  return kind === 'heart' ? 'heart' : `power-${kind}`
+  return kind === 'heart' ? 'pickup-heart' : `power-${kind}`
 }

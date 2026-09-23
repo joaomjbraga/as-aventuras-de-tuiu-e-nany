@@ -148,7 +148,7 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
     this.disableBody(false, false)
     this.setDepth(0)
 
-    this.spawnDeathParticles()
+    this.spawnDeathEffect()
 
     this.scene.tweens.add({
       targets: this,
@@ -165,8 +165,18 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
     this.onKilled?.()
   }
 
-  /** Pequena explosão de partículas no local do abate (juiciness). */
-  private spawnDeathParticles(): void {
+  /**
+   * Efeito de abate: explosão animada (spritesheet 'explosion') quando o
+   * asset foi montado pela PreloadScene; senão cai nas partículas simples.
+   */
+  private spawnDeathEffect(): void {
+    if (this.scene.textures.exists('explosion')) {
+      const boom = this.scene.add.sprite(this.x, this.y, 'explosion').setOrigin(0.5).setDepth(1)
+      boom.play('explosion-boom')
+      boom.once('animationcomplete', () => boom.destroy())
+      return
+    }
+
     const emitter = this.scene.add.particles(this.x, this.y, 'pixel', {
       speedX: { min: -70, max: 70 },
       speedY: { min: -70, max: -10 },

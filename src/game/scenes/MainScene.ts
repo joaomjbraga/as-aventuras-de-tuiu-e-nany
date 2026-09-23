@@ -491,7 +491,7 @@ export class MainScene extends Phaser.Scene {
     const groundedY = Math.min(y, this.groundTop - 30)
     const img = this.pickupGroup.create(x, groundedY, pickupTextureKey(kind)) as Phaser.Physics.Arcade.Image
     img.setDepth(2)
-    img.setTint(PICKUP_EFFECTS[kind].tint)
+    if (kind !== 'heart') img.setTint(PICKUP_EFFECTS[kind].tint)
     img.setData('kind', kind)
 
     // Flutuação suave (visual; o corpo de colisão permanece parado)
@@ -516,7 +516,7 @@ export class MainScene extends Phaser.Scene {
       saveBestScore(this.bestScore)
     }
 
-    this.sound.play(AUDIO.ZOMBIE_DEATH, { volume: 0.7 })
+    this.sound.play(AUDIO.EXPLOSION, { volume: 0.7 })
 
     // Popup do quanto o abate valeu (multiplicado pelo combo) no local da morte
     if (killed) {

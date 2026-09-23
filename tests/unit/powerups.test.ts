@@ -40,7 +40,7 @@ describe('randomPickupKind', () => {
 
 describe('pickupTextureKey', () => {
   it('coração reusa a textura do HUD', () => {
-    expect(pickupTextureKey('heart')).toBe('heart')
+    expect(pickupTextureKey('heart')).toBe('pickup-heart')
   })
   it('demais usam o prefixo power-', () => {
     expect(pickupTextureKey('shield')).toBe('power-shield')

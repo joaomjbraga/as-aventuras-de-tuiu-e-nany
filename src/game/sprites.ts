@@ -99,6 +99,19 @@ export const ZOMBIE_VARIANTS: ZombieVariantDef[] = [
 export const ZOMBIE_TARGET_HEIGHT = 64
 
 /**
+ * Explosão de abate dos zumbis: 6 frames individuais (PNGs de tamanhos
+ * variados) empacotados em runtime num spritesheet quadrado normalizado
+ * (PreloadScene), exibido no local da morte no lugar das partículas.
+ */
+export const EXPLOSION = {
+  key: 'explosion',
+  path: 'sprites/explosao/explosao_',
+  frames: 6,
+  /** Lado (px) do quadrado alvo da normalização, maior que o zumbi (~64px). */
+  frameSize: 96,
+} as const
+
+/**
  * Configuração das animações por personagem.
  * frameRate pode ser ajustado por personagem se necessário.
  */
