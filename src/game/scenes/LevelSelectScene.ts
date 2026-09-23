@@ -1,12 +1,14 @@
 import Phaser from 'phaser'
 import { LEVELS, bgImageKey, type LevelConfig } from '../levels'
 import { setSessionLevel } from '../session'
+import { isLevelCompleted } from '../storage'
 
 interface LevelCard {
   level: LevelConfig
   panel: Phaser.GameObjects.Rectangle
   thumb: Phaser.GameObjects.Image
   name: Phaser.GameObjects.Text
+  done?: Phaser.GameObjects.Text
 }
 
 /**
@@ -119,6 +121,21 @@ export class LevelSelectScene extends Phaser.Scene {
         .setStroke('#0d101b', 3)
         .setDepth(1)
 
+      // Fase já concluída: '✓' dourado no canto do card
+      let done: Phaser.GameObjects.Text | undefined
+      if (isLevelCompleted(level.id)) {
+        done = this.add
+          .text(x + cardW / 2 - 6, cardY - cardH / 2 + 5, '✓', {
+            fontFamily: 'monospace',
+            fontSize: '12px',
+            color: '#ffd54f',
+            fontStyle: 'bold',
+          })
+          .setOrigin(1, 0)
+          .setStroke('#0d101b', 2)
+          .setDepth(1)
+      }
+
       panel.setInteractive({ useHandCursor: true })
       panel.on('pointerover', () => {
         if (this.selectedIndex !== i) panel.setStrokeStyle(1, 0x4fc3f7, 0.5)
@@ -130,7 +147,7 @@ export class LevelSelectScene extends Phaser.Scene {
         this.confirmSelected()
       })
 
-      this.cards.push({ level, panel, thumb, name })
+      this.cards.push({ level, panel, thumb, name, done })
     })
 
     this.refreshSelection()

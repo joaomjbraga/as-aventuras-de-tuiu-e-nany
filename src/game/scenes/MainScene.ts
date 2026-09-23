@@ -9,7 +9,7 @@ import { createButton } from '../ui'
 import { groundCenterYFor, groundTopFor, spawnXFor } from '../layout'
 import { canSpawnZombie, hasWon, spawnIntervalMs } from '../difficulty'
 import { randomNextLevel, type LevelConfig } from '../levels'
-import { loadBestKills, saveBestKills, loadBestScore, saveBestScore } from '../storage'
+import { loadBestKills, markLevelCompleted, saveBestKills, loadBestScore, saveBestScore } from '../storage'
 import { multiplierFor } from '../score'
 import {
   PICKUP_EFFECT_DURATION_MS,
@@ -726,6 +726,7 @@ export class MainScene extends Phaser.Scene {
   private triggerVictory(): void {
     if (this.victory || this.gameOver) return
     this.victory = true
+    markLevelCompleted(this.level.id)
     this.pendingRespawn.clear()
     this.hideAllRevivePrompts()
     this.spawnerTimer?.remove(false)

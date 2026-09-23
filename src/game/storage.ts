@@ -7,6 +7,7 @@ export const STORAGE_KEYS = {
   BEST_KILLS: 'tuio.best-kills',
   BEST_SCORE: 'tuio.best-score',
   MUTED: 'tuio.muted',
+  COMPLETED_LEVELS: 'tuio.completed-levels',
 } as const
 
 function readNumber(key: string): number | null {
@@ -40,6 +41,35 @@ export function loadBestScore(): number {
 
 export function saveBestScore(value: number): void {
   write(STORAGE_KEYS.BEST_SCORE, Math.max(0, Math.floor(value)))
+}
+
+/** Fases já concluídas (ids), para destacar na seleção de cenários. */
+export function loadCompletedLevels(): string[] {
+  if (typeof localStorage === 'undefined') return []
+  const raw = localStorage.getItem(STORAGE_KEYS.COMPLETED_LEVELS)
+  if (!raw) return []
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+export function saveCompletedLevels(ids: string[]): void {
+  if (typeof localStorage === 'undefined') return
+  localStorage.setItem(STORAGE_KEYS.COMPLETED_LEVELS, JSON.stringify(ids))
+}
+
+export function isLevelCompleted(id: string): boolean {
+  return loadCompletedLevels().includes(id)
+}
+
+export function markLevelCompleted(id: string): void {
+  const list = loadCompletedLevels()
+  if (list.includes(id)) return
+  list.push(id)
+  saveCompletedLevels(list)
 }
 
 /** Preferência de som (mudo) do jogador. */

@@ -42,6 +42,15 @@ function createWindow(): void {
 
   win.setMenu(null)
 
+  // F11 alterna o modo tela cheia (não expõe nada ao renderer e funciona em
+  // qualquer cena). O Esc sai do tela cheia em algumas plataformas; se não,
+  // o próprio F11 volta.
+  win.webContents.on('before-input-event', (_event, input) => {
+    if (input.type === 'keyDown' && input.key === 'F11') {
+      win.setFullScreen(!win.isFullScreen())
+    }
+  })
+
   if (isDev) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL']!)
     win.webContents.openDevTools({ mode: 'detach' })
