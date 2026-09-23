@@ -37,6 +37,8 @@ window.__state = function () {
     hasHeart: __game.textures.exists('heart'),
     muted: __game.sound ? __game.sound.mute : null,
     prompts: s.revivePrompts ? s.revivePrompts.size : null,
+    bossPhase: !!s.bossPhase,
+    boss: s.boss ? { hp: s.boss.hp, max: s.boss.hpMax, dying: s.boss.isDying } : null,
     anniversary: s.children.list.some(function (o) { return o && o.text && String(o.text).indexOf('ANNE C C BRAGA') >= 0; })
   };
 };
@@ -66,7 +68,8 @@ window.__killP = function (pid) {
   return window.__state();
 };
 window.__healP = function (pid) { var s = __game.scene.getScene('MainScene'); var p = s.players.find(function (x) { return x.id === pid; }); if (!p) return null; p.hp = p.maxHp; p.isAlive = true; return window.__state(); };
-window.__forceVictory = function () { var s = __game.scene.getScene('MainScene'); s.kills = 20; s.triggerVictory(); return window.__state(); };
+window.__forceVictory = function () { var s = __game.scene.getScene('MainScene'); s.kills = 20; s.onLevelCleared(); return window.__state(); };
+window.__smashBoss = function () { var s = __game.scene.getScene('MainScene'); var b = s.boss; if (!b) return window.__state(); b.takeDamage(b.hp, b.x); return window.__state(); };
 window.__zombieBody = function () { var s = __game.scene.getScene('MainScene'); if (!s.zombieGroup) return null; var z = s.zombieGroup.getChildren()[0] || null; return { count: s.zombieGroup.countActive(true), bodyW: z ? z.body.width : null, bodyH: z ? z.body.height : null, sw: z ? Math.round(z.width) : null, sh: z ? Math.round(z.height) : null }; };
 `
 
@@ -222,9 +225,17 @@ app.whenReady().then(async () => {
     const allAlive = st && st.players.length === 2 && st.players.every((p) => p.alive)
     check('restart volta à arena limpa', st && st.scene === 'MainScene' && st.kills === 0 && allAlive, { st })
 
-    // Vitória aos 20 kills
-    const vic = await js('window.__forceVictory()')
-    check('vitória aos 20 kills', !!vic && vic.victory, { victory: vic && vic.victory })
+    // Meta de abates → luta do boss (a Casa tem boss) → vitória ao derrotá-lo
+    const bossStart = await js('window.__forceVictory()')
+    check(
+      'meta de abates abre a luta do boss',
+      !!bossStart && bossStart.bossPhase && bossStart.boss && bossStart.boss.hp > 0 && !bossStart.victory,
+      { boss: bossStart && bossStart.boss },
+    )
+    const bossDown = await js('window.__smashBoss()')
+    check('abater o boss vence a fase', !!bossDown && bossDown.victory && !bossDown.bossPhase, {
+      victory: bossDown && bossDown.victory,
+    })
     await sleep(400)
     st = await js('window.__state()')
     check('partida parada após vitória', st && st.victory, { victory: st && st.victory })

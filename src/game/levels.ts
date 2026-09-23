@@ -19,6 +19,15 @@ export interface LevelArt {
   video?: string
 }
 
+export interface LevelBossConfig {
+  /** Nome exibido na barra de vida do boss. */
+  name: string
+  /** Pontos de vida (pisões para derrotar, considerando dano em dobro). */
+  hp: number
+  /** Velocidade de deslocamento (padrão: mais lento que o zumbi comum). */
+  moveSpeed?: number
+}
+
 export interface LevelConfig {
   /** Identificador único (usado nas chaves de assets: `bg-<id>`, `bg-<id>-img`). */
   id: string
@@ -28,9 +37,11 @@ export interface LevelConfig {
   groundColor: number
   groundStrokeColor: number
   fogColor: number
-  /** Abates necessários para vencer esta fase. */
+  /** Abates necessários para vencer esta fase (sem boss). */
   victoryKills: number
   difficulty: DifficultyParams
+  /** Quando definido, ao atingir a meta de abates surge um boss; só se vence ao derrotá-lo. */
+  boss?: LevelBossConfig
 }
 
 export const HOUSE_LEVEL_ID = 'home'
@@ -48,6 +59,7 @@ export const LEVELS: LevelConfig[] = [
     fogColor: 0xd8d8c8,
     victoryKills: VICTORY_KILLS,
     difficulty: DEFAULT_DIFFICULTY,
+    boss: { name: 'ZUMBI-CHEFE', hp: 20, moveSpeed: 26 },
   },
 ]
 

@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import { Player } from '../entities/Player'
 import { Zombie } from '../entities/Zombie'
+import { Boss } from '../entities/Boss'
 import { CHARACTERS, ZOMBIE_TARGET_HEIGHT, ZOMBIE_VARIANTS, type CharacterKey } from '../sprites'
 import { advanceSessionLevel, getSession, getSessionLevel, setSessionPlayers, type PlayerId } from '../session'
 import { buildScene, type SceneResult } from '../scenery'
@@ -64,6 +65,12 @@ export class MainScene extends Phaser.Scene {
   private effectsByPlayer = new Map<string, HudEffect[]>()
   private vignette?: Phaser.GameObjects.Rectangle
 
+  private boss?: Boss
+  private bossPhase = false
+  private bossLabel?: Phaser.GameObjects.Text
+  private bossBarBack?: Phaser.GameObjects.Rectangle
+  private bossBarFill?: Phaser.GameObjects.Rectangle
+
   constructor() {
     super({ key: 'MainScene' })
   }
@@ -90,6 +97,8 @@ export class MainScene extends Phaser.Scene {
     this.joinButton = undefined
     this.effectsByPlayer = new Map()
     this.lastPickupAt = this.time.now
+    this.boss = undefined
+    this.bossPhase = false
 
     // Fase atual da campanha (vinda da sessão: seleção/avanço de fase).
     this.level = getSessionLevel()
@@ -500,7 +509,81 @@ export class MainScene extends Phaser.Scene {
       this.showFloatingScore(killed.x, killed.y, this.mult)
     }
 
-    if (hasWon(this.kills, this.level.victoryKills)) this.triggerVictory()
+    // Meta de abates: abre a luta do boss (se houver) ou vence direto
+    if (!this.bossPhase && hasWon(this.kills, this.level.victoryKills)) this.onLevelCleared()
+  }
+
+  /**
+   * Meta de abates alcançada. Com boss configurado na fase, abre a "final
+   * wave" (barra de vida); sem boss, a vitória é imediata.
+   */
+  private onLevelCleared(): void {
+    if (this.level.boss) {
+      this.startBossFight()
+    } else {
+      this.triggerVictory()
+    }
+  }
+
+  private startBossFight(): void {
+    if (this.bossPhase || this.boss) return
+    this.bossPhase = true
+    this.spawnerTimer?.remove(false)
+
+    const { width } = this.scale
+    const bossConf = this.level.boss!
+    const boss = new Boss(this, {
+      x: width / 2,
+      y: this.groundTop - 30,
+      hp: bossConf.hp,
+      moveSpeed: bossConf.moveSpeed,
+      players: this.players,
+      onKilled: () => this.onBossKilled(boss),
+    })
+    // Apoia os pés do boss no chão (a altura real só é conhecida após criar)
+    boss.setPosition(width / 2, this.groundTop - boss.displayHeight / 2)
+
+    this.zombieGroup.add(boss)
+    this.boss = boss
+
+    this.createBossBar(bossConf.name)
+    this.sound.play(AUDIO.ZOMBIE_GROWL, { volume: 0.6 })
+    this.cameras.main.shake(300, 0.012)
+  }
+
+  /** Barra de vida do boss (topo central, abaixo do placar). */
+  private createBossBar(name: string): void {
+    const { width } = this.scale
+
+    this.bossLabel = this.add
+      .text(width / 2, 30, `${name.toUpperCase()}`, {
+        fontFamily: 'monospace',
+        fontSize: '8px',
+        fontStyle: 'bold',
+        color: '#ff5d6c',
+      })
+      .setOrigin(0.5, 0)
+      .setStroke('#0d101b', 2)
+      .setDepth(11)
+
+    this.bossBarBack = this.add
+      .rectangle(width / 2, 42, 170, 7, 0x181d29)
+      .setStrokeStyle(1, 0xff5d6c, 0.9)
+      .setDepth(10)
+
+    this.bossBarFill = this.add
+      .rectangle(width / 2 - 85, 42, 170, 5, 0xff5d6c)
+      .setOrigin(0, 0.5)
+      .setDepth(11)
+  }
+
+  /** O boss foi derrotado: conta como abate (pontos de combo) e vence a fase. */
+  private onBossKilled(boss: Boss): void {
+    if (!this.boss) return
+    this.registerKill(boss)
+    this.boss = undefined
+    this.bossPhase = false
+    this.triggerVictory()
   }
 
   /** O jogador levou dano: a sequência de combo é zerada (volta para x1). */
@@ -882,7 +965,19 @@ export class MainScene extends Phaser.Scene {
       this.vignette.setVisible(false)
     }
 
+    this.refreshBossBar()
     this.refreshEffectIcons()
+  }
+
+  /** Atualiza/esconde a barra de vida do boss. */
+  private refreshBossBar(): void {
+    const show = !!this.boss && !this.boss.isDying && !this.victory
+    if (this.bossLabel) this.bossLabel.setVisible(show)
+    if (this.bossBarBack) this.bossBarBack.setVisible(show)
+    if (this.bossBarFill) this.bossBarFill.setVisible(show)
+    if (show && this.boss && this.bossBarFill) {
+      this.bossBarFill.width = Math.max(1, 170 * (this.boss.hp / this.boss.hpMax))
+    }
   }
 
   /**

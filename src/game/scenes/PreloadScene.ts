@@ -56,6 +56,7 @@ export class PreloadScene extends Phaser.Scene {
     // buildRealZombieSpritesheets sobrescreve com os spritesheets reais.
     this.generateZombiePlaceholder()
     this.buildRealZombieSpritesheets()
+    this.generateBossPlaceholder()
     this.createUiTextures()
     this.scene.start('TitleScene')
   }
@@ -293,6 +294,75 @@ export class PreloadScene extends Phaser.Scene {
     }
 
     this.textures.addSpriteSheet('zombie', canvas as unknown as HTMLImageElement, {
+      frameWidth,
+      frameHeight,
+    })
+  }
+
+  /**
+   * Placeholder procedural do boss de fase: um zumbi grande e sombrio,
+   * com braços longos e olhos vermelhos (2 frames de vai-e-vem).
+   */
+  private generateBossPlaceholder(): void {
+    if (this.textures.exists('boss')) return
+
+    const frameWidth = 48
+    const frameHeight = 64
+    const frameCount = 2
+
+    const canvas = document.createElement('canvas')
+    canvas.width = frameWidth * frameCount
+    canvas.height = frameHeight
+    const ctx = canvas.getContext('2d')!
+
+    const skin = '#5f6b52'
+    const torso = '#272e38'
+    const arms = '#20242c'
+    const pants = '#15181f'
+    const eye = '#e83a4a'
+
+    for (let f = 0; f < frameCount; f++) {
+      const o = f * frameWidth
+      const sway = f % 2 === 0 ? 0 : 1
+
+      // Pernas largas
+      ctx.fillStyle = pants
+      ctx.fillRect(o + 14 + sway, 48, 8, 16)
+      ctx.fillRect(o + 26 - sway, 48, 8, 16)
+
+      // Braços longos esticados para frente (estilo Thriller)
+      ctx.fillStyle = arms
+      ctx.fillRect(o + 30, 24 + sway, 18, 6)
+      ctx.fillRect(o + 30, 34 - sway, 18, 6)
+
+      // Mãos (pele)
+      ctx.fillStyle = skin
+      ctx.fillRect(o + 44, 22 + sway, 4, 10)
+      ctx.fillRect(o + 44, 32 - sway, 4, 10)
+
+      // Tronco volumoso
+      ctx.fillStyle = torso
+      ctx.fillRect(o + 8 + sway, 18, 32, 32)
+
+      // Remendo / rasgo no peito
+      ctx.fillStyle = '#4a5260'
+      ctx.fillRect(o + 16 + sway, 24, 10, 5)
+
+      // Cabeça grande
+      ctx.fillStyle = skin
+      ctx.fillRect(o + 12 + sway, 2, 24, 18)
+
+      // Cicatriz
+      ctx.fillStyle = '#3c4234'
+      ctx.fillRect(o + 26 + sway, 6, 8, 2)
+
+      // Olhos vermelhos brilhantes
+      ctx.fillStyle = eye
+      ctx.fillRect(o + 32 + sway, 10, 2, 2)
+      ctx.fillRect(o + 36 + sway, 10, 2, 2)
+    }
+
+    this.textures.addSpriteSheet('boss', canvas as unknown as HTMLImageElement, {
       frameWidth,
       frameHeight,
     })

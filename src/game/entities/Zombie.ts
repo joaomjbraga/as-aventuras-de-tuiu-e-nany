@@ -8,6 +8,8 @@ export interface ZombieConfig {
   moveSpeed?: number
   /** Sorteia automaticamente a variante visual (1-3) se omitida. */
   variant?: number
+  /** Textura específica (ex.: 'boss'); sem ela, usa a variante visual sorteada. */
+  textureKey?: string
   players: Player[]
   onKilled?: () => void
 }
@@ -37,7 +39,8 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
 
     // Textura real normalizada (zombie1/2/3) se tiver sido montada pela
     // PreloadScene; caso contrário usa o placeholder procedural 'zombie'.
-    const textureKey = scene.textures.exists(`zombie${variant}`) ? `zombie${variant}` : 'zombie'
+    const fallback = scene.textures.exists(`zombie${variant}`) ? `zombie${variant}` : 'zombie'
+    const textureKey = config.textureKey ?? fallback
 
     super(scene, config.x, config.y, textureKey, 0)
 
