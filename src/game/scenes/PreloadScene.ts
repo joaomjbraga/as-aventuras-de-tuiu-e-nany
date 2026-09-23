@@ -123,7 +123,7 @@ export class PreloadScene extends Phaser.Scene {
         frames.push(img)
       }
 
-      const targetH = ZOMBIE_TARGET_HEIGHT
+      const targetH = def.targetHeight ?? ZOMBIE_TARGET_HEIGHT
       const maxW = Math.max(...frames.map((im) => (im.width * targetH) / im.height))
       const frameW = Math.ceil(maxW)
 

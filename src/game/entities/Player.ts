@@ -13,6 +13,8 @@ export interface PlayerConfig {
   controls: ControlSchemeId
   bodyWidth?: number
   bodyHeight?: number
+  /** Escala do sprite em jogo (1 = tamanho original do frame). */
+  scale?: number
 }
 
 /**
@@ -56,6 +58,10 @@ export class Player {
     this.sprite = scene.physics.add.sprite(config.x, config.y, config.spriteKey)
     this.sprite.setCollideWorldBounds(true)
     this.sprite.setDepth(1)
+
+    // O Arcade Body escala sourceWidth/sourceHeight e o offset pelo scale do
+    // sprite, então basta definir a escala antes do corpo de colisão.
+    this.sprite.setScale(config.scale ?? 1)
 
     if (config.bodyWidth && config.bodyHeight) {
       // Corpo de colisão menor que o frame (margem transparente) e ancorado

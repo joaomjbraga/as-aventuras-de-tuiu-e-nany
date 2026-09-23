@@ -1,7 +1,7 @@
 import Phaser from 'phaser'
 import { Player } from '../entities/Player'
 import { Zombie } from '../entities/Zombie'
-import { CHARACTERS, ZOMBIE_TARGET_HEIGHT, type CharacterKey } from '../sprites'
+import { CHARACTERS, ZOMBIE_TARGET_HEIGHT, ZOMBIE_VARIANTS, type CharacterKey } from '../sprites'
 import { getSession, setSessionPlayers, type PlayerId } from '../session'
 import { buildGraveyard, type GraveyardResult } from '../scenery'
 import { AUDIO, playBgm } from '../audio'
@@ -137,11 +137,12 @@ export class MainScene extends Phaser.Scene {
         id: entry.id,
         name: def.name,
         x,
-        y: this.groundTop - (def.bodyHeight ?? 0) / 2,
+        y: this.groundTop - ((def.bodyHeight ?? 0) * def.scale) / 2,
         spriteKey: def.key,
         controls: entry.controls,
         bodyWidth: def.bodyWidth,
         bodyHeight: def.bodyHeight,
+        scale: def.scale,
       })
 
       this.players.push(player)
@@ -188,11 +189,12 @@ export class MainScene extends Phaser.Scene {
       id: 'P2',
       name: def.name,
       x,
-      y: this.groundTop - (def.bodyHeight ?? 0) / 2,
+      y: this.groundTop - ((def.bodyHeight ?? 0) * def.scale) / 2,
       spriteKey: def.key,
       controls: 'p2',
       bodyWidth: def.bodyWidth,
       bodyHeight: def.bodyHeight,
+      scale: def.scale,
     })
 
     this.players.push(player)
@@ -224,8 +226,8 @@ export class MainScene extends Phaser.Scene {
     // A altura do corpo é por personagem (Nany é maior que Tuiu); usar sempre
     // a do Tuiu afundava a Nany 6px dentro do chão.
     const player = this.players[i]
-    const bodyHeight = CHARACTERS[(player?.spriteKey as CharacterKey) ?? 'tuio']?.bodyHeight ?? CHARACTERS.tuio.bodyHeight
-    return { x, y: this.groundTop - bodyHeight / 2 }
+    const def = CHARACTERS[(player?.spriteKey as CharacterKey) ?? 'tuio'] ?? CHARACTERS.tuio
+    return { x, y: this.groundTop - (def.bodyHeight * def.scale) / 2 }
   }
 
   private get groundTop(): number {
@@ -257,10 +259,16 @@ export class MainScene extends Phaser.Scene {
   }
 
   private spawnZombie(x: number): void {
+    // Sorteia a variante aqui para alinhar a altura do spawn com a
+    // normalização do spritesheet (cada zumbi pode ter altura própria).
+    const variant = Phaser.Math.Between(1, 3) as 1 | 2 | 3
+    const targetH = ZOMBIE_VARIANTS[variant - 1]?.targetHeight ?? ZOMBIE_TARGET_HEIGHT
+
     const zombie = new Zombie(this, {
       x,
-      y: this.groundTop - ZOMBIE_TARGET_HEIGHT / 2,
+      y: this.groundTop - targetH / 2,
       players: this.players,
+      variant,
       onKilled: () => {
         this.kills += 1
         this.sound.play(AUDIO.ZOMBIE_ATTACK, { volume: 0.7 })

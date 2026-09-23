@@ -29,6 +29,8 @@ export interface CharacterDef extends SpritesheetDef {
   /** Tamanho do corpo de colisão (arcade), menor que o frame por causa da margem transparente. */
   bodyWidth: number
   bodyHeight: number
+  /** Escala aplicada ao sprite em jogo (física é ajustada automaticamente). */
+  scale: number
 }
 
 /**
@@ -57,6 +59,7 @@ export const CHARACTERS = {
     frameHeight: 74,
     bodyWidth: 30,
     bodyHeight: 68,
+    scale: 0.85,
   },
   nany: {
     key: 'nany',
@@ -66,6 +69,9 @@ export const CHARACTERS = {
     frameHeight: 84,
     bodyWidth: 34,
     bodyHeight: 80,
+    // Menor que o Tuiu para compensar o frame mais alto (84 vs 74) e ficarem
+    // com a mesma altura em jogo: 84 * 0.75 ≈ 74 * 0.85.
+    scale: 0.75,
   },
 } satisfies Record<string, CharacterDef>
 
@@ -80,11 +86,17 @@ export interface ZombieVariantDef {
   key: string
   path: string
   frames: number
+  /** Altura-alvo (px) da normalização desta variante. Padrão: ZOMBIE_TARGET_HEIGHT. */
+  targetHeight?: number
 }
 
+/**
+ * Zumbis 1 e 2 são normalizados um pouco menores (58px) para ficarem no
+ * mesmo tamanho dos personagens; o zumbi 3 mantém a altura padrão (64px).
+ */
 export const ZOMBIE_VARIANTS: ZombieVariantDef[] = [
-  { key: 'zombie1', path: 'sprites/zombie1_frames/zombie1_', frames: 15 },
-  { key: 'zombie2', path: 'sprites/zombie2_frames/zombie2_', frames: 17 },
+  { key: 'zombie1', path: 'sprites/zombie1_frames/zombie1_', frames: 15, targetHeight: 58 },
+  { key: 'zombie2', path: 'sprites/zombie2_frames/zombie2_', frames: 17, targetHeight: 58 },
   { key: 'zombie3', path: 'sprites/zombie3_frames/zombie3_', frames: 17 },
 ]
 
