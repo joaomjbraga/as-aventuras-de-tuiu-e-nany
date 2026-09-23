@@ -70,6 +70,9 @@ window.__killP = function (pid) {
 window.__healP = function (pid) { var s = __game.scene.getScene('MainScene'); var p = s.players.find(function (x) { return x.id === pid; }); if (!p) return null; p.hp = p.maxHp; p.isAlive = true; return window.__state(); };
 window.__forceVictory = function () { var s = __game.scene.getScene('MainScene'); s.kills = 20; s.onLevelCleared(); return window.__state(); };
 window.__smashBoss = function () { var s = __game.scene.getScene('MainScene'); var b = s.boss; if (!b) return window.__state(); b.takeDamage(b.hp, b.x); return window.__state(); };
+window.__about = function () { ['MainScene','LevelSelectScene','CharacterSelectScene'].forEach(function (k) { var sc = __game.scene.getScene(k); if (sc && sc.scene.isActive()) __game.scene.stop(k); }); __game.scene.start('AboutScene'); return true; };
+window.__aboutState = function () { var s = __game.scene.getScene('AboutScene'); var hasSobre = false; var hasAnne = false; if (s && s.scene.isActive()) s.children.list.forEach(function (o) { if (o && o.text) { if (String(o.text) === 'SOBRE') hasSobre = true; if (String(o.text).indexOf('ANNE C C BRAGA') >= 0) hasAnne = true; } }); return { active: !!(s && s.scene.isActive()), hasSobre: hasSobre, hasAnne: hasAnne }; };
+window.__aboutBack = function () { __game.scene.start('TitleScene'); return true; };
 window.__zombieBody = function () { var s = __game.scene.getScene('MainScene'); if (!s.zombieGroup) return null; var z = s.zombieGroup.getChildren()[0] || null; return { count: s.zombieGroup.countActive(true), bodyW: z ? z.body.width : null, bodyH: z ? z.body.height : null, sw: z ? Math.round(z.width) : null, sh: z ? Math.round(z.height) : null }; };
 `
 
@@ -240,6 +243,14 @@ app.whenReady().then(async () => {
     st = await js('window.__state()')
     check('partida parada após vitória', st && st.victory, { victory: st && st.victory })
     check('recado de aniversário na vitória', !!st && st.anniversary, { anniversary: !!st && st.anniversary })
+
+    // Menu Sobre (por que o jogo existe)
+    await js('window.__about()')
+    await sleep(300)
+    const about = await js('window.__aboutState()')
+    check('menu SOBRE abre a partir do jogo', about && about.active && about.hasSobre, about)
+    check('SOBRE cita a homenagem (Anne)', !!about && about.hasAnne, { hasAnne: about && about.hasAnne })
+    await js('window.__aboutBack()')
 
     const failed = results.filter((r) => !r.ok)
     console.log(`SMOKE ${failed.length === 0 ? 'OK' : 'FALHOU'} (${results.length - failed.length}/${results.length})`)

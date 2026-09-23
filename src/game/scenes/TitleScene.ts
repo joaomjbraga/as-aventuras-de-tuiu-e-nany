@@ -78,7 +78,7 @@ export class TitleScene extends Phaser.Scene {
 
     // Pista
     const hint = this.add
-      .text(cx, height - 22, '[ ENTER ] para começar', {
+      .text(cx, height - 24, '[ ENTER ] para começar', {
         fontFamily: 'monospace',
         fontSize: '10px',
         color: '#ffe082',
@@ -100,8 +100,22 @@ export class TitleScene extends Phaser.Scene {
       ease: 'Sine.easeInOut',
     })
 
+    // Sobre: por que o jogo existe
+    const about = this.add
+      .text(cx, height - 8, '[ A ] sobre', {
+        fontFamily: 'monospace',
+        fontSize: '8px',
+        color: '#7a89a0',
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+    about.on('pointerdown', () => this.scene.start('AboutScene'))
+
     this.input.keyboard!.once('keydown-ENTER', () => {
       this.scene.start('CharacterSelectScene')
+    })
+    this.input.keyboard!.once('keydown-A', () => {
+      this.scene.start('AboutScene')
     })
   }
 }
