@@ -24,6 +24,9 @@ export interface PlayerConfig {
  */
 const FOOT_INSET = 4
 
+/** Cor do brilho do escudo (azul gelo). */
+const SHIELD_TINT = 0x7fd4ff
+
 export class Player {
   readonly id: string
   readonly name: string
@@ -44,10 +47,14 @@ export class Player {
   private state: PlayerState = 'idle'
   private isFacingRight = true
   private immuneUntil = 0
+  private shieldUntil = 0
+  private speedUntil = 0
+  private damageBoostUntil = 0
 
   // Física (ajustável para o "jeitão" do jogo)
   private moveSpeed = 160
   private jumpForce = 380
+  private readonly speedBoostFactor = 1.5
 
   constructor(scene: Phaser.Scene, config: PlayerConfig) {
     this.scene = scene
@@ -102,13 +109,15 @@ export class Player {
     const moveRight = this.keys.right.isDown
     const jumpPressed = this.keys.jump.some((key) => key.isDown)
 
+    const currentSpeed = this.hasSpeedBoost() ? this.moveSpeed * this.speedBoostFactor : this.moveSpeed
+
     // ---- Movimento horizontal ----
     if (moveLeft) {
-      this.sprite.setVelocityX(-this.moveSpeed)
+      this.sprite.setVelocityX(-currentSpeed)
       this.sprite.flipX = true
       this.isFacingRight = false
     } else if (moveRight) {
-      this.sprite.setVelocityX(this.moveSpeed)
+      this.sprite.setVelocityX(currentSpeed)
       this.sprite.flipX = false
       this.isFacingRight = true
     } else {
@@ -152,14 +161,24 @@ export class Player {
     } else if (this.sprite.alpha !== 1) {
       this.sprite.alpha = 1
     }
+
+    // Brilho azulado enquanto estiver com escudo
+    const shieldActive = this.scene.time.now < this.shieldUntil
+    if (shieldActive && this.sprite.tintTopLeft !== SHIELD_TINT) {
+      this.sprite.setTint(SHIELD_TINT)
+    } else if (!shieldActive && this.sprite.tintTopLeft === SHIELD_TINT) {
+      this.sprite.clearTint()
+    }
   }
 
   /**
-   * Aplica dano se o jogador não estiver invulnerável.
+   * Aplica dano se o jogador não estiver invulnerável nem com escudo.
    * Retorna true se o dano foi aplicado.
    */
   damage(amount: number): boolean {
-    if (!this.isAlive || this.scene.time.now < this.immuneUntil) return false
+    if (!this.isAlive) return false
+    if (this.scene.time.now < this.shieldUntil) return false // escudo bloqueia o dano
+    if (this.scene.time.now < this.immuneUntil) return false
 
     this.hp = Math.max(0, this.hp - amount)
     this.immuneUntil = this.scene.time.now + 1000
@@ -181,6 +200,38 @@ export class Player {
   /** Ação de revive (tecla de pulo) pressionada neste frame — quem decide se quer voltar. */
   isRevivePressed(): boolean {
     return this.keys.jump.some((key) => Phaser.Input.Keyboard.JustDown(key))
+  }
+
+  // ---- Power-ups (efeitos temporizados) ----
+
+  activateShield(durationMs: number): void {
+    this.shieldUntil = Math.max(this.shieldUntil, this.scene.time.now + durationMs)
+  }
+
+  hasShield(): boolean {
+    return this.scene.time.now < this.shieldUntil
+  }
+
+  activateSpeed(durationMs: number): void {
+    this.speedUntil = Math.max(this.speedUntil, this.scene.time.now + durationMs)
+  }
+
+  hasSpeedBoost(): boolean {
+    return this.scene.time.now < this.speedUntil
+  }
+
+  activateDamageBoost(durationMs: number): void {
+    this.damageBoostUntil = Math.max(this.damageBoostUntil, this.scene.time.now + durationMs)
+  }
+
+  hasDamageBoost(): boolean {
+    return this.scene.time.now < this.damageBoostUntil
+  }
+
+  /** Tempo restante (ms) de um efeito ativo; 0 quando inativo. */
+  effectTimeRemaining(effect: 'shield' | 'speed' | 'double'): number {
+    const until = effect === 'shield' ? this.shieldUntil : effect === 'speed' ? this.speedUntil : this.damageBoostUntil
+    return Math.max(0, until - this.scene.time.now)
   }
 
   /** Ressuscita o jogador em (x, y) com vida cheia e invulnerabilidade curta. */

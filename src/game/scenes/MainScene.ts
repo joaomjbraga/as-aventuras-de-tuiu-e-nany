@@ -11,8 +11,25 @@ import { canSpawnZombie, hasWon, spawnIntervalMs } from '../difficulty'
 import { randomNextLevel, type LevelConfig } from '../levels'
 import { loadBestKills, saveBestKills, loadBestScore, saveBestScore } from '../storage'
 import { multiplierFor } from '../score'
+import {
+  PICKUP_EFFECT_DURATION_MS,
+  PICKUP_EFFECTS,
+  PICKUP_SAFETY_INTERVAL_MS,
+  pickupTextureKey,
+  randomPickupKind,
+  rollPickupDrop,
+  type PickupKind,
+} from '../powerups'
 
 type ArcadeObject = Phaser.Types.Physics.Arcade.GameObjectWithBody
+
+interface HudEffect {
+  kind: 'shield' | 'speed' | 'double'
+  icon: Phaser.GameObjects.Image
+  bar: Phaser.GameObjects.Rectangle
+  until: number
+  duration: number
+}
 
 export class MainScene extends Phaser.Scene {
   private level!: LevelConfig
@@ -42,6 +59,11 @@ export class MainScene extends Phaser.Scene {
   private p2JoinKey?: Phaser.Input.Keyboard.Key
   private joinButton?: Phaser.GameObjects.Container
 
+  private pickupGroup!: Phaser.Physics.Arcade.Group
+  private lastPickupAt = 0
+  private effectsByPlayer = new Map<string, HudEffect[]>()
+  private vignette?: Phaser.GameObjects.Rectangle
+
   constructor() {
     super({ key: 'MainScene' })
   }
@@ -66,6 +88,8 @@ export class MainScene extends Phaser.Scene {
     this.bestScore = loadBestScore()
     this.spawnerTimer = undefined
     this.joinButton = undefined
+    this.effectsByPlayer = new Map()
+    this.lastPickupAt = this.time.now
 
     // Fase atual da campanha (vinda da sessão: seleção/avanço de fase).
     this.level = getSessionLevel()
@@ -87,6 +111,7 @@ export class MainScene extends Phaser.Scene {
 
     this.createPlayers()
     this.createCombat()
+    this.createPickups()
     this.createHud()
 
     // Música de fundo em volume baixo (continua se já estava tocando)
@@ -141,6 +166,12 @@ export class MainScene extends Phaser.Scene {
     // tryJoinP2 a cada pulo era redundante.
     if (this.players.length === 1 && this.p2JoinKey && Phaser.Input.Keyboard.JustDown(this.p2JoinKey)) {
       this.tryJoinP2()
+    }
+
+    // Segurança dos power-ups: se não houver drop há um bom tempo, garante um
+    // pickup na arena para o jogador não ficar sem opções.
+    if (this.kills > 0 && this.time.now - this.lastPickupAt > PICKUP_SAFETY_INTERVAL_MS) {
+      this.spawnPickup(Phaser.Math.Between(48, this.scale.width - 48), this.groundTop - 30)
     }
 
     this.players.forEach((player) => {
@@ -347,15 +378,105 @@ export class MainScene extends Phaser.Scene {
       y: this.groundTop - targetH / 2,
       players: this.players,
       variant,
-      onKilled: () => this.registerKill(),
+      onKilled: () => this.registerKill(zombie),
     })
 
     this.zombieGroup.add(zombie)
     this.sound.play(AUDIO.ZOMBIE_GROWL, { volume: 0.5 })
   }
 
+  // ------------------------------------------------------------------
+  // Power-ups (drop dos zumbis)
+  // ------------------------------------------------------------------
+
+  private createPickups(): void {
+    this.pickupGroup = this.physics.add.group({ allowGravity: false, immovable: true })
+
+    this.physics.add.overlap(this.playerGroup, this.pickupGroup, (a, b) => {
+      this.onPickupCollect(a as ArcadeObject, b as ArcadeObject)
+    })
+  }
+
+  private onPickupCollect(object1: ArcadeObject, object2: ArcadeObject): void {
+    if (this.gameOver || this.victory) return
+    const playerSpr = object1 as Phaser.Physics.Arcade.Sprite
+    const player = this.players.find((p) => p.sprite === playerSpr)
+    if (!player) return
+
+    const pickup = object2 as Phaser.Physics.Arcade.Image
+    const kind = pickup.getData('kind') as PickupKind
+
+    this.applyPickup(player, kind)
+    pickup.destroy()
+
+    // Pequena explosão de partículas na coleta
+    const emitter = this.add.particles(pickup.x, pickup.y, 'pixel', {
+      speedX: { min: -50, max: 50 },
+      speedY: { min: -80, max: -20 },
+      gravityY: 340,
+      scale: { start: 1.2, end: 0 },
+      lifespan: 420,
+      tint: [PICKUP_EFFECTS[kind].tint, 0xe8edf7],
+    })
+    emitter.setDepth(2)
+    emitter.explode(10)
+    this.time.delayedCall(520, () => emitter.destroy())
+
+    this.sound.play(AUDIO.ZOMBIE_GROWL, { volume: 0.35 })
+  }
+
+  private applyPickup(player: Player, kind: PickupKind): void {
+    const effect = PICKUP_EFFECTS[kind]
+
+    if (kind === 'heart') {
+      if (player.hp < player.maxHp) {
+        player.hp += 1
+        this.sound.play(AUDIO.ZOMBIE_ATTACK, { volume: 0.4 })
+      } else {
+        // Vida cheia: o coração vira uns pontinhos de bônus
+        const bonus = 5 * this.mult
+        this.score += bonus
+        if (this.score > this.bestScore) {
+          this.bestScore = this.score
+          saveBestScore(this.bestScore)
+        }
+        this.sound.play(AUDIO.ZOMBIE_ATTACK, { volume: 0.3 })
+      }
+      return
+    }
+
+    if (kind === 'shield') player.activateShield(effect.durationMs ?? PICKUP_EFFECT_DURATION_MS)
+    else if (kind === 'speed') player.activateSpeed(effect.durationMs ?? PICKUP_EFFECT_DURATION_MS)
+    else player.activateDamageBoost(effect.durationMs ?? PICKUP_EFFECT_DURATION_MS)
+
+    this.upsertEffectSlot(player, kind, effect.durationMs ?? PICKUP_EFFECT_DURATION_MS)
+  }
+
+  /**
+   * Sorteia um drop de power-up ao abater um zumbi (na posição dele).
+   * Percentual configurável em PICKUP_DROP_CHANCE.
+   */
+  private maybeDropPickup(x: number, y: number): void {
+    if (this.gameOver || this.victory) return
+    if (!rollPickupDrop()) return
+    this.spawnPickup(x, y)
+  }
+
+  private spawnPickup(x: number, y: number): void {
+    const kind = randomPickupKind()
+    const groundedY = Math.min(y, this.groundTop - 30)
+    const img = this.pickupGroup.create(x, groundedY, pickupTextureKey(kind)) as Phaser.Physics.Arcade.Image
+    img.setDepth(2)
+    img.setTint(PICKUP_EFFECTS[kind].tint)
+    img.setData('kind', kind)
+
+    // Flutuação suave (visual; o corpo de colisão permanece parado)
+    this.tweens.add({ targets: img, y: groundedY - 4, duration: 700, yoyo: true, repeat: -1 })
+    this.lastPickupAt = this.time.now
+  }
+
   /** Registra um abate: atualiza combo/placar, recorde, som de morte e vitória. */
-  private registerKill(): void {
+  private registerKill(killed?: Zombie): void {
     this.kills += 1
     if (this.kills > this.bestKills) {
       this.bestKills = this.kills
@@ -372,6 +493,9 @@ export class MainScene extends Phaser.Scene {
     }
 
     this.sound.play(AUDIO.ZOMBIE_DEATH, { volume: 0.7 })
+
+    // Chance de derrubar um power-up no local do abate
+    if (killed) this.maybeDropPickup(killed.x, killed.y)
 
     if (hasWon(this.kills, this.level.victoryKills)) this.triggerVictory()
   }
@@ -400,7 +524,7 @@ export class MainScene extends Phaser.Scene {
 
     // Pisão (stomp): os pés estão acima da cabeça do zumbi
     if (playerFeet <= zombieHead + 6 && playerBody.velocity.y >= -20) {
-      if (zombie.stompDamage(playerSpr.x)) {
+      if (zombie.stompDamage(playerSpr.x, player.hasDamageBoost() ? 4 : 2)) {
         player.bounce(-160)
         this.cameras.main.shake(90, 0.012)
         this.hitStop()
@@ -668,6 +792,61 @@ export class MainScene extends Phaser.Scene {
     const text = `ZOMBIES: ${this.kills}${boosted ? `  x${this.mult}` : ''}`
     if (this.killsText.text !== text) this.killsText.setText(text)
     this.killsText.setColor(isRecord || boosted ? '#ffe082' : '#e8edf7')
+
+    this.refreshEffectIcons()
+  }
+
+  /**
+   * Ícones dos power-ups ativos (escudo/veloz/dano x2) com barra do tempo
+   * restante, logo abaixo do painel de cada jogador.
+   */
+  private refreshEffectIcons(): void {
+    this.players.forEach((player) => {
+      const slots = this.effectsByPlayer.get(player.id)
+      if (!slots || slots.length === 0) return
+      for (let i = slots.length - 1; i >= 0; i--) {
+        const slot = slots[i]
+        const remaining = slot.until - this.time.now
+        if (remaining <= 0) {
+          slot.icon.destroy()
+          slot.bar.destroy()
+          slots.splice(i, 1)
+          continue
+        }
+        const fraction = Math.max(0, Math.min(1, remaining / slot.duration))
+        slot.icon.setVisible(true)
+        slot.bar.setVisible(true)
+        slot.bar.width = Math.max(1, 16 * fraction)
+      }
+    })
+  }
+
+  /**
+   * Cria (ou estende) o indicador de um efeito temporizado do jogador.
+   * Reutilizado sempre que o mesmo power-up é coletado de novo.
+   */
+  private upsertEffectSlot(player: Player, kind: 'shield' | 'speed' | 'double', duration: number): void {
+    const { width } = this.scale
+    const slots = this.effectsByPlayer.get(player.id) ?? []
+    const existing = slots.find((s) => s.kind === kind)
+    if (existing) {
+      existing.until = this.time.now + duration
+      existing.duration = duration
+      return
+    }
+
+    const isP1 = this.players[0]?.id === player.id
+    const dir = isP1 ? 1 : -1
+    const originX = isP1 ? 12 : width - 12
+    const x = originX + dir * (8 + slots.length * 17)
+
+    const tint = PICKUP_EFFECTS[kind].tint
+    const icon = this.add.image(x, 34, pickupTextureKey(kind)).setDepth(11).setScale(1.4)
+    icon.setTint(tint)
+    const bar = this.add.rectangle(x, 43, 16, 2, tint, 0.9).setOrigin(0.5, 0).setDepth(11)
+
+    slots.push({ kind, icon, bar, until: this.time.now + duration, duration })
+    this.effectsByPlayer.set(player.id, slots)
   }
 
   /**

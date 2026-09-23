@@ -91,12 +91,15 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
     this.flipX = dir < 0
   }
 
-  /** Dano de pisão (stomp). Respeita um pequeno cooldown para não drenar HP a cada frame. */
-  stompDamage(fromX: number): boolean {
+  /**
+   * Dano de pisão (stomp). Respeita um pequeno cooldown para não drenar HP a
+   * cada frame. `amount` permite o power-up de dano em dobro (padrão 2).
+   */
+  stompDamage(fromX: number, amount = 2): boolean {
     if (this.isDying) return false
     if (this.scene.time.now < this.hurtCooldownUntil) return false
     this.hurtCooldownUntil = this.scene.time.now + 350
-    return this.takeDamage(2, fromX)
+    return this.takeDamage(amount, fromX)
   }
 
   takeDamage(amount: number, fromX: number): boolean {
