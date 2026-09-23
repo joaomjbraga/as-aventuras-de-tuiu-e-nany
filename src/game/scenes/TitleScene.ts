@@ -111,11 +111,25 @@ export class TitleScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true })
     about.on('pointerdown', () => this.scene.start('AboutScene'))
 
+    // Sair do jogo
+    const quit = this.add
+      .text(10, height - 8, 'SAIR', {
+        fontFamily: 'monospace',
+        fontSize: '8px',
+        color: '#7a89a0',
+      })
+      .setOrigin(0, 0.5)
+      .setInteractive({ useHandCursor: true })
+    quit.on('pointerdown', () => window.api?.quit())
+
     this.input.keyboard!.once('keydown-ENTER', () => {
       this.scene.start('CharacterSelectScene')
     })
     this.input.keyboard!.once('keydown-A', () => {
       this.scene.start('AboutScene')
+    })
+    this.input.keyboard!.once('keydown-Q', () => {
+      window.api?.quit()
     })
   }
 }

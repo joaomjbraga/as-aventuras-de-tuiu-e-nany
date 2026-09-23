@@ -53,14 +53,15 @@ export class PauseScene extends Phaser.Scene {
       { label: 'REINICIAR', action: () => this.restartGame() },
       { label: 'VOLTAR AO TÍTULO', action: () => this.goToTitle() },
       { label: `SOM: ${isMuted() ? 'OFF' : 'ON'}`, action: () => this.toggleSound() },
+      { label: 'SAIR', action: () => window.api?.quit() },
     ]
 
-    const firstY = 62
+    const firstY = 56
 
     this.options.forEach((opt, i) => {
-      const y = firstY + i * 32
+      const y = firstY + i * 30
       const rect = this.add
-        .rectangle(width / 2, y, 190, 30, 0x1c2230)
+        .rectangle(width / 2, y, 190, 28, 0x1c2230)
         .setStrokeStyle(1, 0x4a5a80)
         .setDepth(11)
       this.optionRects.push(rect)
@@ -90,7 +91,7 @@ export class PauseScene extends Phaser.Scene {
 
     // Atalhos da partida
     this.add
-      .text(width / 2, 186, 'J1: ←/→ mover · ESPAÇO pular\nJ2: A/D mover · W pular', {
+      .text(width / 2, 196, 'J1: ←/→ mover · ESPAÇO pular\nJ2: A/D mover · W pular', {
         fontFamily: 'monospace',
         fontSize: '8px',
         color: '#9aa9c0',
@@ -154,9 +155,11 @@ export class PauseScene extends Phaser.Scene {
 
   private toggleSound(): void {
     const muted = toggleMute(this)
-    const index = this.options.length - 1
-    this.options[index].label = `SOM: ${muted ? 'OFF' : 'ON'}`
-    this.optionTexts[index].setText(this.options[index].label)
+    const index = this.options.findIndex((o) => o.label.startsWith('SOM:'))
+    if (index >= 0) {
+      this.options[index].label = `SOM: ${muted ? 'OFF' : 'ON'}`
+      this.optionTexts[index].setText(this.options[index].label)
+    }
   }
 
   private move(delta: number): void {
@@ -170,7 +173,7 @@ export class PauseScene extends Phaser.Scene {
       rect.setFillStyle(active ? 0x2a3550 : 0x1c2230)
       rect.setStrokeStyle(1, active ? 0x8ab0ff : 0x4a5a80, active ? 1 : 0.8)
     })
-    this.cursor.setY(62 + this.selectedIndex * 32)
+    this.cursor.setY(56 + this.selectedIndex * 30)
   }
 
   private resumeGame(): void {

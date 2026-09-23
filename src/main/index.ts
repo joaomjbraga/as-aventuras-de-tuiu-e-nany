@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { existsSync } from 'fs'
 
@@ -70,6 +70,9 @@ if (!gotTheLock) {
 
 app.whenReady().then(() => {
   createWindow()
+
+  // Fecha o aplicativo a partir do jogo (botão SAIR do título/pausa)
+  ipcMain.on('game-quit', () => app.quit())
 
   app.on('second-instance', () => {
     const win = BrowserWindow.getAllWindows()[0]
