@@ -10,8 +10,10 @@ export class PreloadScene extends Phaser.Scene {
   preload(): void {
     this.drawLoadingBar()
 
-    // Cenário de fundo (arte da casa)
-    this.load.image('bg-home', 'scenes/scenes-my-home.jpg')
+    // Cenário de fundo: vídeo da casa (noAudio habilita autoplay) com
+    // fallback para a arte estática caso o codec não esteja disponível.
+    this.load.video('bg-home', 'scenes/scenes-my-home.mp4', true)
+    this.load.image('bg-home-img', 'scenes/scenes-my-home.jpg')
 
     const sprites = Object.values(CHARACTERS)
 

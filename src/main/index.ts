@@ -3,6 +3,9 @@ import { join } from 'path'
 
 const isDev = !!process.env['ELECTRON_RENDERER_URL']
 
+// Libera o autoplay do vídeo de fundo (O cenário toca sem gesto do usuário).
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required')
+
 // Ícone da janela (barra, taskbar, alt+tab): .ico no Windows, .png no Linux.
 // Busca dentro do app (dev = raiz do projeto; empacotado = recursos do app).
 function windowIconPath(): string {

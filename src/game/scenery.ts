@@ -12,10 +12,27 @@ export function buildGraveyard(scene: Phaser.Scene, width: number, height: numbe
   const groundTop = height - 48
   const cx = width / 2
 
-  // ---- Fundo: arte da casa em tela cheia ----
-  const bg = scene.add.image(cx, height / 2, 'bg-home')
-  bg.setDisplaySize(width, height)
+  // ---- Fundo: vídeo da casa em tela cheia (fallback: imagem) ----
+  // O Phaser guarda vídeos no CacheManager.video (a textura só existe após o
+  // add.video), então a checagem de disponibilidade é cache.video, não textures.
+  const hasVideo = scene.cache.video.exists('bg-home')
+  const bg: Phaser.GameObjects.Image | Phaser.GameObjects.Video = hasVideo
+    ? scene.add.video(cx, height / 2, 'bg-home')
+    : scene.add.image(cx, height / 2, 'bg-home-img')
   bg.setDepth(0)
+
+  if (hasVideo) {
+    const video = bg as Phaser.GameObjects.Video
+    video.setLoop(true)
+    // Antes do 'created' o vídeo usa 256x256 e o setDisplaySize calcularia uma
+    // escala errada; redimensiona só quando o frame real (1248x704) existir.
+    video.once('created', () => {
+      video.setDisplaySize(width, height)
+    })
+    video.play(true)
+  } else {
+    bg.setDisplaySize(width, height)
+  }
 
   // ---- Chão do cemitério ----
   const ground = scene.add.rectangle(cx, height - 24, width, 48, 0x232633)
