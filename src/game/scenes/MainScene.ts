@@ -422,7 +422,7 @@ export class MainScene extends Phaser.Scene {
 
     const panelW = name.width + player.maxHp * 11 + 20
     this.add
-      .rectangle(isP1 ? 0 : width, 0, panelW, 26, 0x0a0c14, 0.6)
+      .rectangle(isP1 ? 0 : width, 0, panelW, 26, 0x0a0c14, 1)
       .setOrigin(isP1 ? 0 : 1, 0)
       .setStrokeStyle(1, isP1 ? 0x2c3350 : 0x4a2c3e, 0.9)
       .setDepth(9)
