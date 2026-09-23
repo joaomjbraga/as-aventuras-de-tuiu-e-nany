@@ -28,6 +28,7 @@ export class MainScene extends Phaser.Scene {
   private gameOver = false
   private victory = false
   private spawnerTimer?: Phaser.Time.TimerEvent
+  private matchStartTime = 0
   private enterKey!: Phaser.Input.Keyboard.Key
   private escKey!: Phaser.Input.Keyboard.Key
   private muteKey!: Phaser.Input.Keyboard.Key
@@ -54,6 +55,14 @@ export class MainScene extends Phaser.Scene {
     this.bestKills = loadBestKills()
     this.spawnerTimer = undefined
     this.joinButton = undefined
+
+    // Restaura o relógio da cena: um hit-stop (timeScale 0.25) pode ter sido
+    // cancelado por um restart/shutdown antes do reset; sem isso a nova
+    // partida rodaria inteira em câmera lenta (Clock.shutdown não zera o
+    // timeScale). Também zera a referência do início da partida (a rampa de
+    // dificuldade é relativa a esta partida, não ao relógio global do app).
+    this.time.timeScale = 1
+    this.matchStartTime = this.time.now
 
     const { width, height } = this.scale
 
@@ -83,6 +92,10 @@ export class MainScene extends Phaser.Scene {
     this.spawnerTimer?.remove()
     this.sound.stopByKey(AUDIO.BGM)
     this.sound.stopByKey(AUDIO.GAME_OVER)
+
+    // Garante que um hit-stop pendente (timeScale 0.25) nunca vaze para a
+    // próxima partida — Clock.shutdown destrói os timers mas não reseta o scale.
+    this.time.timeScale = 1
   }
 
   update(): void {
@@ -291,12 +304,18 @@ export class MainScene extends Phaser.Scene {
     this.spawnerTimer?.remove()
 
     // Dificuldade progressiva: o intervalo de spawn começa devagar e acelera
-    // ao longo da partida; o próximo ciclo re-agenda com o delay novo.
+    // ao longo da PARTIDA (relativo a matchStartTime, não ao relógio global —
+    // do contrário a 2ª partida já abriria no teto de dificuldade). O próximo
+    // ciclo re-agenda com o delay novo.
     const tick = () => {
       if (!canSpawnZombie(this.zombieGroup.countActive(true))) return
       const side = Phaser.Math.Between(0, 1)
       this.spawnZombie(side === 0 ? -16 : width + 16)
-      this.spawnerTimer?.reset({ delay: spawnIntervalMs(this.time.now), loop: true, callback: tick })
+      this.spawnerTimer?.reset({
+        delay: spawnIntervalMs(this.time.now - this.matchStartTime),
+        loop: true,
+        callback: tick,
+      })
     }
 
     this.spawnerTimer = this.time.addEvent({ delay: spawnIntervalMs(0), loop: true, callback: tick })
