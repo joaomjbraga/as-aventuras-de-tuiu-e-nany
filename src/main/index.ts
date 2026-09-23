@@ -20,6 +20,7 @@ function createWindow(): void {
   const win = new BrowserWindow({
     width: 1280,
     height: 720,
+    fullscreen: true, // o jogo abre direto em tela cheia (ideal para o jogo)
     title: 'As Aventuras de Tuiu e Nany',
     backgroundColor: '#151a22',
     icon: windowIconPath(),
@@ -42,9 +43,8 @@ function createWindow(): void {
 
   win.setMenu(null)
 
-  // F11 alterna o modo tela cheia (não expõe nada ao renderer e funciona em
-  // qualquer cena). O Esc sai do tela cheia em algumas plataformas; se não,
-  // o próprio F11 volta.
+  // F11 alterna o modo tela cheia (o jogo abre em tela cheia; o F11 permite
+  // sair/voltar). Não expõe nada ao renderer e funciona em qualquer cena.
   win.webContents.on('before-input-event', (_event, input) => {
     if (input.type === 'keyDown' && input.key === 'F11') {
       win.setFullScreen(!win.isFullScreen())
