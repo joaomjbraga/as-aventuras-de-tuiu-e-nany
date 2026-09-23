@@ -178,6 +178,11 @@ export class Player {
     if (this.isAlive) this.sprite.setVelocityY(forceY)
   }
 
+  /** Ação de revive (tecla de pulo) pressionada neste frame — quem decide se quer voltar. */
+  isRevivePressed(): boolean {
+    return this.keys.jump.some((key) => Phaser.Input.Keyboard.JustDown(key))
+  }
+
   /** Ressuscita o jogador em (x, y) com vida cheia e invulnerabilidade curta. */
   revive(x: number, y: number): void {
     this.hp = this.maxHp

@@ -24,6 +24,7 @@ export class MainScene extends Phaser.Scene {
   private killsText!: Phaser.GameObjects.Text
   private heartsByPlayer = new Map<string, Phaser.GameObjects.Image[]>()
   private pendingRespawn = new Set<string>()
+  private revivePrompts = new Map<string, Phaser.GameObjects.Text>()
   private gameOver = false
   private victory = false
   private spawnerTimer?: Phaser.Time.TimerEvent
@@ -45,6 +46,7 @@ export class MainScene extends Phaser.Scene {
     // gameOver e o personagem não se move.
     this.players = []
     this.pendingRespawn = new Set()
+    this.revivePrompts = new Map()
     this.heartsByPlayer = new Map()
     this.gameOver = false
     this.victory = false
@@ -117,13 +119,21 @@ export class MainScene extends Phaser.Scene {
     this.players.forEach((player) => {
       player.update()
       if (!player.isAlive && !this.pendingRespawn.has(player.id)) {
-        this.pendingRespawn.add(player.id)
-        const { x, y } = this.spawnPointFor(player.id)
-        this.time.delayedCall(1800, () => {
-          if (this.gameOver || this.victory) return
-          player.revive(x, y)
+        // Oferece reviver só se ainda há companheiro em pé (senão é game over)
+        if (this.players.some((p) => p.id !== player.id && p.isAlive)) {
+          this.pendingRespawn.add(player.id)
+          this.showRevivePrompt(player)
+        }
+      } else if (!player.isAlive) {
+        // O morto escolhe: mantém o aviso acompanhando o corpo até ele decidir
+        const prompt = this.revivePrompts.get(player.id)
+        if (prompt) prompt.setPosition(player.sprite.x, player.sprite.y - 74)
+        if (player.isRevivePressed()) {
+          this.hideRevivePrompt(player.id)
           this.pendingRespawn.delete(player.id)
-        })
+          const { x, y } = this.spawnPointFor(player.id)
+          player.revive(x, y)
+        }
       }
     })
 
@@ -363,6 +373,38 @@ export class MainScene extends Phaser.Scene {
   }
 
   // ------------------------------------------------------------------
+  // Reviver (escolha do jogador morto)
+  // ------------------------------------------------------------------
+
+  /** Mostra o aviso "CAIU! APERTE X PARA REVIVER" flutuando sobre o corpo. */
+  private showRevivePrompt(player: Player): void {
+    const label = player.id === 'P2' ? 'W' : '↑ / ESPAÇO'
+    const prompt = this.add
+      .text(player.sprite.x, player.sprite.y - 74, `${player.name.toUpperCase()} CAIU!\nAPERTE ${label} PARA REVIVER`, {
+        fontFamily: 'monospace',
+        fontSize: '9px',
+        fontStyle: 'bold',
+        color: '#ffd54f',
+        align: 'center',
+      })
+      .setOrigin(0.5)
+      .setDepth(12)
+      .setStroke('#0d101b', 3)
+    this.tweens.add({ targets: prompt, alpha: 0.55, duration: 480, yoyo: true, repeat: -1 })
+    this.revivePrompts.set(player.id, prompt)
+  }
+
+  private hideRevivePrompt(playerId: string): void {
+    const prompt = this.revivePrompts.get(playerId)
+    if (prompt) prompt.destroy()
+    this.revivePrompts.delete(playerId)
+  }
+
+  private hideAllRevivePrompts(): void {
+    for (const id of [...this.revivePrompts.keys()]) this.hideRevivePrompt(id)
+  }
+
+  // ------------------------------------------------------------------
   // Fim de partida
   // ------------------------------------------------------------------
 
@@ -418,6 +460,7 @@ export class MainScene extends Phaser.Scene {
     if (this.gameOver || this.victory) return
     this.gameOver = true
     this.pendingRespawn.clear()
+    this.hideAllRevivePrompts()
     this.spawnerTimer?.remove(false)
     this.staticEndScreen()
 
@@ -454,6 +497,7 @@ export class MainScene extends Phaser.Scene {
     if (this.victory || this.gameOver) return
     this.victory = true
     this.pendingRespawn.clear()
+    this.hideAllRevivePrompts()
     this.spawnerTimer?.remove(false)
     this.staticEndScreen()
 

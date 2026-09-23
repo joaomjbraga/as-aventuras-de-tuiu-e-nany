@@ -35,7 +35,8 @@ window.__state = function () {
     players: s.players.map(function (p) { return { id: p.id, scale: +p.sprite.scaleX.toFixed(3), h: Math.round(p.sprite.height * p.sprite.scaleY), y: Math.round(p.sprite.y), alive: p.isAlive }; }),
     zombies: s.zombieGroup ? s.zombieGroup.countActive(true) : 0,
     hasHeart: __game.textures.exists('heart'),
-    muted: __game.sound ? __game.sound.mute : null
+    muted: __game.sound ? __game.sound.mute : null,
+    prompts: s.revivePrompts ? s.revivePrompts.size : null
   };
 };
 window.__goMain = function () {
@@ -160,22 +161,31 @@ app.whenReady().then(async () => {
     }
     check('zumbi com hitbox reduzida', zb && zb.count > 0 && zb.bodyW < zb.sw, zb)
 
-    // P1 morre (P2 vivo) -> deve reviver e o jogo NÃO deve ir a game over
+    // Morte de um dos dois: NÃO encerra, e o morto ESCOLHE reviver
     st = await js('window.__killP("P1")')
     await sleep(300)
     st = await js('window.__state()')
     check('morte de P1 não encerra com P2 vivo', st && !st.gameOver, { gameOver: st && st.gameOver })
-    for (let i = 0; i < 14; i++) {
+    check('P1 vê o aviso de reviver', st && st.prompts === 1, { prompts: st && st.prompts })
+    // Não revive sozinho: passa do antigo atraso de 1,8s sem ninguém apertar nada
+    for (let i = 0; i < 10; i++) {
       await js('window.__healP("P2")')
       await sleep(200)
-      st = await js('window.__state()')
-      if (st && st.players.find((p) => p.id === 'P1') && st.players.find((p) => p.id === 'P1').alive) break
     }
-    check(
-      'P1 revive',
-      st && !!st.players.find((p) => p.id === 'P1').alive,
-      st && st.players.map((p) => ({ id: p.id, alive: p.alive })),
-    )
+    st = await js('window.__state()')
+    const p1AfterWait = st.players.find((p) => p.id === 'P1')
+    check('não revive sozinho (escolha do jogador)', p1AfterWait && !p1AfterWait.alive, {
+      alive: p1AfterWait && p1AfterWait.alive,
+    })
+    // P1 escolhe reviver (a ação dele é pular = UP/ESPAÇO)
+    await holdKey('Space', 120)
+    await sleep(300)
+    st = await js('window.__state()')
+    const p1Revived = st.players.find((p) => p.id === 'P1')
+    check('P1 revive ao escolher', !!p1Revived && p1Revived.alive && st.prompts === 0, {
+      alive: p1Revived && p1Revived.alive,
+      prompts: st.prompts,
+    })
 
     // Textura de coração do HUD
     check('textura heart existe', !!st.hasHeart, { hasHeart: st.hasHeart })
