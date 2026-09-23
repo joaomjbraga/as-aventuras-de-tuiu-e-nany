@@ -30,6 +30,19 @@ export class MainScene extends Phaser.Scene {
   }
 
   create(): void {
+    // scene.restart() reutiliza a MESMA instância da cena, então os
+    // field-initializers NÃO rodam de novo. Sem esse reset, o estado da
+    // partida anterior (players, gameOver, kills, ...) vaza para a nova
+    // partida: após "JOGAR NOVAMENTE" o update() fica preso no branch de
+    // gameOver e o personagem não se move.
+    this.players = []
+    this.pendingRespawn = new Set()
+    this.heartsByPlayer = new Map()
+    this.gameOver = false
+    this.kills = 0
+    this.spawnerTimer = undefined
+    this.joinButton = undefined
+
     const { width, height } = this.scale
 
     this.scenery = buildGraveyard(this, width, height)
@@ -204,10 +217,17 @@ export class MainScene extends Phaser.Scene {
   }
 
   private spawnPointFor(playerId: string, index?: number): { x: number; y: number } {
-    const { width, height } = this.scale
+    const { width } = this.scale
     const i = index ?? this.players.findIndex((p) => p.id === playerId)
-    const x = width * (i === 0 ? 0.3 : 0.7)
-    return { x, y: this.groundTop - (CHARACTERS.tuio.bodyHeight ?? 0) / 2 }
+    // Deixa os spawns fora das faixas das lápides (20–32, 102–118, 193–207,
+    // 283–301): um personagem que renasce em cima de uma lápide fica preso na
+    // colisão (e zumbis empurram contra ela depois do revive).
+    const x = width * (i === 0 ? 0.15 : 0.85)
+    // A altura do corpo é por personagem (Nany é maior que Tuiu); usar sempre
+    // a do Tuiu afundava a Nany 6px dentro do chão.
+    const player = this.players[i]
+    const bodyHeight = CHARACTERS[(player?.spriteKey as CharacterKey) ?? 'tuio']?.bodyHeight ?? CHARACTERS.tuio.bodyHeight
+    return { x, y: this.groundTop - bodyHeight / 2 }
   }
 
   private get groundTop(): number {

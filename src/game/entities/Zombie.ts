@@ -1,6 +1,5 @@
 import Phaser from 'phaser'
 import { Player } from './Player'
-import { ZOMBIE_VARIANTS } from '../sprites'
 
 export interface ZombieConfig {
   x: number
@@ -29,7 +28,6 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
   private onKilled?: () => void
   private hurtCooldownUntil = 0
   private bobPhase: number
-  private readonly variant: 1 | 2 | 3
   private readonly textureKey: string
 
   constructor(scene: Phaser.Scene, config: ZombieConfig) {
@@ -43,8 +41,7 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
 
     super(scene, config.x, config.y, textureKey, 0)
 
-    // Agora que o super foi chamado, gravamos a variante/textura nos campos.
-    this.variant = variant
+    // Agora que o super foi chamado, gravamos a textura nos campos.
     this.textureKey = textureKey
 
     this.hpMax = config.hp ?? 3
@@ -152,17 +149,19 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
   }
 
   private createAnimations(): void {
-    const real = ZOMBIE_VARIANTS[this.variant - 1]
     const walkKey = `${this.textureKey}-walk`
 
     if (!this.scene.anims.exists(walkKey)) {
+      // Usa a contagem real de frames da textura (spritesheet real normalizado
+      // ou o placeholder 'zombie' de 4 frames) para o fallback nunca estourar.
+      const frameTotal = this.scene.textures.get(this.textureKey).frameTotal
       this.scene.anims.create({
         key: walkKey,
         frames: this.scene.anims.generateFrameNumbers(this.textureKey, {
           start: 0,
-          end: real ? real.frames - 1 : 3,
+          end: frameTotal - 1,
         }),
-        frameRate: real ? Math.min(12, real.frames) : 8,
+        frameRate: Math.min(12, frameTotal),
         repeat: -1,
       })
     }

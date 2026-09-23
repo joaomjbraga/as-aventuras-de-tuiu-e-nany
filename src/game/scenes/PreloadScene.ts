@@ -41,6 +41,9 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Placeholder 'zombie' (fallback caso os frames reais não carreguem);
+    // buildRealZombieSpritesheets sobrescreve com os spritesheets reais.
+    this.generateZombiePlaceholder()
     this.buildRealZombieSpritesheets()
     this.scene.start('TitleScene')
   }
@@ -147,7 +150,8 @@ export class PreloadScene extends Phaser.Scene {
     })
   }
 
-  private generateZombiePlaceholder(): void {    if (this.textures.exists('zombie')) return
+  private generateZombiePlaceholder(): void {
+    if (this.textures.exists('zombie')) return
 
     const frameWidth = 32
     const frameHeight = 40
