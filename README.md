@@ -1,18 +1,11 @@
 # As Aventuras de Tuiu & Nany
 
-Jogo 2D em pixel art (co-op local) no qual Tuiu e Nany enfrentam zumbis em um cemitério inspirado em "Thriller" (Michael Jackson). Feito com **Electron**, **Phaser 3** e **TypeScript**.
+Jogo 2D em pixel art (co-op local) no qual Tuiu e Nany enfrentam zumbis.
 
 ## Por que este jogo existe
 
 Este jogo foi desenvolvido para **comemorar os 5 anos de união de mim e minha esposa** — celebramos o dia em que começamos a namorar. Tuiu e Nany são nós dois, sobrevivendo juntos (e comemorando com muita aventura).
 
-## Como rodar
-
-```bash
-npm install
-npm run dev       # desenvolvimento (com DevTools)
-npm run build     # build de produção
-```
 
 ## Controles
 
@@ -33,9 +26,6 @@ npm run build     # build de produção
 
 ## Autor
 
-**João M J Braga**
+[![João M J Braga](https://github.com/joaomjbraga.png?size=100)](https://github.com/joaomjbraga)
 
-- Email: [joaomarcos.jbraga@gmail.com](mailto:joaomarcos.jbraga@gmail.com)
-- GitHub: [github.com/joaomjbraga](https://github.com/joaomjbraga)
-- Instagram: [instagram.com/joaomjbraga](https://instagram.com/joaomjbraga)
-- LinkedIn: [linkedin.com/in/joaomjbraga](https://www.linkedin.com/in/joaomjbraga)
+Se você gostou, considere deixar uma ⭐ no repositório!
