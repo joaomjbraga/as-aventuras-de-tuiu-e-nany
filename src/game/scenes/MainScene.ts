@@ -9,7 +9,8 @@ import { createButton } from '../ui'
 import { groundCenterYFor, groundTopFor, spawnXFor } from '../layout'
 import { canSpawnZombie, hasWon, spawnIntervalMs } from '../difficulty'
 import { randomNextLevel, type LevelConfig } from '../levels'
-import { loadBestKills, saveBestKills } from '../storage'
+import { loadBestKills, saveBestKills, loadBestScore, saveBestScore } from '../storage'
+import { multiplierFor } from '../score'
 
 type ArcadeObject = Phaser.Types.Physics.Arcade.GameObjectWithBody
 
@@ -23,6 +24,10 @@ export class MainScene extends Phaser.Scene {
 
   private kills = 0
   private bestKills = 0
+  private score = 0
+  private combo = 0
+  private mult = 1
+  private bestScore = 0
   private killsText!: Phaser.GameObjects.Text
   private heartsByPlayer = new Map<string, Phaser.GameObjects.Image[]>()
   private pendingRespawn = new Set<string>()
@@ -55,6 +60,10 @@ export class MainScene extends Phaser.Scene {
     this.victory = false
     this.kills = 0
     this.bestKills = loadBestKills()
+    this.score = 0
+    this.combo = 0
+    this.mult = 1
+    this.bestScore = loadBestScore()
     this.spawnerTimer = undefined
     this.joinButton = undefined
 
@@ -345,16 +354,33 @@ export class MainScene extends Phaser.Scene {
     this.sound.play(AUDIO.ZOMBIE_GROWL, { volume: 0.5 })
   }
 
-  /** Registra um abate: atualiza placar, recorde, som de morte e vitória. */
+  /** Registra um abate: atualiza combo/placar, recorde, som de morte e vitória. */
   private registerKill(): void {
     this.kills += 1
     if (this.kills > this.bestKills) {
       this.bestKills = this.kills
       saveBestKills(this.bestKills)
     }
+
+    // Combo: cada abate sem levar dano sobe o multiplicador (x1 → x10)
+    this.combo += 1
+    this.mult = multiplierFor(this.combo)
+    this.score += this.mult
+    if (this.score > this.bestScore) {
+      this.bestScore = this.score
+      saveBestScore(this.bestScore)
+    }
+
     this.sound.play(AUDIO.ZOMBIE_DEATH, { volume: 0.7 })
 
     if (hasWon(this.kills, this.level.victoryKills)) this.triggerVictory()
+  }
+
+  /** O jogador levou dano: a sequência de combo é zerada (volta para x1). */
+  private breakCombo(): void {
+    if (this.mult === 1) return
+    this.combo = 0
+    this.mult = 1
   }
 
   private onPlayerZombieContact(object1: ArcadeObject, object2: ArcadeObject): void {
@@ -385,6 +411,8 @@ export class MainScene extends Phaser.Scene {
       // Contato lateral (ou queda lateral): zumbi machuca o jogador
       if (player.damage(1)) {
         this.sound.play(AUDIO.ZOMBIE_ATTACK, { volume: 0.7 })
+        // Dano quebra a sequência de abates sem levar dano (combo)
+        this.breakCombo()
       }
     }
   }
@@ -528,11 +556,16 @@ export class MainScene extends Phaser.Scene {
       .setStroke('#0d101b', 4)
       .setDepth(21)
     this.add
-      .text(width / 2, height / 2 - 22, `ZOMBIES: ${this.kills}    RECORDE: ${this.bestKills}`, {
-        fontFamily: 'monospace',
-        fontSize: '9px',
-        color: '#e8edf7',
-      })
+      .text(
+        width / 2,
+        height / 2 - 22,
+        `ABATES: ${this.kills}    PONTOS: ${this.score}    RECORDE: ${this.bestScore}`,
+        {
+          fontFamily: 'monospace',
+          fontSize: '9px',
+          color: '#e8edf7',
+        },
+      )
       .setOrigin(0.5)
       .setStroke('#0d101b', 3)
       .setDepth(21)
@@ -570,11 +603,16 @@ export class MainScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(21)
     this.add
-      .text(width / 2, height / 2 - 16, `ABATES: ${this.kills}    RECORDE: ${this.bestKills}`, {
-        fontFamily: 'monospace',
-        fontSize: '9px',
-        color: '#e8edf7',
-      })
+      .text(
+        width / 2,
+        height / 2 - 16,
+        `ABATES: ${this.kills}    PONTOS: ${this.score}    RECORDE: ${this.bestScore}`,
+        {
+          fontFamily: 'monospace',
+          fontSize: '9px',
+          color: '#e8edf7',
+        },
+      )
       .setOrigin(0.5)
       .setStroke('#0d101b', 3)
       .setDepth(21)
@@ -591,9 +629,9 @@ export class MainScene extends Phaser.Scene {
 
     this.players.forEach((player, i) => this.addPlayerHud(player, i))
 
-    // Placar de abates (topo central)
+    // Placar de abates (topo central) com o multiplicador de combo
     this.killsText = this.add
-      .text(width / 2, 4, 'ZOMBIES: 999', {
+      .text(width / 2, 4, 'ZOMBIES: 999  x10', {
         fontFamily: 'monospace',
         fontSize: '9px',
         fontStyle: 'bold',
@@ -605,7 +643,7 @@ export class MainScene extends Phaser.Scene {
     this.killsText.setStroke('#0d101b', 3)
 
     this.add
-      .rectangle(width / 2, 0, this.killsText.width + 18, 26, 0x0a0c14, 0.45)
+      .rectangle(width / 2, 0, 150, 26, 0x0a0c14, 0.45)
       .setOrigin(0.5, 0)
       .setStrokeStyle(1, 0x2c3350, 0.7)
       .setDepth(9)
@@ -623,10 +661,13 @@ export class MainScene extends Phaser.Scene {
       })
     })
 
-    // Realça o placar em dourado enquanto o recorde da sessão está empatado/à frente
+    // Realça o placar: dourado quando o recorde da sessão está à frente/igual,
+    // ou quando o multiplicador de combo está acima de x1
     const isRecord = this.kills > 0 && this.kills >= this.bestKills
-    this.killsText.setText(`ZOMBIES: ${this.kills}`)
-    this.killsText.setColor(isRecord ? '#ffe082' : '#e8edf7')
+    const boosted = this.mult > 1
+    const text = `ZOMBIES: ${this.kills}${boosted ? `  x${this.mult}` : ''}`
+    if (this.killsText.text !== text) this.killsText.setText(text)
+    this.killsText.setColor(isRecord || boosted ? '#ffe082' : '#e8edf7')
   }
 
   /**

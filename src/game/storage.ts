@@ -5,6 +5,7 @@
 
 export const STORAGE_KEYS = {
   BEST_KILLS: 'tuio.best-kills',
+  BEST_SCORE: 'tuio.best-score',
   MUTED: 'tuio.muted',
 } as const
 
@@ -29,6 +30,16 @@ export function loadBestKills(): number {
 
 export function saveBestKills(value: number): void {
   write(STORAGE_KEYS.BEST_KILLS, Math.max(0, Math.floor(value)))
+}
+
+/** Melhor pontuação de uma partida (kills × multiplicador de combo). */
+export function loadBestScore(): number {
+  const value = readNumber(STORAGE_KEYS.BEST_SCORE)
+  return value !== null && value > 0 ? Math.floor(value) : 0
+}
+
+export function saveBestScore(value: number): void {
+  write(STORAGE_KEYS.BEST_SCORE, Math.max(0, Math.floor(value)))
 }
 
 /** Preferência de som (mudo) do jogador. */
