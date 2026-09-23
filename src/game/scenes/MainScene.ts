@@ -30,6 +30,7 @@ interface HudEffect {
   bar: Phaser.GameObjects.Rectangle
   until: number
   duration: number
+  barWidth: number
 }
 
 export class MainScene extends Phaser.Scene {
@@ -71,6 +72,13 @@ export class MainScene extends Phaser.Scene {
   private bossBarBack?: Phaser.GameObjects.Rectangle
   private bossBarFill?: Phaser.GameObjects.Rectangle
 
+  // Estado cacheado do HUD para não reescrever objetos por frame
+  private lastHpByPlayer = new Map<string, number>()
+  private lastKillsLabel = ''
+  private lastKillsColor = ''
+  private lastBossVisible = false
+  private lastBossHp = -1
+
   constructor() {
     super({ key: 'MainScene' })
   }
@@ -99,6 +107,11 @@ export class MainScene extends Phaser.Scene {
     this.lastPickupAt = this.time.now
     this.boss = undefined
     this.bossPhase = false
+    this.lastHpByPlayer = new Map()
+    this.lastKillsLabel = ''
+    this.lastKillsColor = ''
+    this.lastBossVisible = false
+    this.lastBossHp = -1
 
     // Fase atual da campanha (vinda da sessão: seleção/avanço de fase).
     this.level = getSessionLevel()
@@ -583,6 +596,11 @@ export class MainScene extends Phaser.Scene {
     this.registerKill(boss)
     this.boss = undefined
     this.bossPhase = false
+    this.lastHpByPlayer = new Map()
+    this.lastKillsLabel = ''
+    this.lastKillsColor = ''
+    this.lastBossVisible = false
+    this.lastBossHp = -1
     this.triggerVictory()
   }
 
@@ -943,19 +961,30 @@ export class MainScene extends Phaser.Scene {
     this.players.forEach((player) => {
       const hearts = this.heartsByPlayer.get(player.id)
       if (!hearts) return
-      hearts.forEach((heart, h) => {
-        // Coração inteiro vermelho, vazio escuro (tintFill sobre a textura branca)
-        heart.setTintFill(h < player.hp ? 0xff4d5d : 0x251f33)
-      })
+
+      // Corações só re-pintam quando o HP mudou
+      if (this.lastHpByPlayer.get(player.id) !== player.hp) {
+        hearts.forEach((heart, h) => {
+          heart.setTintFill(h < player.hp ? 0xff4d5d : 0x251f33)
+        })
+        this.lastHpByPlayer.set(player.id, player.hp)
+      }
     })
 
     // Realça o placar: dourado quando o recorde da sessão está à frente/igual,
     // ou quando o multiplicador de combo está acima de x1
     const isRecord = this.kills > 0 && this.kills >= this.bestKills
     const boosted = this.mult > 1
-    const text = `ZOMBIES: ${this.kills}${boosted ? `  x${this.mult}` : ''}`
-    if (this.killsText.text !== text) this.killsText.setText(text)
-    this.killsText.setColor(isRecord || boosted ? '#ffe082' : '#e8edf7')
+    const color = isRecord || boosted ? '#ffe082' : '#e8edf7'
+    const label = `ZOMBIES: ${this.kills}${boosted ? `  x${this.mult}` : ''}`
+    if (label !== this.lastKillsLabel) {
+      this.killsText.setText(label)
+      this.lastKillsLabel = label
+    }
+    if (color !== this.lastKillsColor) {
+      this.killsText.setColor(color)
+      this.lastKillsColor = color
+    }
 
     // Vinheta apenas durante o combate e com algum jogador no último coração
     const lowHp = this.players.some((p) => p.isAlive && p.hp <= 1)
@@ -969,14 +998,21 @@ export class MainScene extends Phaser.Scene {
     this.refreshEffectIcons()
   }
 
-  /** Atualiza/esconde a barra de vida do boss. */
+  /** Atualiza/esconde a barra de vida do boss (só reescreve quando muda). */
   private refreshBossBar(): void {
     const show = !!this.boss && !this.boss.isDying && !this.victory
-    if (this.bossLabel) this.bossLabel.setVisible(show)
-    if (this.bossBarBack) this.bossBarBack.setVisible(show)
-    if (this.bossBarFill) this.bossBarFill.setVisible(show)
+    if (show !== this.lastBossVisible) {
+      this.bossLabel?.setVisible(show)
+      this.bossBarBack?.setVisible(show)
+      this.bossBarFill?.setVisible(show)
+      this.lastBossVisible = show
+    }
     if (show && this.boss && this.bossBarFill) {
-      this.bossBarFill.width = Math.max(1, 170 * (this.boss.hp / this.boss.hpMax))
+      const hp = this.boss.hp
+      if (hp !== this.lastBossHp) {
+        this.bossBarFill.width = Math.max(1, 170 * (hp / this.boss.hpMax))
+        this.lastBossHp = hp
+      }
     }
   }
 
@@ -1000,7 +1036,11 @@ export class MainScene extends Phaser.Scene {
         const fraction = Math.max(0, Math.min(1, remaining / slot.duration))
         slot.icon.setVisible(true)
         slot.bar.setVisible(true)
-        slot.bar.width = Math.max(1, 16 * fraction)
+        const barWidth = Math.max(1, 16 * fraction)
+        if (barWidth !== slot.barWidth) {
+          slot.bar.width = barWidth
+          slot.barWidth = barWidth
+        }
       }
     })
   }
@@ -1029,7 +1069,7 @@ export class MainScene extends Phaser.Scene {
     icon.setTint(tint)
     const bar = this.add.rectangle(x, 43, 16, 2, tint, 0.9).setOrigin(0.5, 0).setDepth(11)
 
-    slots.push({ kind, icon, bar, until: this.time.now + duration, duration })
+    slots.push({ kind, icon, bar, until: this.time.now + duration, duration, barWidth: 16 })
     this.effectsByPlayer.set(player.id, slots)
   }
 
