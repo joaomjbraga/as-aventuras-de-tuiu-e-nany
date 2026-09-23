@@ -1,8 +1,8 @@
 /**
  * Registro das fases do jogo (cenários).
  *
- * Cada fase declara sua arte de fundo (vídeo com fallback de imagem),
- * visual do chão e da névoa, meta de vitória e curva de dificuldade.
+ * Cada fase declara sua arte de fundo estática, visual do chão e da névoa,
+ * meta de vitória e curva de dificuldade.
  *
  * Para adicionar uma nova fase: crie um `LevelConfig` e inclua-o em `LEVELS`,
  * na ordem em que deve ser jogada. Os assets são carregados automaticamente
@@ -13,10 +13,8 @@
 import { DEFAULT_DIFFICULTY, VICTORY_KILLS, type DifficultyParams } from './difficulty'
 
 export interface LevelArt {
-  /** Arte estática do fundo (fallback quando não há vídeo ou codec indisponível). */
+  /** Arte estática do fundo (imagem JPG). */
   image: string
-  /** Vídeo de fundo opcional (autoplay no Electron). */
-  video?: string
 }
 
 export interface LevelBossConfig {
@@ -29,7 +27,7 @@ export interface LevelBossConfig {
 }
 
 export interface LevelConfig {
-  /** Identificador único (usado nas chaves de assets: `bg-<id>`, `bg-<id>-img`). */
+  /** Identificador único (usado nas chaves de assets: `bg-<id>-img`). */
   id: string
   /** Nome exibido na tela de vitória (ex.: "CASA"). */
   name: string
@@ -51,7 +49,6 @@ export const LEVELS: LevelConfig[] = [
     id: HOUSE_LEVEL_ID,
     name: 'CASA',
     art: {
-      video: 'scenes/scenes-my-home.mp4',
       image: 'scenes/scenes-my-home.jpg',
     },
     groundColor: 0x232633,
@@ -65,7 +62,6 @@ export const LEVELS: LevelConfig[] = [
     id: 'ieab',
     name: 'IEAB',
     art: {
-      video: 'scenes/IEAB.mp4',
       image: 'scenes/IEAB.jpg',
     },
     groundColor: 0x1e2a3a,
@@ -84,7 +80,6 @@ export const LEVELS: LevelConfig[] = [
     id: 'castro-alves',
     name: 'CASTRO ALVES',
     art: {
-      video: 'scenes/Castro_Alves.mp4',
       image: 'scenes/Castro_Alves.jpg',
     },
     groundColor: 0x2d1e2a,
@@ -103,7 +98,6 @@ export const LEVELS: LevelConfig[] = [
     id: 'cetep',
     name: 'CETEP',
     art: {
-      video: 'scenes/CETEP.mp4',
       image: 'scenes/CETEP.jpg',
     },
     groundColor: 0x1a2a1e,
@@ -125,11 +119,6 @@ export function getLevel(id: string): LevelConfig {
   return LEVELS.find((level) => level.id === id) ?? LEVELS[0]
 }
 
-/** Chave da textura do vídeo de fundo de uma fase (`bg-<id>`). */
-export function bgVideoKey(level: LevelConfig): string {
-  return `bg-${level.id}`
-}
-
 /** Chave da imagem de fundo de uma fase (`bg-<id>-img`). */
 export function bgImageKey(level: LevelConfig): string {
   return `bg-${level.id}-img`
@@ -142,23 +131,18 @@ export function nextLevel(current: LevelConfig): LevelConfig | null {
   return LEVELS[index + 1]
 }
 
-/**
- * Sorteia a próxima fase entre as DEMAIS (sem repetir a atual).
- * `null` quando não há outra fase para sortear. O RNG fica injetável
- * para testes determinísticos.
- */
-export function randomNextLevel(current: LevelConfig, rng: () => number = Math.random): LevelConfig | null {
-  return pickRandomLevel(current, LEVELS, rng)
-}
-
-/** Lógica pura do sorteio (usada por `randomNextLevel` e pelos testes). */
+/** Fases disponíveis para sorteio (todas, exceto a atual). */
 export function pickRandomLevel(
   current: LevelConfig,
-  pool: readonly LevelConfig[],
+  pool: LevelConfig[] = LEVELS,
   rng: () => number = Math.random,
 ): LevelConfig | null {
   const others = pool.filter((level) => level.id !== current.id)
   if (others.length === 0) return null
-  const index = Math.min(others.length - 1, Math.floor(rng() * others.length))
-  return others[index]
+  return others[Math.floor(rng() * others.length)]
+}
+
+/** Próxima fase aleatória (sem repetir a atual). */
+export function randomNextLevel(current: LevelConfig): LevelConfig | null {
+  return pickRandomLevel(current)
 }

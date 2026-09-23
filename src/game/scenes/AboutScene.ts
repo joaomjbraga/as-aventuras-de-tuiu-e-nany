@@ -38,8 +38,6 @@ export class AboutScene extends Phaser.Scene {
       { text: 'SUA: PULE NOS ZUMBIS, PROTEJA', bold: true },
       { text: 'QUEM VOCÊ AMA E SOBREVIVA À' },
       { text: 'AVENTURA DO NOSSO AMOR.' },
-      { text: '' },
-      { text: 'FEITO COM PHASER, AMOR E 384x216.' },
     ]
 
     lines.forEach((line, i) => {

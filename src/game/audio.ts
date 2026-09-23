@@ -2,7 +2,7 @@ import { isMuted, setMuted } from './storage'
 
 /**
  * Chaves dos efeitos sonoros e música.
- * Os arquivos ficam em assets/audio/ (servidos como audio/<arquivo>).
+ * Os arquivos ficam em src/assets/audio/ (servidos como audio/<arquivo>).
  */
 export const AUDIO = {
   /** Música da tela inicial / menus. */

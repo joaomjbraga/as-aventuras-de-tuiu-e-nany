@@ -60,7 +60,6 @@ export class PauseScene extends Phaser.Scene {
       { label: 'REINICIAR', action: () => this.restartGame() },
       { label: 'VOLTAR AO TÍTULO', action: () => this.goToTitle() },
       { label: `SOM: ${isMuted() ? 'OFF' : 'ON'}`, action: () => this.toggleSound() },
-      { label: 'SAIR', action: () => window.api?.quit() },
     ]
 
     const firstY = 56

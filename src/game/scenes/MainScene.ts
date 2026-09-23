@@ -11,7 +11,7 @@ import { groundCenterYFor, groundTopFor, spawnXFor } from '../layout'
 import { canSpawnZombie, hasWon, spawnIntervalMs } from '../difficulty'
 import { randomNextLevel, type LevelConfig } from '../levels'
 import { loadBestKills, markLevelCompleted, saveBestKills, loadBestScore, saveBestScore } from '../storage'
-import { multiplierFor } from '../score'
+import { multiplierFor, scoreOfKill } from '../score'
 import { resolvePlayerZombieContact } from '../combat'
 import { buildGameOverScreen, buildVictoryScreen } from '../ui/endScreen'
 import {
@@ -38,7 +38,7 @@ interface HudEffect {
 export class MainScene extends Phaser.Scene {
   private level!: LevelConfig
   private players: Player[] = []
-  private ground!: Phaser.GameObjects.Rectangle
+  private ground!: Phaser.GameObjects.Zone
   private playerGroup!: Phaser.Physics.Arcade.Group
   private zombieGroup!: Phaser.Physics.Arcade.Group
   private scenery!: SceneResult
@@ -60,6 +60,7 @@ export class MainScene extends Phaser.Scene {
   private enterKey!: Phaser.Input.Keyboard.Key
   private escKey!: Phaser.Input.Keyboard.Key
   private muteKey!: Phaser.Input.Keyboard.Key
+  private f11Key!: Phaser.Input.Keyboard.Key
   private p2JoinKey?: Phaser.Input.Keyboard.Key
   private joinButton?: Phaser.GameObjects.Container
 
@@ -144,6 +145,7 @@ export class MainScene extends Phaser.Scene {
     this.enterKey = this.input.keyboard!.addKey('ENTER')
     this.escKey = this.input.keyboard!.addKey('ESC')
     this.muteKey = this.input.keyboard!.addKey('M')
+    this.f11Key = this.input.keyboard!.addKey('F11')
 
     this.setupJoinP2()
   }
@@ -161,10 +163,30 @@ export class MainScene extends Phaser.Scene {
     this.time.timeScale = 1
   }
 
+  /**
+   * Alterna o modo tela cheia (web). Requer gesture do usuário (tecla F11
+   * conta como gesture). Se o navegador não suportar, não faz nada.
+   */
+  private toggleFullscreen(): void {
+    const doc = document.documentElement
+    if (!document.fullscreenElement) {
+      doc.requestFullscreen().catch(() => {
+        // Navegador rejeitou — silencioso
+      })
+    } else {
+      document.exitFullscreen()
+    }
+  }
+
   update(): void {
     // Mudo (tecla M) a qualquer momento durante a partida
     if (Phaser.Input.Keyboard.JustDown(this.muteKey)) {
       toggleMute(this)
+    }
+
+    // F11 alterna o modo tela cheia (web: requestFullscreen / exitFullscreen)
+    if (Phaser.Input.Keyboard.JustDown(this.f11Key)) {
+      this.toggleFullscreen()
     }
 
     // Pausa (ESC): abre o menu de pausa
@@ -510,7 +532,7 @@ export class MainScene extends Phaser.Scene {
     // Combo: cada abate sem levar dano sobe o multiplicador (x1 → x10)
     this.combo += 1
     this.mult = multiplierFor(this.combo)
-    this.score += this.mult
+    this.score += scoreOfKill(this.mult)
     if (this.score > this.bestScore) {
       this.bestScore = this.score
       saveBestScore(this.bestScore)

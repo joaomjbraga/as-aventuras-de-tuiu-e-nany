@@ -1,48 +1,28 @@
 import Phaser from 'phaser'
-import { GROUND_HEIGHT, groundTopFor } from './layout'
-import { bgImageKey, bgVideoKey, type LevelConfig } from './levels'
+import { bgImageKey, type LevelConfig } from './levels'
 
 export interface SceneResult {
-  ground: Phaser.GameObjects.Rectangle
+  ground: Phaser.GameObjects.Zone
 }
 
 /**
- * Cenário da fase: arte de fundo (vídeo com fallback de imagem) cobrindo a
- * tela, chão jogável com física e névoa ambiente — tudo vindo do `LevelConfig`.
+ * Cenário da fase: arte de fundo estática cobrindo a tela e zona de chão
+ * invisível (para física). Tudo vindo do `LevelConfig`.
  */
 export function buildScene(scene: Phaser.Scene, width: number, height: number, level: LevelConfig): SceneResult {
-  const groundTop = groundTopFor(height)
   const cx = width / 2
 
-  // ---- Fundo: vídeo em tela cheia (fallback: imagem) ----
-  // O Phaser guarda vídeos no CacheManager.video (a textura só existe após o
-  // add.video), então a checagem de disponibilidade é cache.video, não textures.
-  const hasVideo = !!level.art.video && scene.cache.video.exists(bgVideoKey(level))
-  const bg: Phaser.GameObjects.Image | Phaser.GameObjects.Video = hasVideo
-    ? scene.add.video(cx, height / 2, bgVideoKey(level))
-    : scene.add.image(cx, height / 2, bgImageKey(level))
+  // ---- Fundo: imagem estática em tela cheia ----
+  const bg = scene.add.image(cx, height / 2, bgImageKey(level))
   bg.setDepth(0)
+  bg.setDisplaySize(width, height)
 
-  if (hasVideo) {
-    const video = bg as Phaser.GameObjects.Video
-    video.setLoop(true)
-    // Antes do 'created' o vídeo usa 256x256 e o setDisplaySize calcularia uma
-    // escala errada; redimensiona só quando o frame real (1248x704) existir.
-    video.once('created', () => {
-      video.setDisplaySize(width, height)
-    })
-    video.play(true)
-  } else {
-    bg.setDisplaySize(width, height)
-  }
-
-  // ---- Chão jogável ----
-  const ground = scene.add.rectangle(cx, height - GROUND_HEIGHT / 2, width, GROUND_HEIGHT, level.groundColor)
-  ground.setStrokeStyle(2, level.groundStrokeColor)
-  ground.setDepth(0)
+  // ---- Chão invisível (zona de física, sem retângulo visual) ----
+  const ground = scene.add.zone(cx, height - 24, width, 48)
   scene.physics.add.existing(ground, true)
 
   // ---- Névoa rasteira ----
+  const groundTop = height - 48
   for (let i = 0; i < 4; i++) {
     const fog = scene.add.ellipse(
       cx + (i - 1.5) * 88,

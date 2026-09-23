@@ -40,7 +40,7 @@ export const FRAME_LAYOUT = {
 
 /**
  * Personagens.
- * Spritesheets gerados a partir dos PNGs em assets/sprites/boy e /girl
+ * Spritesheets gerados a partir dos PNGs em src/assets/sprites/boy e /girl
  * (frames 01-06 = walk, 07-09 = jump: agachar/ar/aterrissagem), reduzidos
  * a 25% para caber na resolução base 384x216. Os arquivos originais não
  * foram alterados.
@@ -49,7 +49,7 @@ export const CHARACTERS = {
   tuio: {
     key: 'tuio',
     name: 'Tuiu',
-    path: 'sprites/tuio.png', // gerado de assets/sprites/boy
+    path: 'sprites/tuio.png', // gerado de src/assets/sprites/boy
     frameWidth: 43,
     frameHeight: 74,
     bodyWidth: 30,
@@ -59,7 +59,7 @@ export const CHARACTERS = {
   nany: {
     key: 'nany',
     name: 'Nany',
-    path: 'sprites/nany.png', // gerado de assets/sprites/girl
+    path: 'sprites/nany.png', // gerado de src/assets/sprites/girl
     frameWidth: 48,
     frameHeight: 84,
     bodyWidth: 34,

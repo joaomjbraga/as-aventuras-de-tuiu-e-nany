@@ -18,6 +18,13 @@ interface LevelCard {
  */
 export class LevelSelectScene extends Phaser.Scene {
   private cards: LevelCard[] = []
+  private cardsContainer!: Phaser.GameObjects.Container
+  private scrollOffset = 0
+  private maxScrollOffset = 0
+  private readonly viewportLeft = 14
+  private readonly viewportWidth = 356
+  private readonly cardWidth = 132
+  private readonly cardGap = 18
   private selectedIndex = 0
   private cursor!: Phaser.GameObjects.Rectangle
   private enterKey!: Phaser.Input.Keyboard.Key
@@ -53,7 +60,7 @@ export class LevelSelectScene extends Phaser.Scene {
     if (this.cards.length > 0) this.placeCursor()
 
     this.add
-      .text(cx, height - 14, '←/→: escolher    ENTER: confirmar    ESC: voltar', {
+      .text(cx, height - 14, '←/→ ou RODA: rolar    ENTER: confirmar    ESC: voltar', {
         fontFamily: 'monospace',
         fontSize: '8px',
         color: '#6b7a8f',
@@ -65,6 +72,19 @@ export class LevelSelectScene extends Phaser.Scene {
     this.leftKey = kb.addKey('LEFT')
     this.rightKey = kb.addKey('RIGHT')
     this.escKey = kb.addKey('ESC')
+
+    this.input.on(
+      'wheel',
+      (
+        pointer: Phaser.Input.Pointer,
+        _gameObjects: Phaser.GameObjects.GameObject[],
+        _deltaX: number,
+        deltaY: number,
+      ) => {
+        if (pointer.y < 38 || pointer.y > height - 30) return
+        this.setScrollOffset(this.scrollOffset + Math.sign(deltaY) * 54)
+      },
+    )
   }
 
   update(): void {
@@ -89,20 +109,25 @@ export class LevelSelectScene extends Phaser.Scene {
     // Cena reutilizada entre partidas: descarta os cards da visita anterior.
     this.cards = []
 
-    const { width } = this.scale
-    const cx = width / 2
-    const cardW = 132
+    const { height } = this.scale
     const cardH = 128
-    const gap = 18
     const cardY = 106
+    const total = LEVELS.length * this.cardWidth + Math.max(0, LEVELS.length - 1) * this.cardGap
+    this.maxScrollOffset = Math.max(0, total - this.viewportWidth)
+    this.scrollOffset = 0
 
-    const total = LEVELS.length * cardW + Math.max(0, LEVELS.length - 1) * gap
-    const startX = cx - total / 2 + cardW / 2
+    this.cardsContainer = this.add.container(this.viewportLeft, 0).setDepth(1)
+    const maskGraphics = this.make.graphics({}, false)
+    maskGraphics.fillStyle(0xffffff)
+    maskGraphics.fillRect(this.viewportLeft, 38, this.viewportWidth, height - 68)
+    this.cardsContainer.setMask(maskGraphics.createGeometryMask())
+
+    const cardStartX = this.cardWidth / 2
 
     LEVELS.forEach((level, i) => {
-      const x = startX + i * (cardW + gap)
+      const x = cardStartX + i * (this.cardWidth + this.cardGap)
 
-      const panel = this.add.rectangle(x, cardY, cardW, cardH, 0x131720)
+      const panel = this.add.rectangle(x, cardY, this.cardWidth, cardH, 0x131720)
       panel.setStrokeStyle(1, 0x2c3350)
 
       // Miniatura da arte de fundo da fase (textura `bg-<id>-img`), com ajuste
@@ -111,12 +136,13 @@ export class LevelSelectScene extends Phaser.Scene {
       const src = this.textures.get(bgImageKey(level)).getSourceImage()
       const tw = src.width || 1
       const th = src.height || 1
-      const fit = Math.min((cardW - 24) / tw, 60 / th)
+      const fit = Math.min((this.cardWidth - 24) / tw, 60 / th)
       thumb.setScale(fit)
-      thumb.setDepth(1)
+
+      const namePlate = this.add.rectangle(x, cardY + 43, this.cardWidth - 10, 22, 0x090c14, 0.88)
 
       const name = this.add
-        .text(x, cardY + cardH / 2 - 6, level.name.toUpperCase(), {
+        .text(x, cardY + 43, level.name.toUpperCase(), {
           fontFamily: 'monospace',
           fontSize: '10px',
           color: '#c8d6e5',
@@ -124,13 +150,12 @@ export class LevelSelectScene extends Phaser.Scene {
         })
         .setOrigin(0.5)
         .setStroke('#0d101b', 3)
-        .setDepth(1)
 
       // Fase já concluída: '✓' dourado no canto do card
       let done: Phaser.GameObjects.Text | undefined
       if (isLevelCompleted(level.id)) {
         done = this.add
-          .text(x + cardW / 2 - 6, cardY - cardH / 2 + 5, '✓', {
+          .text(x + this.cardWidth / 2 - 6, cardY - cardH / 2 + 5, '✓', {
             fontFamily: 'monospace',
             fontSize: '12px',
             color: '#ffd54f',
@@ -138,8 +163,10 @@ export class LevelSelectScene extends Phaser.Scene {
           })
           .setOrigin(1, 0)
           .setStroke('#0d101b', 2)
-          .setDepth(1)
       }
+
+      this.cardsContainer.add([panel, thumb, namePlate, name])
+      if (done) this.cardsContainer.add(done)
 
       panel.setInteractive({ useHandCursor: true })
       panel.on('pointerover', () => {
@@ -160,12 +187,32 @@ export class LevelSelectScene extends Phaser.Scene {
 
   private move(delta: number): void {
     this.selectedIndex = (this.selectedIndex + delta + this.cards.length) % this.cards.length
+    this.ensureSelectedVisible()
     this.placeCursor()
     this.refreshSelection()
   }
 
   private placeCursor(): void {
-    this.cursor.setPosition(this.cards[this.selectedIndex].panel.x, this.cards[this.selectedIndex].panel.y + 62)
+    const card = this.cards[this.selectedIndex]
+    this.cursor.setPosition(this.cardsContainer.x + card.panel.x, card.panel.y + 62)
+  }
+
+  private ensureSelectedVisible(): void {
+    const cardLeft = this.selectedIndex * (this.cardWidth + this.cardGap)
+    const cardRight = cardLeft + this.cardWidth
+    const padding = 8
+
+    if (cardLeft < this.scrollOffset + padding) {
+      this.setScrollOffset(cardLeft - padding)
+    } else if (cardRight > this.scrollOffset + this.viewportWidth - padding) {
+      this.setScrollOffset(cardRight - this.viewportWidth + padding)
+    }
+  }
+
+  private setScrollOffset(value: number): void {
+    this.scrollOffset = Phaser.Math.Clamp(value, 0, this.maxScrollOffset)
+    this.cardsContainer.x = this.viewportLeft - this.scrollOffset
+    if (this.cursor && this.cards.length > 0) this.placeCursor()
   }
 
   private refreshSelection(): void {

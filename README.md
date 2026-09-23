@@ -23,7 +23,7 @@ Este jogo foi desenvolvido para **comemorar os 5 anos de união de mim e minha e
 - Os abates valem **pontos** multiplicados pela sequência de abates sem levar dano (combo): cada abate sobe o multiplicador (x1 → x10); levar dano zera o combo.
 - Cada jogador tem 3 corações; ao cair, o jogador reviverá quando **escolher** (pulo do próprio personagem) se ainda houver companheiro em pé.
 - Todos os jogadores caídos ao mesmo tempo = fim de jogo.
-- A dificuldade aumenta ao longo de cada partida (os zumbis spawnam mais rápido) e a vitória da fase fecha em 20 abates.
+- A dificuldade aumenta ao longo de cada partida (os zumbis spawnam mais rápido). Cada fase define sua própria meta de abates e, depois dela, exige a derrota do boss para ser concluída.
 
 ## Fases
 
@@ -34,20 +34,17 @@ O jogo é dirigido por um registro de fases (`src/game/levels.ts`), cada uma com
 
 Para adicionar uma nova fase:
 
-1. Coloque a arte em `assets/scenes/` (vídeo opcional + imagem de fallback).
+1. Coloque a arte em `src/assets/scenes/` (vídeo opcional + imagem de fallback).
 2. Adicione um novo `LevelConfig` ao array `LEVELS` em `src/game/levels.ts` (use a fase "Casa" como modelo), informando `id`, `name`, `art`, cores do chão/névoa, `victoryKills` e `difficulty`.
 3. Nada mais muda: a `PreloadScene` carrega os assets pelas chaves `bg-<id>`/`bg-<id>-img`, a `LevelSelectScene` lista o cenário automaticamente e a `MainScene` usa a fase da sessão.
 
-## Distribuir
-
-Empacota o app em instaladores/executáveis prontos (os artefatos saem em `dist/`):
+## Desenvolvimento
 
 ```sh
-npm run dist:linux   # AppImage (Linux)
-npm run dist:win     # portable .exe (Windows)
+npm run dev          # servidor de desenvolvimento
+npm run build        # build de produção em dist/
+npm run preview      # serve o build de produção localmente
 ```
-
-O Windows pode ser gerado no Linux (o electron-builder cuida do resto); os comandos exigem as ferramentas baixadas na primeira execução.
 
 ## Autor
 

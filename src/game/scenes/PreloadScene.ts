@@ -1,7 +1,7 @@
 import Phaser from 'phaser'
 import { CHARACTERS, EXPLOSION, ZOMBIE_VARIANTS, ZOMBIE_TARGET_HEIGHT } from '../sprites'
 import { AUDIO } from '../audio'
-import { LEVELS, bgImageKey, bgVideoKey } from '../levels'
+import { LEVELS, bgImageKey } from '../levels'
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -11,12 +11,10 @@ export class PreloadScene extends Phaser.Scene {
   preload(): void {
     this.drawLoadingBar()
 
-    // Cenário das fases: carrega o vídeo (noAudio habilita autoplay) com
-    // fallback para a arte estática caso o codec não esteja disponível.
-    // Chaves derivadas do id da fase (bg-<id> / bg-<id>-img) — futuras fases
+    // Cenário das fases: carrega a arte estática (imagem JPG) para o fundo.
+    // Chaves derivadas do id da fase (`bg-<id>-img`) — futuras fases
     // entram automaticamente ao serem adicionadas em LEVELS.
     LEVELS.forEach((level) => {
-      if (level.art.video) this.load.video(bgVideoKey(level), level.art.video, true)
       this.load.image(bgImageKey(level), level.art.image)
     })
 
@@ -67,7 +65,7 @@ export class PreloadScene extends Phaser.Scene {
     this.generateBossPlaceholder()
     this.buildExplosionSpritesheet()
     this.createUiTextures()
-    this.scene.start('TitleScene')
+    this.scene.start('AboutScene')
   }
 
   private drawLoadingBar(): void {
