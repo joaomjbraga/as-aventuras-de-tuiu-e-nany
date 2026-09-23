@@ -112,7 +112,7 @@ export function buildVictoryScreen(opts: EndScreenOptions): void {
     .setStroke('#0d101b', 3)
     .setDepth(21)
   scene.add
-    .text(width / 2, height / 2 + 8, 'COM AMOR, TUIU & NANY', {
+    .text(width / 2, height / 2 + 8, 'COM AMOR, JOÃO M J BRAGA', {
       fontFamily: 'monospace',
       fontSize: '8px',
       color: '#ff9fc2',
