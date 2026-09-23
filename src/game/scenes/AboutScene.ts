@@ -29,7 +29,7 @@ export class AboutScene extends Phaser.Scene {
 
     const lines: Array<{ text: string; color?: string; bold?: boolean }> = [
       { text: 'FEITO COM CARINHO POR' },
-      { text: 'TUIU & NANY', color: '#ff9fc2', bold: true },
+      { text: 'JOÃO M J BRAGA', color: '#ff9fc2', bold: true },
       { text: '' },
       { text: 'ESTE JOGUINHO É O PRESENTE DE' },
       { text: '5 ANOS DE UM CASAL QUE SE AMA.' },
