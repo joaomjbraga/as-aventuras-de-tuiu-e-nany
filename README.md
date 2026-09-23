@@ -6,13 +6,12 @@ Jogo 2D em pixel art (co-op local) no qual Tuiu e Nany enfrentam zumbis.
 
 Este jogo foi desenvolvido para **comemorar os 5 anos de união de mim e minha esposa** — celebramos o dia em que começamos a namorar. Tuiu e Nany são nós dois, sobrevivendo juntos (e comemorando com muita aventura).
 
-
 ## Controles
 
-| Jogador | Mover  | Pular        | Confirmar |
-| ------- | ------ | ------------ | --------- |
-| J1      | ← / →  | ↑ ou ESPAÇO  | ENTER     |
-| J2      | A / D  | W            | W         |
+| Jogador | Mover | Pular       | Confirmar |
+| ------- | ----- | ----------- | --------- |
+| J1      | ← / → | ↑ ou ESPAÇO | ENTER     |
+| J2      | A / D | W           | W         |
 
 - **ESC**: pausa o jogo (menu com continuar/reiniciar/título).
 - Na seleção: J1 confirma com ENTER e inicia; J2 confirma com W.

@@ -121,10 +121,7 @@ export class CharacterSelectScene extends Phaser.Scene {
       .setOrigin(0.5)
 
     // Cursores dos dois jogadores
-    this.cursors = [
-      this.makeCursor('P1', 'p1', 0x4fc3f7),
-      this.makeCursor('P2', 'p2', 0xffb74d),
-    ]
+    this.cursors = [this.makeCursor('P1', 'p1', 0x4fc3f7), this.makeCursor('P2', 'p2', 0xffb74d)]
     this.cursors.forEach((cursor) => this.placeMarker(cursor))
 
     this.enterKey = this.input.keyboard!.addKey('ENTER')
@@ -249,7 +246,9 @@ export class CharacterSelectScene extends Phaser.Scene {
   private updatePrompt(): void {
     const p1 = this.cursors.find((c) => c.playerId === 'P1')
     if (p1?.confirmed) {
-      this.prompt.setText('ENTER para começar · clique de novo no personagem e joga\n(J2: escolha com A/D e confirme com W)')
+      this.prompt.setText(
+        'ENTER para começar · clique de novo no personagem e joga\n(J2: escolha com A/D e confirme com W)',
+      )
     } else {
       this.prompt.setText('J1: escolha com ←/→ e confirme com ENTER (ou clique no personagem)')
     }
@@ -292,7 +291,7 @@ export class CharacterSelectScene extends Phaser.Scene {
   private startGame(): void {
     const players: SessionPlayer[] = this.cursors
       .filter((c) => c.confirmed)
-      .map((c, i) => ({
+      .map((c) => ({
         id: c.playerId,
         characterKey: OPTIONS[c.index],
         controls: c.scheme,

@@ -33,6 +33,7 @@ export class PreloadScene extends Phaser.Scene {
     this.load.audio(AUDIO.BGM, 'audio/background.mp3')
     this.load.audio(AUDIO.ZOMBIE_GROWL, 'audio/zumbi-gemendo.mp3')
     this.load.audio(AUDIO.ZOMBIE_ATTACK, 'audio/Small-Monster-Attack.mp3')
+    this.load.audio(AUDIO.ZOMBIE_DEATH, 'audio/zumbie-morre.mp3')
     this.load.audio(AUDIO.GAME_OVER, 'audio/game-over.mp3')
 
     // Carrega os frames individuais (PNGs) dos 3 zumbis reais para montar
@@ -50,6 +51,7 @@ export class PreloadScene extends Phaser.Scene {
     // buildRealZombieSpritesheets sobrescreve com os spritesheets reais.
     this.generateZombiePlaceholder()
     this.buildRealZombieSpritesheets()
+    this.createUiTextures()
     this.scene.start('TitleScene')
   }
 
@@ -70,7 +72,7 @@ export class PreloadScene extends Phaser.Scene {
    * Cria spritesheets placeholder (9 frames: 6 walk + 3 jump) para
    * um personagem cujo arquivo real ainda não existe.
    */
-  private createPlaceholderSpritesheets(sprites: typeof CHARACTERS[keyof typeof CHARACTERS][]): void {
+  private createPlaceholderSpritesheets(sprites: (typeof CHARACTERS)[keyof typeof CHARACTERS][]): void {
     sprites.forEach((def) => {
       if (this.textures.exists(def.key)) return
 
@@ -100,10 +102,6 @@ export class PreloadScene extends Phaser.Scene {
     })
   }
 
-  /**
-   * Gera um spritesheet placeholder de zumbi (4 frames de caminhada,
-   * 32x40 cada). Substituir por arte real quando existir.
-   */
   /**
    * Monta os 3 spritesheets reais de zumbi (zombie1/2/3) a partir dos frames
    * individuais pré-carregados (ZOMBIE_VARIANTS: PNGs de tamanhos variados).
@@ -153,6 +151,43 @@ export class PreloadScene extends Phaser.Scene {
         })
       }
     })
+  }
+
+  /**
+   * Texturas auxiliares de UI/efeitos: um coração (HUD) e um ponto 1x1
+   * (partículas). Brancas — a cor é aplicada por tint/tintFill no uso.
+   */
+  private createUiTextures(): void {
+    if (!this.textures.exists('pixel')) {
+      const px = document.createElement('canvas')
+      px.width = 1
+      px.height = 1
+      px.getContext('2d')!.fillRect(0, 0, 1, 1)
+      this.textures.addCanvas('pixel', px)
+    }
+
+    if (this.textures.exists('heart')) return
+
+    const heartRows = [
+      '...#.#...',
+      '..#.#.#..',
+      '..#####..',
+      '.#######.',
+      '.#######.',
+      '..#####..',
+      '...###...',
+      '....#....',
+    ]
+    const c = document.createElement('canvas')
+    c.width = heartRows[0].length
+    c.height = heartRows.length
+    const g = c.getContext('2d')!
+    heartRows.forEach((row, y) => {
+      for (let x = 0; x < row.length; x++) {
+        if (row[x] === '#') g.fillRect(x, y, 1, 1)
+      }
+    })
+    this.textures.addCanvas('heart', c)
   }
 
   private generateZombiePlaceholder(): void {

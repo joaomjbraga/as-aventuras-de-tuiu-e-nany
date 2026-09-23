@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
+import { GROUND_HEIGHT, groundTopFor } from './layout'
 
-export interface GraveyardResult {
+export interface SceneResult {
   ground: Phaser.GameObjects.Rectangle
 }
 
@@ -8,8 +9,8 @@ export interface GraveyardResult {
  * Cenário do jogo: arte de fundo (scenes-my-home.jpg) cobrindo a tela,
  * chão jogável com física e névoa ambiente.
  */
-export function buildGraveyard(scene: Phaser.Scene, width: number, height: number): GraveyardResult {
-  const groundTop = height - 48
+export function buildScene(scene: Phaser.Scene, width: number, height: number): SceneResult {
+  const groundTop = groundTopFor(height)
   const cx = width / 2
 
   // ---- Fundo: vídeo da casa em tela cheia (fallback: imagem) ----
@@ -34,8 +35,8 @@ export function buildGraveyard(scene: Phaser.Scene, width: number, height: numbe
     bg.setDisplaySize(width, height)
   }
 
-  // ---- Chão do cemitério ----
-  const ground = scene.add.rectangle(cx, height - 24, width, 48, 0x232633)
+  // ---- Chão jogável ----
+  const ground = scene.add.rectangle(cx, height - GROUND_HEIGHT / 2, width, GROUND_HEIGHT, 0x232633)
   ground.setStrokeStyle(2, 0x2f3245)
   ground.setDepth(0)
   scene.physics.add.existing(ground, true)

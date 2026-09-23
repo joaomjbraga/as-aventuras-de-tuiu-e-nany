@@ -133,11 +133,7 @@ export class Player {
 
     // Se a animação de pulo está no frame de aterrissagem (8) mas o
     // personagem ainda está no ar, segura no frame "ar" (7).
-    if (
-      this.state === 'jump' &&
-      !body.blocked.down &&
-      this.sprite.anims.currentFrame?.isLast
-    ) {
+    if (this.state === 'jump' && !body.blocked.down && this.sprite.anims.currentFrame?.isLast) {
       this.sprite.setFrame(FRAME_LAYOUT.JUMP[1])
     }
 

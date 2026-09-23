@@ -3,25 +3,33 @@ import { Player } from '../entities/Player'
 import { Zombie } from '../entities/Zombie'
 import { CHARACTERS, ZOMBIE_TARGET_HEIGHT, ZOMBIE_VARIANTS, type CharacterKey } from '../sprites'
 import { getSession, setSessionPlayers, type PlayerId } from '../session'
-import { buildGraveyard, type GraveyardResult } from '../scenery'
-import { AUDIO, playBgm } from '../audio'
+import { buildScene, type SceneResult } from '../scenery'
+import { AUDIO, applyMute, playBgm, toggleMute } from '../audio'
 import { createButton } from '../ui'
+import { groundCenterYFor, groundTopFor, spawnXFor } from '../layout'
+import { canSpawnZombie, hasWon, spawnIntervalMs, VICTORY_KILLS } from '../difficulty'
+import { loadBestKills, saveBestKills } from '../storage'
+
+type ArcadeObject = Phaser.Types.Physics.Arcade.GameObjectWithBody
 
 export class MainScene extends Phaser.Scene {
   private players: Player[] = []
   private ground!: Phaser.GameObjects.Rectangle
   private playerGroup!: Phaser.Physics.Arcade.Group
   private zombieGroup!: Phaser.Physics.Arcade.Group
-  private scenery!: GraveyardResult
+  private scenery!: SceneResult
 
   private kills = 0
+  private bestKills = 0
   private killsText!: Phaser.GameObjects.Text
-  private heartsByPlayer = new Map<string, Phaser.GameObjects.Rectangle[]>()
+  private heartsByPlayer = new Map<string, Phaser.GameObjects.Image[]>()
   private pendingRespawn = new Set<string>()
   private gameOver = false
+  private victory = false
   private spawnerTimer?: Phaser.Time.TimerEvent
   private enterKey!: Phaser.Input.Keyboard.Key
   private escKey!: Phaser.Input.Keyboard.Key
+  private muteKey!: Phaser.Input.Keyboard.Key
   private p2JoinKey?: Phaser.Input.Keyboard.Key
   private joinButton?: Phaser.GameObjects.Container
 
@@ -39,13 +47,17 @@ export class MainScene extends Phaser.Scene {
     this.pendingRespawn = new Set()
     this.heartsByPlayer = new Map()
     this.gameOver = false
+    this.victory = false
     this.kills = 0
+    this.bestKills = loadBestKills()
     this.spawnerTimer = undefined
     this.joinButton = undefined
 
     const { width, height } = this.scale
 
-    this.scenery = buildGraveyard(this, width, height)
+    applyMute(this)
+
+    this.scenery = buildScene(this, width, height)
     this.ground = this.scenery.ground
 
     this.createPlayers()
@@ -57,6 +69,7 @@ export class MainScene extends Phaser.Scene {
 
     this.enterKey = this.input.keyboard!.addKey('ENTER')
     this.escKey = this.input.keyboard!.addKey('ESC')
+    this.muteKey = this.input.keyboard!.addKey('M')
 
     this.setupJoinP2()
   }
@@ -71,15 +84,20 @@ export class MainScene extends Phaser.Scene {
   }
 
   update(): void {
+    // Mudo (tecla M) a qualquer momento durante a partida
+    if (Phaser.Input.Keyboard.JustDown(this.muteKey)) {
+      toggleMute(this)
+    }
+
     // Pausa (ESC): abre o menu de pausa
-    if (!this.gameOver && Phaser.Input.Keyboard.JustDown(this.escKey)) {
+    if (!this.gameOver && !this.victory && Phaser.Input.Keyboard.JustDown(this.escKey)) {
       this.scene.pause()
       this.scene.launch('PauseScene')
       return
     }
 
-    // Game over: atalhos de teclado para os botões
-    if (this.gameOver) {
+    // Fim de jogo / vitória: atalhos de teclado para os botões
+    if (this.gameOver || this.victory) {
       if (Phaser.Input.Keyboard.JustDown(this.enterKey)) {
         this.scene.restart()
       } else if (Phaser.Input.Keyboard.JustDown(this.escKey)) {
@@ -89,8 +107,10 @@ export class MainScene extends Phaser.Scene {
       return
     }
 
-    // P2 pode entrar numa partida já iniciada (tecla W = mesma da confirmação na seleção)
-    if (this.p2JoinKey && Phaser.Input.Keyboard.JustDown(this.p2JoinKey)) {
+    // P2 pode entrar numa partida já iniciada (tecla W = mesma da confirmação na
+    // seleção). Só checa enquanto não há P2 — W também é o pulo do P2, e chamar
+    // tryJoinP2 a cada pulo era redundante.
+    if (this.players.length === 1 && this.p2JoinKey && Phaser.Input.Keyboard.JustDown(this.p2JoinKey)) {
       this.tryJoinP2()
     }
 
@@ -100,7 +120,7 @@ export class MainScene extends Phaser.Scene {
         this.pendingRespawn.add(player.id)
         const { x, y } = this.spawnPointFor(player.id)
         this.time.delayedCall(1800, () => {
-          if (this.gameOver) return
+          if (this.gameOver || this.victory) return
           player.revive(x, y)
           this.pendingRespawn.delete(player.id)
         })
@@ -108,7 +128,7 @@ export class MainScene extends Phaser.Scene {
     })
 
     // Fim de jogo: todos os jogadores caíram ao mesmo tempo
-    if (!this.gameOver && this.players.length > 0 && this.players.every((p) => !p.isAlive)) {
+    if (!this.gameOver && !this.victory && this.players.length > 0 && this.players.every((p) => !p.isAlive)) {
       this.triggerGameOver()
     }
 
@@ -131,13 +151,13 @@ export class MainScene extends Phaser.Scene {
 
     entries.forEach((entry, i) => {
       const def = CHARACTERS[entry.characterKey]
-      const { x } = this.spawnPointFor(entry.id, i)
+      const { x, y } = this.spawnPointFor(entry.id, i)
 
       const player = new Player(this, {
         id: entry.id,
         name: def.name,
         x,
-        y: this.groundTop - ((def.bodyHeight ?? 0) * def.scale) / 2,
+        y,
         spriteKey: def.key,
         controls: entry.controls,
         bodyWidth: def.bodyWidth,
@@ -171,25 +191,33 @@ export class MainScene extends Phaser.Scene {
         this.scale.height - 22,
         'J2: ENTRAR  [W]',
         () => this.tryJoinP2(),
-        { width: 150, height: 26, fontSize: '9px', color: '#ffe082', bgColor: 0x2a2f22, bgHover: 0x3a4230, strokeColor: 0x8a7a3a },
+        {
+          width: 150,
+          height: 26,
+          fontSize: '9px',
+          color: '#ffe082',
+          bgColor: 0x2a2f22,
+          bgHover: 0x3a4230,
+          strokeColor: 0x8a7a3a,
+        },
       ).setDepth(12)
     }
   }
 
   private tryJoinP2(): void {
-    if (this.gameOver) return
+    if (this.gameOver || this.victory) return
     if (this.players.some((p) => p.id === 'P2')) return
 
     const p1Char = this.players[0].spriteKey
     const remainingKey = (Object.keys(CHARACTERS) as CharacterKey[]).find((k) => k !== p1Char)!
     const def = CHARACTERS[remainingKey]
 
-    const { x } = this.spawnPointFor('P2', 1)
+    const { x, y } = this.spawnPointFor('P2', 1)
     const player = new Player(this, {
       id: 'P2',
       name: def.name,
       x,
-      y: this.groundTop - ((def.bodyHeight ?? 0) * def.scale) / 2,
+      y,
       spriteKey: def.key,
       controls: 'p2',
       bodyWidth: def.bodyWidth,
@@ -222,16 +250,17 @@ export class MainScene extends Phaser.Scene {
     const i = index ?? this.players.findIndex((p) => p.id === playerId)
     // Spawns com margem segura, longe das bordas e do meio da arena, para um
     // personagem não nascer em cima de nenhum obstáculo do cenário.
-    const x = width * (i === 0 ? 0.15 : 0.85)
-    // A altura do corpo é por personagem (Nany é maior que Tuiu); usar sempre
-    // a do Tuiu afundava a Nany 6px dentro do chão.
+    const x = spawnXFor(width, i)
+    // A altura do corpo é por personagem (Nany tem frame maior que o Tuiu,
+    // mas as escalas em jogo são calibradas para a mesma altura); usar sempre
+    // a do Tuiu afundava a Nany alguns pixels dentro do chão.
     const player = this.players[i]
     const def = CHARACTERS[(player?.spriteKey as CharacterKey) ?? 'tuio'] ?? CHARACTERS.tuio
-    return { x, y: this.groundTop - (def.bodyHeight * def.scale) / 2 }
+    return { x, y: groundCenterYFor(this.groundTop, def.bodyHeight * def.scale) }
   }
 
   private get groundTop(): number {
-    return this.scale.height - 48
+    return groundTopFor(this.scale.height)
   }
 
   // ------------------------------------------------------------------
@@ -243,19 +272,24 @@ export class MainScene extends Phaser.Scene {
 
     this.physics.add.collider(this.zombieGroup, this.ground)
     this.physics.add.collider(this.zombieGroup, this.zombieGroup)
-    this.physics.add.collider(this.playerGroup, this.zombieGroup, (a, b) => this.onPlayerZombieContact(a, b))
+    this.physics.add.collider(this.playerGroup, this.zombieGroup, (a, b) => {
+      this.onPlayerZombieContact(a as ArcadeObject, b as ArcadeObject)
+    })
 
     const { width } = this.scale
 
     this.spawnerTimer?.remove()
-    this.spawnerTimer = this.time.addEvent({
-      delay: 2600,
-      loop: true,
-      callback: () => {
-        const side = Phaser.Math.Between(0, 1)
-        this.spawnZombie(side === 0 ? -16 : width + 16)
-      },
-    })
+
+    // Dificuldade progressiva: o intervalo de spawn começa devagar e acelera
+    // ao longo da partida; o próximo ciclo re-agenda com o delay novo.
+    const tick = () => {
+      if (!canSpawnZombie(this.zombieGroup.countActive(true))) return
+      const side = Phaser.Math.Between(0, 1)
+      this.spawnZombie(side === 0 ? -16 : width + 16)
+      this.spawnerTimer?.reset({ delay: spawnIntervalMs(this.time.now), loop: true, callback: tick })
+    }
+
+    this.spawnerTimer = this.time.addEvent({ delay: spawnIntervalMs(0), loop: true, callback: tick })
   }
 
   private spawnZombie(x: number): void {
@@ -269,18 +303,27 @@ export class MainScene extends Phaser.Scene {
       y: this.groundTop - targetH / 2,
       players: this.players,
       variant,
-      onKilled: () => {
-        this.kills += 1
-        this.sound.play(AUDIO.ZOMBIE_ATTACK, { volume: 0.7 })
-      },
+      onKilled: () => this.registerKill(),
     })
 
     this.zombieGroup.add(zombie)
     this.sound.play(AUDIO.ZOMBIE_GROWL, { volume: 0.5 })
   }
 
-  private onPlayerZombieContact(object1: unknown, object2: unknown): void {
-    const playerSpr = object1 as Phaser.GameObjects.Sprite
+  /** Registra um abate: atualiza placar, recorde, som de morte e vitória. */
+  private registerKill(): void {
+    this.kills += 1
+    if (this.kills > this.bestKills) {
+      this.bestKills = this.kills
+      saveBestKills(this.bestKills)
+    }
+    this.sound.play(AUDIO.ZOMBIE_DEATH, { volume: 0.7 })
+
+    if (hasWon(this.kills)) this.triggerVictory()
+  }
+
+  private onPlayerZombieContact(object1: ArcadeObject, object2: ArcadeObject): void {
+    const playerSpr = object1 as Phaser.Physics.Arcade.Sprite
     const zombieSpr = object2 as Phaser.Physics.Arcade.Sprite
     const player = this.players.find((p) => p.sprite === playerSpr)
     const zombie = zombieSpr as Zombie
@@ -298,6 +341,8 @@ export class MainScene extends Phaser.Scene {
     if (playerFeet <= zombieHead + 6 && playerBody.velocity.y >= -20) {
       if (zombie.stompDamage(playerSpr.x)) {
         player.bounce(-160)
+        this.cameras.main.shake(90, 0.012)
+        this.hitStop()
       } else {
         player.bounce(-90) // continua "quicando" mesmo no cooldown de dano
       }
@@ -309,18 +354,78 @@ export class MainScene extends Phaser.Scene {
     }
   }
 
+  /** Micro-congelamento (hit-stop) ao abater um zumbi para dar "peso" ao golpe. */
+  private hitStop(): void {
+    this.time.timeScale = 0.25
+    this.time.delayedCall(90, () => {
+      this.time.timeScale = 1
+    })
+  }
+
+  // ------------------------------------------------------------------
+  // Fim de partida
+  // ------------------------------------------------------------------
+
+  private staticEndScreen(): void {
+    // Congela os zumbis restantes para não ficarem "atropelando" os jogadores
+    // no fundo da tela de vitória.
+    if (!this.zombieGroup) return
+    this.zombieGroup.children.each((child) => {
+      const zombie = child as Zombie
+      if (zombie.active) {
+        zombie.setVelocity(0, 0)
+        zombie.disableBody(false, false)
+      }
+      return true
+    })
+  }
+
+  private createEndButtons(offsetY: number): void {
+    const { width, height } = this.scale
+    createButton(
+      this,
+      width / 2,
+      height / 2 + offsetY,
+      'JOGAR NOVAMENTE',
+      () => {
+        this.scene.restart()
+      },
+      { width: 180 },
+    ).setDepth(21)
+
+    createButton(
+      this,
+      width / 2,
+      height / 2 + offsetY + 46,
+      'MENU INICIAL',
+      () => {
+        this.scene.start('TitleScene')
+      },
+      { width: 170 },
+    ).setDepth(21)
+
+    this.add
+      .text(width / 2, height - 10, 'ENTER: jogar novamente   ESC: menu', {
+        fontFamily: 'monospace',
+        fontSize: '8px',
+        color: '#7a89a0',
+      })
+      .setOrigin(0.5, 0.5)
+      .setDepth(21)
+  }
+
   private triggerGameOver(): void {
+    if (this.gameOver || this.victory) return
     this.gameOver = true
     this.pendingRespawn.clear()
     this.spawnerTimer?.remove(false)
+    this.staticEndScreen()
 
     this.sound.stopByKey(AUDIO.BGM)
     this.sound.play(AUDIO.GAME_OVER, { volume: 0.75 })
 
     const { width, height } = this.scale
-    this.add
-      .rectangle(width / 2, height / 2, width, height, 0x000000, 0.6)
-      .setDepth(20)
+    this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.6).setDepth(20)
     this.add
       .text(width / 2, height / 2 - 46, 'FIM DE JOGO', {
         fontFamily: 'monospace',
@@ -332,7 +437,7 @@ export class MainScene extends Phaser.Scene {
       .setStroke('#0d101b', 4)
       .setDepth(21)
     this.add
-      .text(width / 2, height / 2 - 22, `ZOMBIES: ${this.kills}`, {
+      .text(width / 2, height / 2 - 22, `ZOMBIES: ${this.kills}    RECORDE: ${this.bestKills}`, {
         fontFamily: 'monospace',
         fontSize: '9px',
         color: '#e8edf7',
@@ -341,23 +446,47 @@ export class MainScene extends Phaser.Scene {
       .setStroke('#0d101b', 3)
       .setDepth(21)
 
-    // Reiniciar / menu
-    createButton(this, width / 2, height / 2 + 16, 'JOGAR NOVAMENTE', () => {
-      this.scene.restart()
-    }, { width: 180 }).setDepth(21)
+    this.createEndButtons(16)
+  }
 
-    createButton(this, width / 2, height / 2 + 62, 'MENU INICIAL', () => {
-      this.scene.start('TitleScene')
-    }, { width: 170 }).setDepth(21)
+  /** Condição de vitória alcançada (VICTORY_KILLS abates): overlay verde. */
+  private triggerVictory(): void {
+    if (this.victory || this.gameOver) return
+    this.victory = true
+    this.pendingRespawn.clear()
+    this.spawnerTimer?.remove(false)
+    this.staticEndScreen()
 
+    const { width, height } = this.scale
+    this.add.rectangle(width / 2, height / 2, width, height, 0x0a2318, 0.75).setDepth(20)
     this.add
-      .text(width / 2, height - 10, 'ENTER: jogar novamente   ESC: menu', {
+      .text(width / 2, height / 2 - 52, 'VITÓRIA!', {
         fontFamily: 'monospace',
-        fontSize: '8px',
-        color: '#7a89a0',
+        fontSize: '18px',
+        fontStyle: 'bold',
+        color: '#7cfc8a',
       })
-      .setOrigin(0.5, 0.5)
+      .setOrigin(0.5)
+      .setStroke('#0d101b', 4)
       .setDepth(21)
+    this.add
+      .text(width / 2, height / 2 - 32, `MISSÃO CUMPRIDA — ${VICTORY_KILLS} ZUMBIS`, {
+        fontFamily: 'monospace',
+        fontSize: '9px',
+        color: '#c8e6c9',
+      })
+      .setOrigin(0.5)
+      .setDepth(21)
+    this.add
+      .text(width / 2, height / 2 - 16, `ABATES: ${this.kills}    RECORDE: ${this.bestKills}`, {
+        fontFamily: 'monospace',
+        fontSize: '9px',
+        color: '#e8edf7',
+      })
+      .setOrigin(0.5)
+      .setDepth(21)
+
+    this.createEndButtons(16)
   }
 
   // ------------------------------------------------------------------
@@ -396,13 +525,15 @@ export class MainScene extends Phaser.Scene {
       const hearts = this.heartsByPlayer.get(player.id)
       if (!hearts) return
       hearts.forEach((heart, h) => {
-        const full = h < player.hp
-        heart.setFillStyle(full ? 0xff4d5d : 0x251f33, full ? 1 : 0.85)
-        heart.setStrokeStyle(full ? 0 : 1, 0xff5060, 0.4)
+        // Coração inteiro vermelho, vazio escuro (tintFill sobre a textura branca)
+        heart.setTintFill(h < player.hp ? 0xff4d5d : 0x251f33)
       })
     })
 
-    this.killsText.setText(`ZUMBIES: ${this.kills}`)
+    // Realça o placar em dourado enquanto o recorde da sessão está empatado/à frente
+    const isRecord = this.kills > 0 && this.kills >= this.bestKills
+    this.killsText.setText(`ZOMBIES: ${this.kills}`)
+    this.killsText.setColor(isRecord ? '#ffe082' : '#e8edf7')
   }
 
   /**
@@ -413,7 +544,7 @@ export class MainScene extends Phaser.Scene {
     const { width } = this.scale
     const isP1 = index === 0
     const nameColor = isP1 ? '#8fd8ff' : '#ff9fc2'
-    const hearts: Phaser.GameObjects.Rectangle[] = []
+    const hearts: Phaser.GameObjects.Image[] = []
     const originX = isP1 ? 12 : width - 12
     const dir = isP1 ? 1 : -1
 
@@ -428,7 +559,7 @@ export class MainScene extends Phaser.Scene {
       .setDepth(11)
     name.setStroke('#0d101b', 3)
 
-    const panelW = name.width + player.maxHp * 11 + 20
+    const panelW = name.width + player.maxHp * 12 + 20
     this.add
       .rectangle(isP1 ? 0 : width, 0, panelW, 26, 0x0a0c14, 1)
       .setOrigin(isP1 ? 0 : 1, 0)
@@ -438,7 +569,7 @@ export class MainScene extends Phaser.Scene {
     const heartStart = originX + dir * (name.width + 9)
     for (let h = 0; h < player.maxHp; h++) {
       const heart = this.add
-        .rectangle(heartStart + dir * (h * 11), 13, 7, 7, 0xff4d5d, 1)
+        .image(heartStart + dir * (h * 12), 14, 'heart')
         .setOrigin(0.5)
         .setDepth(11)
       hearts.push(heart)

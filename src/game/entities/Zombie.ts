@@ -60,6 +60,15 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
     // ao entrar em cena (e eleva só o X no preUpdate).
     this.setGravityY(0)
 
+    // Corpo de colisão menor que o frame: os frames reais têm muito espaço
+    // vazio (braços abertos / margem), e o corpo inteiro (ex.: 144px de
+    // largura no zombie1) fazia o jogador tomar dano longe do sprite.
+    // ~55% da largura e ~85% da altura, ancorado na base (pés).
+    const bodyW = Math.max(16, Math.round(this.width * 0.55))
+    const bodyH = Math.round(this.height * 0.85)
+    this.setBodySize(bodyW, bodyH, false)
+    this.body!.setOffset((this.width - bodyW) / 2, this.height - bodyH)
+
     this.setCollideWorldBounds(true)
     this.setDepth(1)
     this.createAnimations()
@@ -133,6 +142,8 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
     this.disableBody(false, false)
     this.setDepth(0)
 
+    this.spawnDeathParticles()
+
     this.scene.tweens.add({
       targets: this,
       alpha: 0,
@@ -146,6 +157,21 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
     })
 
     this.onKilled?.()
+  }
+
+  /** Pequena explosão de partículas no local do abate (juiciness). */
+  private spawnDeathParticles(): void {
+    const emitter = this.scene.add.particles(this.x, this.y, 'pixel', {
+      speedX: { min: -70, max: 70 },
+      speedY: { min: -70, max: -10 },
+      gravityY: 520,
+      scale: { start: 1.4, end: 0 },
+      lifespan: 520,
+      tint: [0xff5d6c, 0x9aa980, 0x6b707e, 0xe8edf7],
+    })
+    emitter.setDepth(1)
+    emitter.explode(14)
+    this.scene.time.delayedCall(650, () => emitter.destroy())
   }
 
   private createAnimations(): void {

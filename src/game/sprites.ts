@@ -10,11 +10,6 @@
  *   ciclo de caminhada (6)    |  agachar, ar, aterrissagem
  *
  * Idle: repete o frame 0 (primeiro frame do walk).
- *
- * TODO IMPORTANTE: informar o tamanho real dos frames
- * (frameWidth/frameHeight) e os nomes de arquivo reais abaixo.
- * Enquanto não estiverem definidos, o jogo usa um placeholder gerado
- * em runtime na PreloadScene.
  */
 
 export interface SpritesheetDef {

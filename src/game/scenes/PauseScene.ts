@@ -1,4 +1,6 @@
 import Phaser from 'phaser'
+import { applyMute, toggleMute } from '../audio'
+import { isMuted } from '../storage'
 
 interface PauseOption {
   label: string
@@ -8,6 +10,7 @@ interface PauseOption {
 export class PauseScene extends Phaser.Scene {
   private options: PauseOption[] = []
   private optionRects: Phaser.GameObjects.Rectangle[] = []
+  private optionTexts: Phaser.GameObjects.Text[] = []
   private cursor!: Phaser.GameObjects.Text
   private selectedIndex = 0
 
@@ -17,6 +20,7 @@ export class PauseScene extends Phaser.Scene {
   private escKey!: Phaser.Input.Keyboard.Key
   private restartKey!: Phaser.Input.Keyboard.Key
   private titleKey!: Phaser.Input.Keyboard.Key
+  private muteKey!: Phaser.Input.Keyboard.Key
 
   constructor() {
     super({ key: 'PauseScene' })
@@ -27,6 +31,8 @@ export class PauseScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.scale
+
+    applyMute(this)
 
     this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.6).setDepth(10)
 
@@ -46,19 +52,20 @@ export class PauseScene extends Phaser.Scene {
       { label: 'CONTINUAR', action: () => this.resumeGame() },
       { label: 'REINICIAR', action: () => this.restartGame() },
       { label: 'VOLTAR AO TÍTULO', action: () => this.goToTitle() },
+      { label: `SOM: ${isMuted() ? 'OFF' : 'ON'}`, action: () => this.toggleSound() },
     ]
 
-    const firstY = 66
+    const firstY = 62
 
     this.options.forEach((opt, i) => {
-      const y = firstY + i * 34
+      const y = firstY + i * 32
       const rect = this.add
         .rectangle(width / 2, y, 190, 30, 0x1c2230)
         .setStrokeStyle(1, 0x4a5a80)
         .setDepth(11)
       this.optionRects.push(rect)
 
-      this.add
+      const text = this.add
         .text(width / 2, y, opt.label, {
           fontFamily: 'monospace',
           fontSize: '10px',
@@ -68,6 +75,7 @@ export class PauseScene extends Phaser.Scene {
         .setOrigin(0.5)
         .setStroke('#0d101b', 2)
         .setDepth(11)
+      this.optionTexts.push(text)
     })
 
     this.cursor = this.add
@@ -82,7 +90,7 @@ export class PauseScene extends Phaser.Scene {
 
     // Atalhos da partida
     this.add
-      .text(width / 2, 178, 'J1: ←/→ mover · ESPAÇO pular\nJ2: A/D mover · W pular', {
+      .text(width / 2, 186, 'J1: ←/→ mover · ESPAÇO pular\nJ2: A/D mover · W pular', {
         fontFamily: 'monospace',
         fontSize: '8px',
         color: '#9aa9c0',
@@ -94,7 +102,7 @@ export class PauseScene extends Phaser.Scene {
 
     // Atalhos do menu
     this.add
-      .text(width / 2, 205, '↑/↓: escolher   ENTER: selecionar   ESC: continuar', {
+      .text(width / 2, 210, '↑/↓: escolher   ENTER: selecionar   ESC: continuar   M: som', {
         fontFamily: 'monospace',
         fontSize: '8px',
         color: '#7a89a0',
@@ -109,6 +117,7 @@ export class PauseScene extends Phaser.Scene {
     this.escKey = kb.addKey('ESC')
     this.restartKey = kb.addKey('R')
     this.titleKey = kb.addKey('T')
+    this.muteKey = kb.addKey('M')
 
     this.highlightOption()
   }
@@ -136,7 +145,18 @@ export class PauseScene extends Phaser.Scene {
     }
     if (Phaser.Input.Keyboard.JustDown(this.titleKey)) {
       this.goToTitle()
+      return
     }
+    if (Phaser.Input.Keyboard.JustDown(this.muteKey)) {
+      this.toggleSound()
+    }
+  }
+
+  private toggleSound(): void {
+    const muted = toggleMute(this)
+    const index = this.options.length - 1
+    this.options[index].label = `SOM: ${muted ? 'OFF' : 'ON'}`
+    this.optionTexts[index].setText(this.options[index].label)
   }
 
   private move(delta: number): void {
@@ -150,7 +170,7 @@ export class PauseScene extends Phaser.Scene {
       rect.setFillStyle(active ? 0x2a3550 : 0x1c2230)
       rect.setStrokeStyle(1, active ? 0x8ab0ff : 0x4a5a80, active ? 1 : 0.8)
     })
-    this.cursor.setY(66 + this.selectedIndex * 34)
+    this.cursor.setY(62 + this.selectedIndex * 32)
   }
 
   private resumeGame(): void {

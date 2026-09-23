@@ -1,5 +1,6 @@
-import { app, BrowserWindow, Menu } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import { join } from 'path'
+import { existsSync } from 'fs'
 
 const isDev = !!process.env['ELECTRON_RENDERER_URL']
 
@@ -8,9 +9,11 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required')
 
 // Ícone da janela (barra, taskbar, alt+tab): .ico no Windows, .png no Linux.
 // Busca dentro do app (dev = raiz do projeto; empacotado = recursos do app).
-function windowIconPath(): string {
+// Retorna undefined se o arquivo não existir para o Electron não reclamar.
+function windowIconPath(): string | undefined {
   const name = process.platform === 'win32' ? 'icon.ico' : 'Icon.png'
-  return join(app.getAppPath(), 'public', name)
+  const candidate = join(app.getAppPath(), 'public', name)
+  return existsSync(candidate) ? candidate : undefined
 }
 
 function createWindow(): void {
@@ -20,15 +23,22 @@ function createWindow(): void {
     title: 'As Aventuras de Tuiu e Nany',
     backgroundColor: '#151a22',
     icon: windowIconPath(),
+    show: false, // evita flash branco: janela aparece só no primeiro frame
     resizable: false,
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      sandbox: true,
     },
   })
+
+  // Só mostra no first-paint do renderer; fallback por segurança.
+  win.once('ready-to-show', () => win.show())
+  setTimeout(() => {
+    if (!win.isDestroyed() && !win.isVisible()) win.show()
+  }, 2000)
 
   win.setMenu(null)
 
