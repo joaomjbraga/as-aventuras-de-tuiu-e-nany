@@ -58,7 +58,12 @@ export class Player {
   // Física (ajustável para o "jeitão" do jogo)
   private moveSpeed = 160
   private jumpForce = 380
+  private doubleJumpForce = 330
   private readonly speedBoostFactor = 1.5
+
+  // Pulo duplo: conta quantos pulos já foram usados até o personagem tocar o chão.
+  private jumpsUsed = 0
+  private readonly maxJumps = 2
 
   constructor(scene: Phaser.Scene, config: PlayerConfig) {
     this.scene = scene
@@ -126,9 +131,20 @@ export class Player {
       this.sprite.setVelocityX(0)
     }
 
-    // ---- Pulo ----
+    // ---- Pulo (simples no chão + pulo duplo no ar) ----
+    const jumpJustPressed = this.jumpJustPressed()
+
+    // Caiu ou pousou: libera os pulos de novo.
+    if (body.blocked.down) this.jumpsUsed = 0
+
     if (jumpPressed && body.blocked.down) {
+      this.jumpsUsed = 1
       this.sprite.setVelocityY(-this.jumpForce)
+      this.setState('jump')
+    } else if (jumpJustPressed && !body.blocked.down && this.jumpsUsed < this.maxJumps) {
+      // Pulo duplo: um novo toque no ar dá um impulso extra.
+      this.jumpsUsed += 1
+      this.sprite.setVelocityY(-this.doubleJumpForce)
       this.setState('jump')
     }
 
@@ -199,12 +215,29 @@ export class Player {
     if (this.isAlive) this.sprite.setVelocityY(forceY)
   }
 
-  /** Ação de revive (tecla de pulo) pressionada neste frame — quem decide se quer voltar. */
-  isRevivePressed(): boolean {
+  /**
+   * true enquanto a queda atual ainda vier de um pulo duplo (ou seja, até o
+   * personagem tocar o chão). Usado para o pisão dar mais dano aos zumbis.
+   */
+  hasDoubleJumped(): boolean {
+    return this.jumpsUsed >= this.maxJumps
+  }
+
+  /**
+   * Botão de pulo pressionado neste frame (just-pressed: ignorado quando o
+   * botão fica segurado). Consome o flag virtual para um toque = uma ação.
+   * Usado pelo pulo duplo e pelo revive (who decides voltar).
+   */
+  private jumpJustPressed(): boolean {
     const keyboardPressed = this.keys.jump.some((key) => Phaser.Input.Keyboard.JustDown(key))
     const virtualPressed = this.virtualInput?.jumpJustPressed === true
     if (this.virtualInput) this.virtualInput.jumpJustPressed = false
     return keyboardPressed || virtualPressed
+  }
+
+  /** Ação de revive (tecla de pulo) pressionada neste frame. */
+  isRevivePressed(): boolean {
+    return this.jumpJustPressed()
   }
 
   // ---- Power-ups (efeitos temporizados) ----

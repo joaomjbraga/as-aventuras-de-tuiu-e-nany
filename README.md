@@ -20,6 +20,8 @@ Este jogo foi desenvolvido para **comemorar os 5 anos de união de mim e minha e
 ## Mecânica
 
 - Pise em cima do zumbi para derrotá-lo; contato lateral tira vida.
+- **Pulo duplo**: aperte o pulo de novo no ar para um impulso extra (ajuda a alcançar a cabeça do chefão).
+- **Pisão forte**: cair sobre um zumbi logo depois de usar o pulo duplo causa 50% mais dano.
 - Os abates valem **pontos** multiplicados pela sequência de abates sem levar dano (combo): cada abate sobe o multiplicador (x1 → x10); levar dano zera o combo.
 - Cada jogador tem 3 corações; ao cair, o jogador reviverá quando **escolher** (pulo do próprio personagem) se ainda houver companheiro em pé.
 - Todos os jogadores caídos ao mesmo tempo = fim de jogo.

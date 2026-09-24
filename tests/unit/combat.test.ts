@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolvePlayerZombieContact, type ZombieContactTarget } from '../../src/game/combat'
+import { resolvePlayerZombieContact, stompDamage, type ZombieContactTarget } from '../../src/game/combat'
 
 function makeZombie(overrides: Partial<ZombieContactTarget> = {}): ZombieContactTarget {
   return {
@@ -73,5 +73,23 @@ describe('resolvePlayerZombieContact', () => {
     })
     resolvePlayerZombieContact(makePlayer({ x: 42, feetY: 120 }), zombie)
     expect(calls).toEqual([{ fromX: 42, amount: 4 }])
+  })
+})
+
+describe('stompDamage', () => {
+  it('pisão normal causa 2 de dano (3 no zumbi de 3 de vida, mata em 2 pisões)', () => {
+    expect(stompDamage({ damageBoost: false, doubleJump: false })).toBe(2)
+  })
+
+  it('pisão com power-up de dano causa 4', () => {
+    expect(stompDamage({ damageBoost: true, doubleJump: false })).toBe(4)
+  })
+
+  it('queda após o pulo duplo causa mais dano que o normal (+50%)', () => {
+    expect(stompDamage({ damageBoost: false, doubleJump: true })).toBe(3)
+  })
+
+  it('queda após o pulo duplo com power-up de dano causa 6', () => {
+    expect(stompDamage({ damageBoost: true, doubleJump: true })).toBe(6)
   })
 })

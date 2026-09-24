@@ -28,12 +28,14 @@ export class InstructionsScene extends Phaser.Scene {
         '◀ ▶ mover      ▲ pular / reviver',
         'Ⅱ pausar       ♪ ligar/desligar som',
         'Segure ◀/▶ para andar e toque ▲ para pular.',
+        'Pulo duplo: toque ▲ de novo no ar.',
       ])
     } else {
       this.addSection(18, 'CONTROLES', [
         'J1  ←/→ mover   ↑ ou ESPAÇO pular',
         'J2  A/D mover   W pular',
         'ESC pausa   M ativa/desativa o som',
+        'Pulo duplo: aperte o pulo de novo no ar.',
       ])
     }
 

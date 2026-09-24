@@ -49,3 +49,19 @@ export function resolvePlayerZombieContact(player: PlayerContactSource, zombie: 
   if (player.velocityY >= -20) return 'hit'
   return 'falling'
 }
+
+export interface StompDamageSource {
+  /** Jogador com o power-up de dano em dobro. */
+  damageBoost: boolean
+  /** A queda atual veio de um pulo duplo (pisão mais forte). */
+  doubleJump: boolean
+}
+
+/**
+ * Dano causado por um pisão: base 2 (×2 com o power-up de dano) e +50% quando
+ * o jogador cai sobre o zumbi depois de usar o pulo duplo.
+ */
+export function stompDamage({ damageBoost, doubleJump }: StompDamageSource): number {
+  const base = damageBoost ? 4 : 2
+  return doubleJump ? Math.round(base * 1.5) : base
+}

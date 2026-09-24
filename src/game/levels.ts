@@ -56,7 +56,7 @@ export const LEVELS: LevelConfig[] = [
     fogColor: 0xd8d8c8,
     victoryKills: VICTORY_KILLS,
     difficulty: DEFAULT_DIFFICULTY,
-    boss: { name: 'ZUMBI-CHEFE', hp: 20, moveSpeed: 26 },
+    boss: { name: 'ZUMBI-CHEFE', hp: 14, moveSpeed: 24 },
   },
   {
     id: 'ieab',
@@ -74,7 +74,7 @@ export const LEVELS: LevelConfig[] = [
       spawnMinDelay: 400,
       difficultyRampMs: 100_000,
     },
-    boss: { name: 'GUARDIÃO DO IEAB', hp: 28, moveSpeed: 28 },
+    boss: { name: 'GUARDIÃO DO IEAB', hp: 18, moveSpeed: 26 },
   },
   {
     id: 'castro-alves',
@@ -92,7 +92,7 @@ export const LEVELS: LevelConfig[] = [
       spawnMinDelay: 350,
       difficultyRampMs: 90_000,
     },
-    boss: { name: 'POETA SOMBRIO', hp: 35, moveSpeed: 30 },
+    boss: { name: 'POETA SOMBRIO', hp: 24, moveSpeed: 28 },
   },
   {
     id: 'cetep',
@@ -110,7 +110,7 @@ export const LEVELS: LevelConfig[] = [
       spawnMinDelay: 300,
       difficultyRampMs: 80_000,
     },
-    boss: { name: 'MESTRE TÉCNICO', hp: 42, moveSpeed: 32 },
+    boss: { name: 'MESTRE TÉCNICO', hp: 28, moveSpeed: 30 },
   },
 ]
 

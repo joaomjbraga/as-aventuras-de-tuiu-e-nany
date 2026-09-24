@@ -12,7 +12,7 @@ import { canSpawnZombie, hasWon, spawnIntervalMs } from '../difficulty'
 import { randomNextLevel, type LevelConfig } from '../levels'
 import { loadBestKills, markLevelCompleted, saveBestKills, loadBestScore, saveBestScore } from '../storage'
 import { multiplierFor, scoreOfKill } from '../score'
-import { resolvePlayerZombieContact } from '../combat'
+import { resolvePlayerZombieContact, stompDamage } from '../combat'
 import { buildGameOverScreen, buildVictoryScreen } from '../ui/endScreen'
 import { createMobileControls, type MobileControls } from '../mobileControls'
 import { isTouchDevice } from '../mobile'
@@ -705,7 +705,10 @@ export class MainScene extends Phaser.Scene {
         isDying: zombie.isDying,
         x: zombieSpr.x,
         headY: zombieSpr.y - zombieBody.halfHeight,
-        damageAmount: player.hasDamageBoost() ? 4 : 2,
+        damageAmount: stompDamage({
+          damageBoost: player.hasDamageBoost(),
+          doubleJump: player.hasDoubleJumped(),
+        }),
         stomp: (fromX, amount) => zombie.stompDamage(fromX, amount),
       },
     )
