@@ -111,6 +111,32 @@ export const EXPLOSION = {
   frameSize: 96,
 } as const
 
+/** Altura-alvo (px) da normalização do boss, maior que a dos zumbis comuns (58–64),
+ * mas baixa o suficiente para o pulo alcançar a cabeça e permitir o pisão (stomp). */
+export const BOSS_TARGET_HEIGHT = 80
+
+export interface BossAnimationDef {
+  /** Chave da textura do spritesheet (a de walk também é a textura-padrão 'boss'). */
+  key: string
+  /** Caminho da pasta dos frames individuais (com prefixo do frame). */
+  path: string
+  /** Quantidade de PNGs da animação. */
+  frames: number
+}
+
+/**
+ * Animações do zumbi-chefe (src/assets/sprites/zumbi_chefe). Cada animação é
+ * empacotada em runtime (PreloadScene) num spritesheet normalizado para
+ * BOSS_TARGET_HEIGHT. A de walk usa a chave 'boss' — a textura-padrão do Boss
+ * — e as demais ganham chaves próprias (boss-idle/-attack/-investida).
+ */
+export const BOSS_ANIMATIONS = {
+  idle: { key: 'boss-idle', path: 'sprites/zumbi_chefe/idle/idle_', frames: 8 },
+  walk: { key: 'boss', path: 'sprites/zumbi_chefe/walk/walk_', frames: 11 },
+  attack: { key: 'boss-attack', path: 'sprites/zumbi_chefe/attack_golpe/attack_golpe_', frames: 3 },
+  investida: { key: 'boss-investida', path: 'sprites/zumbi_chefe/attack_investida/attack_investida_', frames: 4 },
+} as const
+
 /**
  * Configuração das animações por personagem.
  * frameRate pode ser ajustado por personagem se necessário.

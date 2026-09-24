@@ -26,11 +26,11 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
 
   isDying: boolean
 
-  private players: Player[]
+  protected players: Player[]
   private onKilled?: () => void
   private hurtCooldownUntil = 0
   private bobPhase: number
-  private readonly textureKey: string
+  protected readonly textureKey: string
 
   constructor(scene: Phaser.Scene, config: ZombieConfig) {
     // Sorteia a variante (1-3) se não vier definida no spawn. Calculado em
@@ -127,7 +127,7 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
     return false
   }
 
-  private findNearestPlayer(): Player | null {
+  protected findNearestPlayer(): Player | null {
     let best: Player | null = null
     let bestDist = Infinity
 
@@ -190,18 +190,19 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
     this.scene.time.delayedCall(650, () => emitter.destroy())
   }
 
-  private createAnimations(): void {
+  protected createAnimations(): void {
     const walkKey = `${this.textureKey}-walk`
 
     if (!this.scene.anims.exists(walkKey)) {
       // Usa a contagem real de frames da textura (spritesheet real normalizado
       // ou o placeholder 'zombie' de 4 frames) para o fallback nunca estourar.
       const frameTotal = this.scene.textures.get(this.textureKey).frameTotal
+      const lastFrame = frameTotal - 1
       this.scene.anims.create({
         key: walkKey,
         frames: this.scene.anims.generateFrameNumbers(this.textureKey, {
           start: 0,
-          end: frameTotal - 1,
+          end: lastFrame,
         }),
         frameRate: Math.min(12, frameTotal),
         repeat: -1,

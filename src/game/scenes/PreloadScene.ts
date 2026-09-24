@@ -1,5 +1,12 @@
 import Phaser from 'phaser'
-import { CHARACTERS, EXPLOSION, ZOMBIE_VARIANTS, ZOMBIE_TARGET_HEIGHT } from '../sprites'
+import {
+  BOSS_ANIMATIONS,
+  BOSS_TARGET_HEIGHT,
+  CHARACTERS,
+  EXPLOSION,
+  ZOMBIE_VARIANTS,
+  ZOMBIE_TARGET_HEIGHT,
+} from '../sprites'
 import { AUDIO } from '../audio'
 import { LEVELS, bgImageKey } from '../levels'
 
@@ -55,6 +62,14 @@ export class PreloadScene extends Phaser.Scene {
     for (let i = 1; i <= EXPLOSION.frames; i++) {
       this.load.image(`${EXPLOSION.key}_${i}`, `${EXPLOSION.path}${i}.png`)
     }
+
+    // Frames do zumbi-chefe (empacotados em spritesheets por animação em create).
+    Object.values(BOSS_ANIMATIONS).forEach((def) => {
+      for (let i = 1; i <= def.frames; i++) {
+        const n = String(i).padStart(2, '0')
+        this.load.image(`${def.key}_${n}`, `${def.path}${n}.png`)
+      }
+    })
   }
 
   create(): void {
@@ -63,6 +78,7 @@ export class PreloadScene extends Phaser.Scene {
     this.generateZombiePlaceholder()
     this.buildRealZombieSpritesheets()
     this.generateBossPlaceholder()
+    this.buildBossSpritesheets()
     this.buildExplosionSpritesheet()
     this.createUiTextures()
     this.scene.start('AboutScene')
@@ -163,6 +179,57 @@ export class PreloadScene extends Phaser.Scene {
           repeat: -1,
         })
       }
+    })
+  }
+
+  /**
+   * Monta os spritesheets do zumbi-chefe (BOSS_ANIMATIONS): um spritesheet por
+   * animação (idle, walk, golpe e investida), normalizado para
+   * BOSS_TARGET_HEIGHT (maior que os zumbis comuns), com os pés ancorados na
+   * base. A animação de walk substitui a textura-padrão 'boss'. Se faltar
+   * qualquer frame, mantém o placeholder procedural já gerado.
+   */
+  private buildBossSpritesheets(): void {
+    const sheets: Array<{ key: string; frames: HTMLImageElement[] }> = []
+
+    for (const def of Object.values(BOSS_ANIMATIONS)) {
+      const frames: HTMLImageElement[] = []
+      for (let i = 1; i <= def.frames; i++) {
+        const n = String(i).padStart(2, '0')
+        const img = this.textures.get(`${def.key}_${n}`).getSourceImage() as HTMLImageElement | undefined
+        if (!img || !img.width) return // frame ausente → mantém o placeholder 'boss'
+        frames.push(img)
+      }
+      sheets.push({ key: def.key, frames })
+    }
+
+    for (const sheet of sheets) {
+      // Descarta o placeholder procedural 'boss' para entrar o spritesheet real.
+      if (this.textures.exists(sheet.key)) this.textures.remove(sheet.key)
+      this.buildSpritesheetFromFrames(sheet.key, sheet.frames, BOSS_TARGET_HEIGHT)
+    }
+  }
+
+  /** Normaliza uma lista de frames (alturas variadas) num spritesheet único. */
+  private buildSpritesheetFromFrames(textureKey: string, frames: HTMLImageElement[], targetHeight: number): void {
+    const maxW = Math.max(...frames.map((im) => (im.width * targetHeight) / im.height))
+    const frameW = Math.ceil(maxW)
+
+    const canvas = document.createElement('canvas')
+    canvas.width = frameW * frames.length
+    canvas.height = targetHeight
+    const ctx = canvas.getContext('2d')!
+
+    frames.forEach((im, f) => {
+      const h = targetHeight
+      const w = (im.width * h) / im.height
+      const x = f * frameW + (frameW - w) / 2
+      ctx.drawImage(im, x, 0, w, h)
+    })
+
+    this.textures.addSpriteSheet(textureKey, canvas as unknown as HTMLImageElement, {
+      frameWidth: frameW,
+      frameHeight: targetHeight,
     })
   }
 
@@ -393,15 +460,19 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   /**
-   * Placeholder procedural do boss de fase: um zumbi grande e sombrio,
-   * com braços longos e olhos vermelhos (2 frames de vai-e-vem).
+   * Sprite procedural pixel art do boss (fallback): seis frames de caminhada e
+   * seis de ataque, com braços longos, olhos vermelhos e silhueta maior. É
+   * usado apenas quando os frames reais do zumbi-chefe não carregam —
+   * buildBossSpritesheets o substitui pelos sprites reais quando disponíveis.
    */
   private generateBossPlaceholder(): void {
     if (this.textures.exists('boss')) return
 
-    const frameWidth = 48
-    const frameHeight = 64
-    const frameCount = 2
+    const frameWidth = 56
+    const frameHeight = 72
+    const walkFrames = 6
+    const attackFrames = 6
+    const frameCount = walkFrames + attackFrames
 
     const canvas = document.createElement('canvas')
     canvas.width = frameWidth * frameCount
@@ -416,43 +487,47 @@ export class PreloadScene extends Phaser.Scene {
 
     for (let f = 0; f < frameCount; f++) {
       const o = f * frameWidth
-      const sway = f % 2 === 0 ? 0 : 1
+      const attack = f >= walkFrames
+      const phase = attack ? f - walkFrames : f
+      const sway = phase % 2 === 0 ? 0 : 1
+      const legShift = attack ? 0 : (phase % 3) - 1
+      const reach = attack ? Math.min(10, phase * 2) : 0
 
       // Pernas largas
       ctx.fillStyle = pants
-      ctx.fillRect(o + 14 + sway, 48, 8, 16)
-      ctx.fillRect(o + 26 - sway, 48, 8, 16)
+      ctx.fillRect(o + 14 + sway + legShift, 54, 8, 18)
+      ctx.fillRect(o + 30 - sway - legShift, 54, 8, 18)
 
-      // Braços longos esticados para frente (estilo Thriller)
+      // Braços longos: avançam durante o golpe de ataque.
       ctx.fillStyle = arms
-      ctx.fillRect(o + 30, 24 + sway, 18, 6)
-      ctx.fillRect(o + 30, 34 - sway, 18, 6)
+      ctx.fillRect(o + 34 + reach, 28 + sway, 18, 6)
+      ctx.fillRect(o + 34 + reach, 40 - sway, 18, 6)
 
       // Mãos (pele)
       ctx.fillStyle = skin
-      ctx.fillRect(o + 44, 22 + sway, 4, 10)
-      ctx.fillRect(o + 44, 32 - sway, 4, 10)
+      ctx.fillRect(o + 48 + reach, 26 + sway, 5, 11)
+      ctx.fillRect(o + 48 + reach, 38 - sway, 5, 11)
 
       // Tronco volumoso
       ctx.fillStyle = torso
-      ctx.fillRect(o + 8 + sway, 18, 32, 32)
+      ctx.fillRect(o + 8 + sway, 22, 36, 32)
 
       // Remendo / rasgo no peito
       ctx.fillStyle = '#4a5260'
-      ctx.fillRect(o + 16 + sway, 24, 10, 5)
+      ctx.fillRect(o + 18 + sway, 29, 12, 5)
 
       // Cabeça grande
       ctx.fillStyle = skin
-      ctx.fillRect(o + 12 + sway, 2, 24, 18)
+      ctx.fillRect(o + 13 + sway, 4, 27, 18)
 
       // Cicatriz
       ctx.fillStyle = '#3c4234'
-      ctx.fillRect(o + 26 + sway, 6, 8, 2)
+      ctx.fillRect(o + 28 + sway, 8, 9, 2)
 
       // Olhos vermelhos brilhantes
       ctx.fillStyle = eye
-      ctx.fillRect(o + 32 + sway, 10, 2, 2)
-      ctx.fillRect(o + 36 + sway, 10, 2, 2)
+      ctx.fillRect(o + 34 + sway, 12, 2, 2)
+      ctx.fillRect(o + 38 + sway, 12, 2, 2)
     }
 
     this.textures.addSpriteSheet('boss', canvas as unknown as HTMLImageElement, {
