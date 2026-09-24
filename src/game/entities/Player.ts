@@ -279,9 +279,13 @@ export class Player {
     this.immuneUntil = this.scene.time.now + 1500
     this.sprite.setVisible(true)
     this.sprite.alpha = 1
-    // Usa reset() para sincronizar sprite e body (body desabilitado não rastreia setPosition)
+    // Usa reset() para sincronizar sprite e body, e reativa o corpo físico que
+    // foi desligado no die() — reset() NÃO re-habilita o body, sem isso o
+    // jogador vira a direção mas não anda (a física ignora um corpo inválido).
+    this.sprite.body!.enable = true
     this.sprite.body!.reset(x, y)
     this.sprite.setVelocity(0, 0)
+    this.jumpsUsed = 0
     this.setState('idle')
   }
 
