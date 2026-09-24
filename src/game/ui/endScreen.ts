@@ -15,6 +15,8 @@ export interface EndScreenOptions {
   levelName?: string
   levelVictoryKills?: number
   hasNextLevel?: boolean
+  /** Todas as fases já foram concluídas (campanha zerada): mostra a saudação final. */
+  campaignComplete?: boolean
   stats: MatchStats
   onPrimary: () => void
   onMenu: () => void
@@ -61,7 +63,18 @@ export function buildGameOverScreen(opts: EndScreenOptions): void {
  * avança para a próxima fase quando existe.
  */
 export function buildVictoryScreen(opts: EndScreenOptions): void {
-  const { scene, width, height, levelName, levelVictoryKills, stats, hasNextLevel, onPrimary, onMenu } = opts
+  const {
+    scene,
+    width,
+    height,
+    levelName,
+    levelVictoryKills,
+    stats,
+    hasNextLevel,
+    campaignComplete,
+    onPrimary,
+    onMenu,
+  } = opts
 
   scene.add.rectangle(width / 2, height / 2, width, height, 0x0a2318, 0.75).setDepth(20)
   scene.add
@@ -75,7 +88,28 @@ export function buildVictoryScreen(opts: EndScreenOptions): void {
     .setStroke('#0d101b', 4)
     .setDepth(21)
 
-  if (levelName != null && levelVictoryKills != null) {
+  if (campaignComplete) {
+    // Zerou o jogo: realça a conquista em vez da linha habitual de fase.
+    scene.add
+      .text(width / 2, height / 2 - 40, 'TODAS AS FASES CONCLUÍDAS!', {
+        fontFamily: 'monospace',
+        fontSize: '10px',
+        fontStyle: 'bold',
+        color: '#ffd54f',
+      })
+      .setOrigin(0.5)
+      .setStroke('#0d101b', 2)
+      .setDepth(21)
+    scene.add
+      .text(width / 2, height / 2 - 16, 'PARABÉNS, você venceu a campanha!', {
+        fontFamily: 'monospace',
+        fontSize: '8px',
+        color: '#c8e6c9',
+      })
+      .setOrigin(0.5)
+      .setStroke('#0d101b', 2)
+      .setDepth(21)
+  } else if (levelName != null && levelVictoryKills != null) {
     scene.add
       .text(width / 2, height / 2 - 40, `${levelName} CONCLUÍDA — ${levelVictoryKills} ZUMBIS`, {
         fontFamily: 'monospace',

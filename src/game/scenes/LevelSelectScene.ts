@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import { LEVELS, bgImageKey, type LevelConfig } from '../levels'
+import { createButton } from '../ui'
 import { setSessionLevel } from '../session'
 import { isLevelCompleted } from '../storage'
 import { isTouchDevice } from '../mobile'
@@ -34,7 +35,6 @@ export class LevelSelectScene extends Phaser.Scene {
   private escKey!: Phaser.Input.Keyboard.Key
   private dragStartX = 0
   private dragging = false
-  private touchConfirmIndex = -1
 
   constructor() {
     super({ key: 'LevelSelectScene' })
@@ -45,7 +45,6 @@ export class LevelSelectScene extends Phaser.Scene {
     const cx = width / 2
 
     this.selectedIndex = 0
-    this.touchConfirmIndex = -1
 
     this.add.rectangle(cx, height / 2, width, height, 0x181d29)
 
@@ -64,13 +63,25 @@ export class LevelSelectScene extends Phaser.Scene {
     this.cursor = this.add.rectangle(0, 0, 16, 4, 0x4fc3f7, 1).setOrigin(0.5).setDepth(5)
     if (this.cards.length > 0) this.placeCursor()
 
+    // A partida começa só com uma ação explícita (botão ou ENTER), para um
+    // simples toque/clique no card apenas selecionar — igual ao rank de escolha.
+    createButton(this, cx, height - 42, isTouchDevice() ? 'COMEÇAR' : 'COMEÇAR [ENTER]', () => this.confirmSelected(), {
+      width: 160,
+      height: 30,
+      fontSize: '10px',
+      color: '#ffe082',
+      bgColor: 0x2a2f22,
+      bgHover: 0x3a4230,
+      strokeColor: 0x8a7a3a,
+    }).setDepth(2)
+
     const navigationHint = this.add
       .text(
         cx,
         height - 14,
         isTouchDevice()
-          ? 'TOQUE 2X: confirmar    ARRASTE: rolar    ESC: voltar'
-          : '←/→ ou RODA: rolar    ENTER: confirmar    ESC: voltar',
+          ? 'TOQUE: escolher    ARRASTE: rolar    ESC: voltar'
+          : '←/→ ou RODA: rolar · clique: escolher · ENTER: começar    ESC: voltar',
         {
           fontFamily: 'monospace',
           fontSize: '8px',
@@ -204,18 +215,10 @@ export class LevelSelectScene extends Phaser.Scene {
         this.placeCursor()
       })
       panel.on('pointerup', () => {
+        // Clique seleciona (o pointerdown já moveu o cursor); a partida só
+        // começa com o botão/tecla de confirmar, como no CharacterSelect.
         if (this.dragging) return
-        if (!isTouchDevice()) {
-          this.confirmSelected()
-          return
-        }
-
-        if (this.touchConfirmIndex === i) {
-          this.confirmSelected()
-        } else {
-          this.touchConfirmIndex = i
-          this.refreshSelection()
-        }
+        this.refreshSelection()
       })
 
       this.cards.push({ level, panel, thumb, name, done })

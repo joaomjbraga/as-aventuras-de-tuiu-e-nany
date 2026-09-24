@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   HOUSE_LEVEL_ID,
   LEVELS,
+  allLevelsCompleted,
   getLevel,
   nextLevel,
   pickRandomLevel,
@@ -14,8 +15,6 @@ const fakePool: LevelConfig[] = [
     id: 'a',
     name: 'A',
     art: { image: 'a.jpg' },
-    groundColor: 1,
-    groundStrokeColor: 2,
     fogColor: 3,
     victoryKills: 5,
     difficulty: { maxSimultaneousZombies: 2, spawnStartDelay: 100, spawnMinDelay: 10, difficultyRampMs: 1000 },
@@ -24,8 +23,6 @@ const fakePool: LevelConfig[] = [
     id: 'b',
     name: 'B',
     art: { image: 'b.jpg' },
-    groundColor: 1,
-    groundStrokeColor: 2,
     fogColor: 3,
     victoryKills: 5,
     difficulty: { maxSimultaneousZombies: 2, spawnStartDelay: 100, spawnMinDelay: 10, difficultyRampMs: 1000 },
@@ -34,8 +31,6 @@ const fakePool: LevelConfig[] = [
     id: 'c',
     name: 'C',
     art: { image: 'c.jpg' },
-    groundColor: 1,
-    groundStrokeColor: 2,
     fogColor: 3,
     victoryKills: 5,
     difficulty: { maxSimultaneousZombies: 2, spawnStartDelay: 100, spawnMinDelay: 10, difficultyRampMs: 1000 },
@@ -43,6 +38,13 @@ const fakePool: LevelConfig[] = [
 ]
 
 describe('levels', () => {
+  it('campanha é zerada somente quando todas as fases foram concluídas', () => {
+    const allIds = LEVELS.map((level) => level.id)
+    expect(allLevelsCompleted([])).toBe(false)
+    expect(allLevelsCompleted(allIds.slice(0, -1))).toBe(false)
+    expect(allLevelsCompleted(allIds)).toBe(true)
+  })
+
   it('sempre há pelo menos uma fase registrada', () => {
     expect(LEVELS.length).toBeGreaterThan(0)
   })

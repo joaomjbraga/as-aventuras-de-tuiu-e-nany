@@ -32,8 +32,6 @@ export interface LevelConfig {
   /** Nome exibido na tela de vitória (ex.: "CASA"). */
   name: string
   art: LevelArt
-  groundColor: number
-  groundStrokeColor: number
   fogColor: number
   /** Abates necessários para vencer esta fase (sem boss). */
   victoryKills: number
@@ -51,8 +49,6 @@ export const LEVELS: LevelConfig[] = [
     art: {
       image: 'scenes/scenes-my-home.jpg',
     },
-    groundColor: 0x232633,
-    groundStrokeColor: 0x2f3245,
     fogColor: 0xd8d8c8,
     victoryKills: VICTORY_KILLS,
     difficulty: DEFAULT_DIFFICULTY,
@@ -64,8 +60,6 @@ export const LEVELS: LevelConfig[] = [
     art: {
       image: 'scenes/IEAB.jpg',
     },
-    groundColor: 0x1e2a3a,
-    groundStrokeColor: 0x2a3f5a,
     fogColor: 0x8ab4d8,
     victoryKills: 25,
     difficulty: {
@@ -82,8 +76,6 @@ export const LEVELS: LevelConfig[] = [
     art: {
       image: 'scenes/Castro_Alves.jpg',
     },
-    groundColor: 0x2d1e2a,
-    groundStrokeColor: 0x4a2a3f,
     fogColor: 0xd8a8c8,
     victoryKills: 30,
     difficulty: {
@@ -100,8 +92,6 @@ export const LEVELS: LevelConfig[] = [
     art: {
       image: 'scenes/CETEP.jpg',
     },
-    groundColor: 0x1a2a1e,
-    groundStrokeColor: 0x2a4a2f,
     fogColor: 0xa8d8b8,
     victoryKills: 35,
     difficulty: {
@@ -145,4 +135,9 @@ export function pickRandomLevel(
 /** Próxima fase aleatória (sem repetir a atual). */
 export function randomNextLevel(current: LevelConfig): LevelConfig | null {
   return pickRandomLevel(current)
+}
+
+/** Todas as fases do jogo já foram concluídas ao menos uma vez (campanha zerada). */
+export function allLevelsCompleted(completedIds: string[]): boolean {
+  return LEVELS.every((level) => completedIds.includes(level.id))
 }

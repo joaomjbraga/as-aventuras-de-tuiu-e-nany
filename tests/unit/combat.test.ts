@@ -77,7 +77,7 @@ describe('resolvePlayerZombieContact', () => {
 })
 
 describe('stompDamage', () => {
-  it('pisão normal causa 2 de dano (3 no zumbi de 3 de vida, mata em 2 pisões)', () => {
+  it('pisão normal causa 2 de dano (zumbi padrão de 3 de vida morre em 2 pisões)', () => {
     expect(stompDamage({ damageBoost: false, doubleJump: false })).toBe(2)
   })
 

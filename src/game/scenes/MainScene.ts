@@ -9,8 +9,15 @@ import { AUDIO, applyMute, playBgm, toggleMute } from '../audio'
 import { createButton } from '../ui'
 import { groundCenterYFor, groundTopFor, spawnXFor } from '../layout'
 import { canSpawnZombie, hasWon, spawnIntervalMs } from '../difficulty'
-import { randomNextLevel, type LevelConfig } from '../levels'
-import { loadBestKills, markLevelCompleted, saveBestKills, loadBestScore, saveBestScore } from '../storage'
+import { allLevelsCompleted, randomNextLevel, type LevelConfig } from '../levels'
+import {
+  loadBestKills,
+  loadCompletedLevels,
+  markLevelCompleted,
+  saveBestKills,
+  loadBestScore,
+  saveBestScore,
+} from '../storage'
 import { multiplierFor, scoreOfKill } from '../score'
 import { resolvePlayerZombieContact, stompDamage } from '../combat'
 import { buildGameOverScreen, buildVictoryScreen } from '../ui/endScreen'
@@ -256,7 +263,13 @@ export class MainScene extends Phaser.Scene {
         if (player.isRevivePressed()) {
           this.hideRevivePrompt(player.id)
           this.pendingRespawn.delete(player.id)
-          const { x, y } = this.spawnPointFor(player.id)
+          const { x, y } = this.spawnPointFor(
+            player.spriteKey as CharacterKey,
+            Math.max(
+              0,
+              this.players.findIndex((p) => p.id === player.id),
+            ),
+          )
           player.revive(x, y)
         }
       }
@@ -287,7 +300,7 @@ export class MainScene extends Phaser.Scene {
     entries.forEach((entry, i) => {
       this.mobileControls?.addPlayer(entry.id)
       const def = CHARACTERS[entry.characterKey]
-      const { x, y } = this.spawnPointFor(entry.id, i)
+      const { x, y } = this.spawnPointFor(entry.characterKey, i)
 
       const player = new Player(this, {
         id: entry.id,
@@ -350,7 +363,7 @@ export class MainScene extends Phaser.Scene {
     const remainingKey = (Object.keys(CHARACTERS) as CharacterKey[]).find((k) => k !== p1Char)!
     const def = CHARACTERS[remainingKey]
 
-    const { x, y } = this.spawnPointFor('P2', 1)
+    const { x, y } = this.spawnPointFor(remainingKey, 1)
     this.mobileControls?.addPlayer('P2')
     const player = new Player(this, {
       id: 'P2',
@@ -385,17 +398,17 @@ export class MainScene extends Phaser.Scene {
     this.sound.play(AUDIO.ZOMBIE_GROWL, { volume: 0.5 })
   }
 
-  private spawnPointFor(playerId: string, index?: number): { x: number; y: number } {
+  private spawnPointFor(characterKey: CharacterKey, index: number): { x: number; y: number } {
     const { width } = this.scale
-    const i = index ?? this.players.findIndex((p) => p.id === playerId)
     // Spawns com margem segura, longe das bordas e do meio da arena, para um
     // personagem não nascer em cima de nenhum obstáculo do cenário.
-    const x = spawnXFor(width, i)
+    const x = spawnXFor(width, index)
     // A altura do corpo é por personagem (Nany tem frame maior que o Tuiu,
     // mas as escalas em jogo são calibradas para a mesma altura); usar sempre
-    // a do Tuiu afundava a Nany alguns pixels dentro do chão.
-    const player = this.players[i]
-    const def = CHARACTERS[(player?.spriteKey as CharacterKey) ?? 'tuio'] ?? CHARACTERS.tuio
+    // a do Tuiu afundava a Nany alguns pixels dentro do chão. Como players[i]
+    // ainda não existe quando a chamada sai de createPlayers, a chave é
+    // recebida explicitamente em vez de inferida do jogador.
+    const def = CHARACTERS[characterKey] ?? CHARACTERS.tuio
     return { x, y: groundCenterYFor(this.groundTop, def.bodyHeight * def.scale) }
   }
 
@@ -614,12 +627,14 @@ export class MainScene extends Phaser.Scene {
     this.cameras.main.shake(300, 0.012)
   }
 
-  /** Barra de vida do boss (topo central, abaixo do placar). */
+  /** Barra de vida do boss (topo central, abaixo do placar e acima dos botões touch). */
   private createBossBar(name: string): void {
     const { width } = this.scale
 
+    // y=56/68: abaixo dos botões pause/mudo do mobile, que ocupam o topo
+    // central (y=30, meio botão 16..44) e cobririam nome e barra do boss.
     this.bossLabel = this.add
-      .text(width / 2, 30, `${name.toUpperCase()}`, {
+      .text(width / 2, 56, `${name.toUpperCase()}`, {
         fontFamily: 'monospace',
         fontSize: '8px',
         fontStyle: 'bold',
@@ -630,12 +645,12 @@ export class MainScene extends Phaser.Scene {
       .setDepth(11)
 
     this.bossBarBack = this.add
-      .rectangle(width / 2, 42, 170, 7, 0x181d29)
+      .rectangle(width / 2, 68, 170, 7, 0x181d29)
       .setStrokeStyle(1, 0xff5d6c, 0.9)
       .setDepth(10)
 
     this.bossBarFill = this.add
-      .rectangle(width / 2 - 85, 42, 170, 5, 0xff5d6c)
+      .rectangle(width / 2 - 85, 68, 170, 5, 0xff5d6c)
       .setOrigin(0, 0.5)
       .setDepth(11)
   }
@@ -789,7 +804,8 @@ export class MainScene extends Phaser.Scene {
 
   /** ENTER no fim de partida: avança para a próxima fase (vitória) ou rejoga. */
   private retryOrAdvance(): void {
-    if (this.victory && randomNextLevel(this.level)) {
+    const campaignComplete = allLevelsCompleted(loadCompletedLevels())
+    if (this.victory && !campaignComplete && randomNextLevel(this.level)) {
       this.startNextLevel()
       return
     }
@@ -829,6 +845,7 @@ export class MainScene extends Phaser.Scene {
     if (this.victory || this.gameOver) return
     this.victory = true
     markLevelCompleted(this.level.id)
+    const campaignComplete = allLevelsCompleted(loadCompletedLevels())
     this.pendingRespawn.clear()
     this.hideAllRevivePrompts()
     this.spawnerTimer?.remove(false)
@@ -842,7 +859,8 @@ export class MainScene extends Phaser.Scene {
       height,
       levelName: this.level.name,
       levelVictoryKills: this.level.victoryKills,
-      hasNextLevel: !!randomNextLevel(this.level),
+      hasNextLevel: !campaignComplete,
+      campaignComplete,
       stats: { kills: this.kills, score: this.score, bestScore: this.bestScore },
       onPrimary: () => this.retryOrAdvance(),
       onMenu: () => this.scene.start('TitleScene'),
