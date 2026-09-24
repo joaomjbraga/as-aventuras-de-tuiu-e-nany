@@ -97,13 +97,6 @@
         line-height: 1.5;
       }
 
-      #orientation-overlay .ios-hint {
-        display: none;
-        margin-top: 12px;
-        color: #9fb4cd;
-        font-size: 9px;
-      }
-
       #orientation-overlay button {
         border: 1px solid #8ab0ff;
         padding: 10px 14px;
@@ -152,6 +145,10 @@
         opacity: 0.94;
       }
 
+      html.mobile-ios-browser.ios-install-dismissed #ios-install-banner {
+        display: none;
+      }
+
       html.mobile-device.mobile-portrait #orientation-overlay {
         display: flex;
       }
@@ -165,16 +162,13 @@
         <strong>GIRE O CELULAR</strong>
         <p>O jogo foi feito para jogar com a tela na horizontal.</p>
         <button id="mobile-fullscreen" type="button">ATIVAR TELA CHEIA</button>
-        <small class="ios-hint"
-          >No iPhone, abra este link no Safari: Compartilhar → Adicionar à Tela de Início. Depois abra pelo ícone para
-          jogar sem a barra do navegador.</small
-        >
       </div>
     </div>
     <div id="ios-install-banner" aria-live="polite">
       <span
-        >No iPhone, abra no Safari. Toque em Compartilhar e escolha <strong>Adicionar à Tela de Início</strong> para
-        jogar sem a barra do navegador.</span
+        >Para jogar sem a barra do navegador: toque em <strong>Compartilhar</strong>, escolha
+        <strong>Adicionar à Tela de Início</strong> e abra o jogo pelo novo ícone. Assim ele inicia como um aplicativo,
+        em tela horizontal.</span
       >
       <button id="ios-install-close" type="button" aria-label="Fechar">OK</button>
     </div>

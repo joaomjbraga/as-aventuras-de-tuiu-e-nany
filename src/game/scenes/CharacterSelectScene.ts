@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import { CHARACTERS, type CharacterKey } from '../sprites'
 import { CONTROL_SCHEMES, type ControlSchemeId } from '../controls'
 import { setSessionPlayers, type PlayerId, type SessionPlayer } from '../session'
+import { isTouchDevice } from '../mobile'
 
 const OPTIONS: CharacterKey[] = ['tuio', 'nany']
 
@@ -41,6 +42,7 @@ export class CharacterSelectScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale
     const cx = width / 2
+    const touch = isTouchDevice()
 
     // A cena é reutilizada entre partidas: reseta os registros antes de
     // reconstruir, senão entradas antigas (objetos destruídos) continuam no
@@ -120,16 +122,34 @@ export class CharacterSelectScene extends Phaser.Scene {
       .setStroke('#0d101b', 2)
 
     this.add
-      .text(cx, 206, 'J1: ←/→ + ENTER    J2: A/D + W    [ESC] voltar', {
-        fontFamily: 'monospace',
-        fontSize: '8px',
-        color: '#6b7a8f',
-        align: 'center',
-      })
+      .text(
+        cx,
+        206,
+        touch ? 'TOQUE NO PERSONAGEM 2X PARA CONFIRMAR' : 'J1: ←/→ + ENTER    J2: A/D + W    [ESC] voltar',
+        {
+          fontFamily: 'monospace',
+          fontSize: '8px',
+          color: '#6b7a8f',
+          align: 'center',
+        },
+      )
       .setOrigin(0.5)
 
-    // Cursores dos dois jogadores
-    this.cursors = [this.makeCursor('P1', 'p1', 0x4fc3f7), this.makeCursor('P2', 'p2', 0xffb74d)]
+    const back = this.add
+      .text(cx, height - 2, touch ? 'VOLTAR' : '', {
+        fontFamily: 'monospace',
+        fontSize: '8px',
+        color: '#ffe082',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+    back.on('pointerdown', () => this.scene.start('TitleScene'))
+
+    // Mobile é uma experiência solo; o segundo cursor permanece apenas no desktop.
+    this.cursors = touch
+      ? [this.makeCursor('P1', 'p1', 0x4fc3f7)]
+      : [this.makeCursor('P1', 'p1', 0x4fc3f7), this.makeCursor('P2', 'p2', 0xffb74d)]
     this.cursors.forEach((cursor) => this.placeMarker(cursor))
 
     this.enterKey = this.input.keyboard!.addKey('ENTER')
@@ -205,7 +225,7 @@ export class CharacterSelectScene extends Phaser.Scene {
   private refreshSelectionVisuals(): void {
     this.options.forEach((opt, i) => {
       const isP1Here = this.cursors[0].index === i
-      const isP2Here = this.cursors[1].index === i
+      const isP2Here = this.cursors[1]?.index === i
       const confirmed = this.takenBy[opt.key]
 
       let borderColor: number
@@ -256,10 +276,16 @@ export class CharacterSelectScene extends Phaser.Scene {
     const p1 = this.cursors.find((c) => c.playerId === 'P1')
     if (p1?.confirmed) {
       this.prompt.setText(
-        'ENTER para começar · clique de novo no personagem e joga\n(J2: escolha com A/D e confirme com W)',
+        isTouchDevice()
+          ? 'Toque novamente no personagem para começar\n(J2 pode tocar no outro personagem e confirmar)'
+          : 'ENTER para começar · clique de novo no personagem e joga\n(J2: escolha com A/D e confirme com W)',
       )
     } else {
-      this.prompt.setText('J1: escolha com ←/→ e confirme com ENTER (ou clique no personagem)')
+      this.prompt.setText(
+        isTouchDevice()
+          ? 'Toque no personagem para escolher'
+          : 'J1: escolha com ←/→ e confirme com ENTER (ou clique no personagem)',
+      )
     }
   }
 

@@ -22,7 +22,7 @@ export interface MobileControlsOptions {
 }
 
 const BUTTON_SIZE = 42
-const BUTTON_GAP = 8
+const BUTTON_GAP = 10
 const EDGE = 12
 const BOTTOM = 12
 
@@ -81,7 +81,7 @@ function createPlayerControls(
   return [
     ...createButton(
       scene,
-      left,
+      left + BUTTON_SIZE / 2,
       bottom,
       '◀',
       () => (state.left = true),
@@ -89,7 +89,7 @@ function createPlayerControls(
     ),
     ...createButton(
       scene,
-      left + BUTTON_SIZE + BUTTON_GAP,
+      left + BUTTON_SIZE + BUTTON_GAP + BUTTON_SIZE / 2,
       bottom,
       '▶',
       () => (state.right = true),
@@ -144,10 +144,6 @@ function createButton(
     onUp()
   })
   button.on('pointerupoutside', () => {
-    button.setFillStyle(0x121a2a, 0.78)
-    onUp()
-  })
-  button.on('pointerout', () => {
     button.setFillStyle(0x121a2a, 0.78)
     onUp()
   })

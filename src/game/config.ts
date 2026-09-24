@@ -7,6 +7,7 @@ import { CharacterSelectScene } from './scenes/CharacterSelectScene'
 import { MainScene } from './scenes/MainScene'
 import { PauseScene } from './scenes/PauseScene'
 import { AboutScene } from './scenes/AboutScene'
+import { InstructionsScene } from './scenes/InstructionsScene'
 
 /**
  * Resolução base do pixel art (16:9).
@@ -57,5 +58,6 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     MainScene,
     PauseScene,
     AboutScene,
+    InstructionsScene,
   ],
 }

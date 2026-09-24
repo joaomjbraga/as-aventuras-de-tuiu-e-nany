@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import { isTouchDevice } from '../mobile'
 
 /**
  * Menu "Sobre": por que o jogo existe. É o recado do casal antes da arena —
@@ -13,6 +14,7 @@ export class AboutScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale
     const cx = width / 2
+    const touch = isTouchDevice()
 
     this.add.rectangle(cx, height / 2, width, height, 0x11151d)
     this.add.rectangle(cx, 96, 344, 158, 0x161c26).setStrokeStyle(1, 0x3b5486, 0.9)
@@ -52,21 +54,25 @@ export class AboutScene extends Phaser.Scene {
         .setStroke('#0d101b', 2)
     })
 
+    const backButton = this.add
+      .rectangle(cx, height - 13, 190, 22, 0x2a3550, 0.9)
+      .setStrokeStyle(1, 0x8ab0ff, 0.9)
+      .setInteractive({ useHandCursor: true })
+
     const back = this.add
-      .text(cx, height - 16, '[ ENTER / ESPAÇO / ESC ] voltar', {
+      .text(cx, height - 13, touch ? 'TOQUE AQUI PARA VOLTAR' : '[ ENTER / ESPAÇO / ESC ] voltar', {
         fontFamily: 'monospace',
-        fontSize: '9px',
+        fontSize: touch ? '8px' : '9px',
         color: '#ffe082',
         fontStyle: 'bold',
       })
       .setOrigin(0.5)
       .setStroke('#0d101b', 2)
 
-    back.setInteractive({ useHandCursor: true })
-    back.on('pointerdown', () => this.scene.start('TitleScene'))
-    this.input.on('pointerdown', () => this.scene.start('TitleScene'))
-
     const goBack = () => this.scene.start('TitleScene')
+    backButton.on('pointerdown', goBack)
+    back.on('pointerdown', goBack)
+
     this.input.keyboard!.once('keydown-ENTER', goBack)
     this.input.keyboard!.once('keydown-SPACE', goBack)
     this.input.keyboard!.once('keydown-ESC', goBack)

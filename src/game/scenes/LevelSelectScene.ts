@@ -64,7 +64,7 @@ export class LevelSelectScene extends Phaser.Scene {
     this.cursor = this.add.rectangle(0, 0, 16, 4, 0x4fc3f7, 1).setOrigin(0.5).setDepth(5)
     if (this.cards.length > 0) this.placeCursor()
 
-    this.add
+    const navigationHint = this.add
       .text(
         cx,
         height - 14,
@@ -78,6 +78,8 @@ export class LevelSelectScene extends Phaser.Scene {
         },
       )
       .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+    navigationHint.on('pointerdown', () => this.scene.start('CharacterSelectScene'))
 
     const kb = this.input.keyboard!
     this.enterKey = kb.addKey('ENTER')

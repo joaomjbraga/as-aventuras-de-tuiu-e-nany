@@ -15,6 +15,7 @@ import { multiplierFor, scoreOfKill } from '../score'
 import { resolvePlayerZombieContact } from '../combat'
 import { buildGameOverScreen, buildVictoryScreen } from '../ui/endScreen'
 import { createMobileControls, type MobileControls } from '../mobileControls'
+import { isTouchDevice } from '../mobile'
 import {
   PICKUP_EFFECT_DURATION_MS,
   PICKUP_EFFECTS,
@@ -275,7 +276,7 @@ export class MainScene extends Phaser.Scene {
 
   private createPlayers(): void {
     const session = getSession()
-    const entries = session.players.length > 0 ? session.players : []
+    const entries = isTouchDevice() ? session.players.slice(0, 1) : session.players
 
     if (entries.length === 0) {
       entries.push({ id: 'P1', characterKey: 'tuio', controls: 'p1' })
@@ -318,6 +319,7 @@ export class MainScene extends Phaser.Scene {
    * Prepara a entrada do P2 numa partida já iniciada: botão + tecla W.
    */
   private setupJoinP2(): void {
+    if (isTouchDevice()) return
     this.p2JoinKey = this.input.keyboard!.addKey('W')
 
     if (this.players.length === 1) {

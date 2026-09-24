@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import { CHARACTERS } from '../sprites'
 import { playIntro } from '../audio'
+import { isTouchDevice } from '../mobile'
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -10,6 +11,7 @@ export class TitleScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale
     const cx = width / 2
+    const touch = isTouchDevice()
 
     playIntro(this)
 
@@ -78,7 +80,7 @@ export class TitleScene extends Phaser.Scene {
 
     // Pista
     const hint = this.add
-      .text(cx, height - 24, '[ ENTER ] para começar', {
+      .text(cx, height - 28, touch ? 'TOQUE PARA COMEÇAR' : '[ ENTER ] para começar', {
         fontFamily: 'monospace',
         fontSize: '10px',
         color: '#ffe082',
@@ -102,7 +104,7 @@ export class TitleScene extends Phaser.Scene {
 
     // Sobre: por que o jogo existe
     const about = this.add
-      .text(cx, height - 8, '[ A ] sobre', {
+      .text(cx - 58, height - 8, touch ? 'SOBRE' : '[ A ] sobre', {
         fontFamily: 'monospace',
         fontSize: '8px',
         color: '#7a89a0',
@@ -111,11 +113,24 @@ export class TitleScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true })
     about.on('pointerdown', () => this.scene.start('AboutScene'))
 
+    const instructions = this.add
+      .text(cx + 58, height - 8, touch ? 'COMO JOGAR' : '[ I ] como jogar', {
+        fontFamily: 'monospace',
+        fontSize: '8px',
+        color: '#7a89a0',
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+    instructions.on('pointerdown', () => this.scene.start('InstructionsScene'))
+
     this.input.keyboard!.once('keydown-ENTER', () => {
       this.scene.start('CharacterSelectScene')
     })
     this.input.keyboard!.once('keydown-A', () => {
       this.scene.start('AboutScene')
+    })
+    this.input.keyboard!.once('keydown-I', () => {
+      this.scene.start('InstructionsScene')
     })
   }
 }
