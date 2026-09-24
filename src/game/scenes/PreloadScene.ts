@@ -49,7 +49,7 @@ export class PreloadScene extends Phaser.Scene {
     this.drawLoadingBar()
 
     // Cenário das fases: carrega a arte estática (imagem JPG) para o fundo.
-    // Chaves derivadas do id da fase (`bg-<id>-img`) — futuras fases
+    // Chaves derivadas do id da fase (`bg-<id>-img`) futuras fases
     // entram automaticamente ao serem adicionadas em LEVELS.
     LEVELS.forEach((level) => {
       this.load.image(bgImageKey(level), level.art.image)
@@ -168,7 +168,7 @@ export class PreloadScene extends Phaser.Scene {
    * Monta os 3 spritesheets reais de zumbi (zombie1/2/3) a partir dos frames
    * individuais pré-carregados (ZOMBIE_VARIANTS: PNGs de tamanhos variados).
    * Cada frame é normalizado para a altura-alvo (ZOMBIE_TARGET_HEIGHT), com
-   * os pés ancorados na base — preservando a colisão de pisão (stomp).
+   * os pés ancorados na base preservando a colisão de pisão (stomp).
    * Se algum frame faltar, mantém o placeholder procedural já existente.
    */
   private buildRealZombieSpritesheets(): void {
@@ -179,7 +179,7 @@ export class PreloadScene extends Phaser.Scene {
       for (let i = 1; i <= def.frames; i++) {
         const n = String(i).padStart(2, '0')
         const textureKey = `${def.key}_${n}`
-        // IMPORTANTE: usar textures.exists() e não textures.get() — para chave
+        // IMPORTANTE: usar textures.exists() e não textures.get()  para chave
         // inexistente, get() devolve a textura __MISSING (32px, width > 0), que
         // passaria na antiga guarda `!img || !img.width` e montaria o
         // spritesheet com frame quadriculado roxo em vez do fallback.
@@ -512,7 +512,7 @@ export class PreloadScene extends Phaser.Scene {
   /**
    * Sprite procedural pixel art do boss (fallback): seis frames de caminhada e
    * seis de ataque, com braços longos, olhos vermelhos e silhueta maior. É
-   * usado apenas quando os frames reais do zumbi-chefe não carregam —
+   * usado apenas quando os frames reais do zumbi-chefe não carregam
    * buildBossSpritesheets o substitui pelos sprites reais quando disponíveis.
    */
   private generateBossPlaceholder(): void {

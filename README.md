@@ -11,7 +11,25 @@ O AppImage deve ser gerado em um ambiente Linux nativo ou pelo workflow de CI.
 
 ## Por que este jogo existe
 
-Este jogo foi desenvolvido para **comemorar os 5 anos de união de mim e minha esposa** — celebramos o dia em que começamos a namorar. Tuiu e Nany somos nós dois, sobrevivendo juntos (e comemorando com muita aventura).
+No dia 22/09/2021, eu e minha esposa começamos a namorar. Cinco anos depois, enquanto pensava no que poderia fazer para marcar essa data, me veio uma ideia meia aleatória:
+
+> "E se em algum momento a gente vivesse um apocalipse zumbi? KKK"
+
+Imagine nós dois tentando sobreviver no meio do caos, com zumbis por todos os lados. E aí veio outra ideia: e se pudéssemos viver essa aventura?
+
+Me peguei pensando: por que não fazer um jogo onde nós dois pudéssemos viver uma aventura apocalíptica?
+
+Só que eu não queria que fosse apenas um jogo de zumbis com dois personagens. Queria que tivesse alguma coisa nossa ali. Então Tuiu e Nany nasceram dentro desse mundo.
+
+E se a aventura era sobre nós dois, os lugares também precisavam fazer parte da nossa história. Cada fase foi inspirada em lugares por onde já passamos juntos, momentos que vivemos e algumas das memórias que construímos nesses cinco anos.
+
+No jogo, Tuiu e Nany precisam atravessar esses lugares em meio a um apocalipse zumbi, enfrentando os zumbis e tentando sobreviver juntos. Na vida real, felizmente, a gente ainda não precisou descobrir como seria sobreviver a um apocalipse. KKK Mas agora, pelo menos, temos uma versão disso.
+
+**As Aventuras de Tuiu & Nany** foi desenvolvido para comemorar nossos 5 anos juntos e, de alguma forma, transformar um pouco da nossa história em algo que pudéssemos jogar.
+
+Não foi tão fácil assim como eu já imaginava. Tive muita dor de cabeça durante o desenvolvimento, vários problemas, pensei que não conseguiria finalizar esse projeto. Mas, no final, valeu cada hora e cada minuto investido. Ver a ideia que começou com um simples "e se a gente vivesse um apocalipse zumbi?" se transformar em um jogo que conta um pouco da nossa história fez tudo valer a pena.
+
+O jogo é uma aplicação desktop (Electron) com suporte a multiplayer local cada jogador controla um personagem (Tuiu ou Nany) com seu próprio teclado. Disponível para Windows e Linux.
 
 ## Pré-requisitos
 
@@ -93,9 +111,11 @@ O workflow `.github/workflows/desktop.yml` valida o projeto e gera os artefatos 
 | J1      | ← / → | ↑ ou ESPAÇO | ENTER     |
 | J2      | A / D | W           | W         |
 
-- **ESC**: pausa o jogo (menu com continuar/reiniciar/título).
+- **ESC**: pausa o jogo (menu com continuar/reiniciar/título/sair).
 - **M**: ativa/desativa o som.
 - **F11**: alterna tela cheia.
+- Na tela inicial: **S** ou clique em `[ S ] sair` encerra o jogo.
+- No menu de pausa: **Q** ou selecione **SAIR** encerra o jogo.
 - Na seleção: J1 confirma com ENTER e inicia; J2 confirma com W.
 - Em uma partida já iniciada, J2 pode entrar pela tecla **W** ou pelo botão na tela.
 
@@ -129,7 +149,7 @@ Para adicionar uma nova fase:
 - `src/preload/index.ts`: ponte mínima via `contextBridge`.
 - `src/game/`: renderer Phaser, entidades, regras, telas e UI.
 - `src/assets/`: cenários, sprites, áudio e demais assets do jogo.
-- `public/`: ícones usados pelo `electron-builder` (`Icon.png`, `icon.ico` e `linux-icon.png`).
+- `public/`: ícones usados pelo `electron-builder` (`Icon.png`, `icon.ico`).
 - `electron.vite.config.ts`: builds separados de main, preload e renderer.
 - `electron-builder.yml`: alvos Windows (NSIS/portátil) e Linux (AppImage).
 - `scripts/ensure-electron.cjs`: garante o download do binário do Electron após a instalação.

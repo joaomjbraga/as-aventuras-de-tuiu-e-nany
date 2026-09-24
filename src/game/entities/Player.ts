@@ -45,7 +45,6 @@ export class Player {
   }
 
   private state: PlayerState = 'idle'
-  private isFacingRight = true
   private immuneUntil = 0
   private shieldUntil = 0
   private speedUntil = 0
@@ -117,11 +116,9 @@ export class Player {
     if (moveLeft) {
       this.sprite.setVelocityX(-currentSpeed)
       this.sprite.flipX = true
-      this.isFacingRight = false
     } else if (moveRight) {
       this.sprite.setVelocityX(currentSpeed)
       this.sprite.flipX = false
-      this.isFacingRight = true
     } else {
       this.sprite.setVelocityX(0)
     }
@@ -237,10 +234,6 @@ export class Player {
     this.shieldUntil = Math.max(this.shieldUntil, this.scene.time.now + durationMs)
   }
 
-  hasShield(): boolean {
-    return this.scene.time.now < this.shieldUntil
-  }
-
   activateSpeed(durationMs: number): void {
     this.speedUntil = Math.max(this.speedUntil, this.scene.time.now + durationMs)
   }
@@ -257,12 +250,6 @@ export class Player {
     return this.scene.time.now < this.damageBoostUntil
   }
 
-  /** Tempo restante (ms) de um efeito ativo; 0 quando inativo. */
-  effectTimeRemaining(effect: 'shield' | 'speed' | 'double'): number {
-    const until = effect === 'shield' ? this.shieldUntil : effect === 'speed' ? this.speedUntil : this.damageBoostUntil
-    return Math.max(0, until - this.scene.time.now)
-  }
-
   /** Ressuscita o jogador em (x, y) com vida cheia e invulnerabilidade curta. */
   revive(x: number, y: number): void {
     this.hp = this.maxHp
@@ -271,7 +258,7 @@ export class Player {
     this.sprite.setVisible(true)
     this.sprite.alpha = 1
     // Usa reset() para sincronizar sprite e body, e reativa o corpo físico que
-    // foi desligado no die() — reset() NÃO re-habilita o body, sem isso o
+    // foi desligado no die() reset() NÃO re-habilita o body, sem isso o
     // jogador vira a direção mas não anda (a física ignora um corpo inválido).
     this.sprite.body!.enable = true
     this.sprite.body!.reset(x, y)
@@ -291,14 +278,6 @@ export class Player {
     if (this.state === state) return
     this.state = state
     this.playState(state)
-  }
-
-  getState(): PlayerState {
-    return this.state
-  }
-
-  isFacingDirection(direction: 'left' | 'right'): boolean {
-    return direction === 'right' ? this.isFacingRight : !this.isFacingRight
   }
 
   /** Cria uma vez as animações do personagem no AnimationManager global. */

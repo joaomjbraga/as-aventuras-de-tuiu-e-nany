@@ -5,6 +5,7 @@ declare global {
     desktop?: {
       isElectron: true
       platform: NodeJS.Platform
+      quit: () => void
     }
   }
 }

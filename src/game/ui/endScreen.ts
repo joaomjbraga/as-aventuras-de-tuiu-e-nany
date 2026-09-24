@@ -110,7 +110,7 @@ export function buildVictoryScreen(opts: EndScreenOptions): void {
       .setDepth(21)
   } else if (levelName != null && levelVictoryKills != null) {
     scene.add
-      .text(width / 2, height / 2 - 40, `${levelName} CONCLUÍDA — ${levelVictoryKills} ZUMBIS`, {
+      .text(width / 2, height / 2 - 40, `${levelName} CONCLUÍDA  ${levelVictoryKills} ZUMBIS`, {
         fontFamily: 'monospace',
         fontSize: '9px',
         color: '#c8e6c9',

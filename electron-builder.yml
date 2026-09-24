@@ -36,5 +36,5 @@ linux:
       arch:
         - x64
   category: Game
-  icon: public/linux-icon.png
+  icon: public/Icon.png
   syncDesktopName: true

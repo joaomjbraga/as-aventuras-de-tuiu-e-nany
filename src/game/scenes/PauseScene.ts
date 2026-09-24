@@ -21,6 +21,7 @@ export class PauseScene extends Phaser.Scene {
   private restartKey!: Phaser.Input.Keyboard.Key
   private titleKey!: Phaser.Input.Keyboard.Key
   private muteKey!: Phaser.Input.Keyboard.Key
+  private quitKey!: Phaser.Input.Keyboard.Key
 
   constructor() {
     super({ key: 'PauseScene' })
@@ -60,6 +61,7 @@ export class PauseScene extends Phaser.Scene {
       { label: 'REINICIAR', action: () => this.restartGame() },
       { label: 'VOLTAR AO TÍTULO', action: () => this.goToTitle() },
       { label: `SOM: ${isMuted() ? 'OFF' : 'ON'}`, action: () => this.toggleSound() },
+      { label: 'SAIR', action: () => this.quitGame() },
     ]
 
     const firstY = 56
@@ -111,7 +113,7 @@ export class PauseScene extends Phaser.Scene {
 
     // Atalhos do menu
     this.add
-      .text(width / 2, 210, '↑/↓: escolher   ENTER: selecionar   ESC: continuar   M: som', {
+      .text(width / 2, 210, '↑/↓: escolher   ENTER: selecionar   ESC: continuar   M: som   Q: sair', {
         fontFamily: 'monospace',
         fontSize: '8px',
         color: '#7a89a0',
@@ -127,6 +129,7 @@ export class PauseScene extends Phaser.Scene {
     this.restartKey = kb.addKey('R')
     this.titleKey = kb.addKey('T')
     this.muteKey = kb.addKey('M')
+    this.quitKey = kb.addKey('Q')
 
     this.highlightOption()
   }
@@ -158,6 +161,9 @@ export class PauseScene extends Phaser.Scene {
     }
     if (Phaser.Input.Keyboard.JustDown(this.muteKey)) {
       this.toggleSound()
+    }
+    if (Phaser.Input.Keyboard.JustDown(this.quitKey)) {
+      this.quitGame()
     }
   }
 
@@ -199,5 +205,11 @@ export class PauseScene extends Phaser.Scene {
     this.scene.stop()
     this.scene.stop('MainScene')
     this.scene.start('TitleScene')
+  }
+
+  private quitGame(): void {
+    this.scene.stop()
+    this.scene.stop('MainScene')
+    window.desktop?.quit()
   }
 }

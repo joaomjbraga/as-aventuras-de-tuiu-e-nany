@@ -63,7 +63,7 @@ export class LevelSelectScene extends Phaser.Scene {
     if (this.cards.length > 0) this.placeCursor()
 
     // A partida começa só com uma ação explícita (botão ou ENTER), para um
-    // Um clique no card apenas seleciona — a partida só começa com a tecla
+    // Um clique no card apenas seleciona a partida só começa com a tecla
     // ou o botão de confirmação, como no rank de escolha.
     createButton(this, cx, height - 42, 'COMEÇAR [ENTER]', () => this.confirmSelected(), {
       width: 160,

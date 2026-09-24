@@ -29,7 +29,6 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
   protected players: Player[]
   private onKilled?: () => void
   private hurtCooldownUntil = 0
-  private bobPhase: number
   protected readonly textureKey: string
 
   constructor(scene: Phaser.Scene, config: ZombieConfig) {
@@ -53,13 +52,12 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
     this.players = config.players
     this.onKilled = config.onKilled
     this.isDying = false
-    this.bobPhase = Phaser.Math.FloatBetween(0, Math.PI * 2)
 
     scene.add.existing(this)
     scene.physics.add.existing(this)
 
     // O mundo tem gravidade global (y=1000) para o jogador; o zumbi é
-    // terrestre e anda no próprio par — zera a gravidade para não despencar
+    // terrestre e anda no próprio par zera a gravidade para não despencar
     // ao entrar em cena (e eleva só o X no preUpdate).
     this.setGravityY(0)
 

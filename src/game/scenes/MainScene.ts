@@ -166,7 +166,7 @@ export class MainScene extends Phaser.Scene {
     this.sound.stopByKey(AUDIO.GAME_OVER)
 
     // Garante que um hit-stop pendente (timeScale 0.25) nunca vaze para a
-    // próxima partida — Clock.shutdown destrói os timers mas não reseta o scale.
+    // próxima partida Clock.shutdown destrói os timers mas não reseta o scale.
     this.time.timeScale = 1
   }
 
@@ -177,7 +177,7 @@ export class MainScene extends Phaser.Scene {
     const doc = document.documentElement
     if (!document.fullscreenElement) {
       doc.requestFullscreen().catch(() => {
-        // O renderer Electron rejeitou — silencioso
+        // O renderer Electron rejeitou silencioso
       })
     } else {
       document.exitFullscreen()
@@ -219,7 +219,7 @@ export class MainScene extends Phaser.Scene {
     }
 
     // P2 pode entrar numa partida já iniciada (tecla W = mesma da confirmação na
-    // seleção). Só checa enquanto não há P2 — W também é o pulo do P2, e chamar
+    // seleção). Só checa enquanto não há P2 W também é o pulo do P2, e chamar
     // tryJoinP2 a cada pulo era redundante.
     if (this.players.length === 1 && this.p2JoinKey && Phaser.Input.Keyboard.JustDown(this.p2JoinKey)) {
       this.tryJoinP2()
@@ -413,7 +413,7 @@ export class MainScene extends Phaser.Scene {
     this.spawnerTimer?.remove()
 
     // Dificuldade progressiva: o intervalo de spawn começa devagar e acelera
-    // ao longo da PARTIDA (relativo a matchStartTime, não ao relógio global —
+    // ao longo da PARTIDA (relativo a matchStartTime, não ao relógio global
     // do contrário a 2ª partida já abriria no teto de dificuldade). O próximo
     // ciclo re-agenda com o delay novo. Os parâmetros vêm da fase atual.
     const tick = () => {

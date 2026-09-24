@@ -1,4 +1,4 @@
-import { contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 
 /**
  * Ponte mínima e segura entre o processo principal e o renderer.
@@ -8,4 +8,5 @@ import { contextBridge } from 'electron'
 contextBridge.exposeInMainWorld('desktop', {
   isElectron: true,
   platform: process.platform,
+  quit: () => ipcRenderer.send('desktop:quit'),
 })

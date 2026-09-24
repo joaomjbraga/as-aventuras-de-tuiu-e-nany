@@ -40,16 +40,14 @@ export const FRAME_LAYOUT = {
 
 /**
  * Personagens.
- * Spritesheets gerados a partir dos PNGs em src/assets/sprites/boy e /girl
- * (frames 01-06 = walk, 07-09 = jump: agachar/ar/aterrissagem), reduzidos
- * a 25% para caber na resolução base 384x216. Os arquivos originais não
- * foram alterados.
+ * Spritesheets tuio.png/nany.png (9 frames: 6 walk + 3 jump: agachar/ar/aterrissagem),
+ * reduzidos a 25% para caber na resolução base 384x216.
  */
 export const CHARACTERS = {
   tuio: {
     key: 'tuio',
     name: 'Tuiu',
-    path: 'sprites/tuio.png', // gerado de src/assets/sprites/boy
+    path: 'sprites/tuio.png',
     frameWidth: 43,
     frameHeight: 74,
     bodyWidth: 30,
@@ -59,7 +57,7 @@ export const CHARACTERS = {
   nany: {
     key: 'nany',
     name: 'Nany',
-    path: 'sprites/nany.png', // gerado de src/assets/sprites/girl
+    path: 'sprites/nany.png',
     frameWidth: 48,
     frameHeight: 84,
     bodyWidth: 34,
@@ -127,8 +125,8 @@ export interface BossAnimationDef {
 /**
  * Animações do zumbi-chefe (src/assets/sprites/zumbi_chefe). Cada animação é
  * empacotada em runtime (PreloadScene) num spritesheet normalizado para
- * BOSS_TARGET_HEIGHT. A de walk usa a chave 'boss' — a textura-padrão do Boss
- * — e as demais ganham chaves próprias (boss-idle/-attack/-investida).
+ * BOSS_TARGET_HEIGHT. A de walk usa a chave 'boss'  a textura-padrão do Boss
+ *  e as demais ganham chaves próprias (boss-idle/-attack/-investida).
  */
 export const BOSS_ANIMATIONS = {
   idle: { key: 'boss-idle', path: 'sprites/zumbi_chefe/idle/idle_', frames: 8 },

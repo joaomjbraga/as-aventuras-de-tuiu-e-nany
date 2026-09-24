@@ -100,26 +100,33 @@ export class TitleScene extends Phaser.Scene {
       ease: 'Sine.easeInOut',
     })
 
-    // Sobre: por que o jogo existe
-    const about = this.add
-      .text(cx - 58, height - 8, '[ A ] sobre', {
-        fontFamily: 'monospace',
-        fontSize: '8px',
-        color: '#7a89a0',
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true })
-    about.on('pointerdown', () => this.scene.start('AboutScene'))
+    // Links Inferiores (horizontal) — "sair" fica logo depois de "como jogar"
+    const links = [
+      { label: '[ A ] sobre', x: cx - 120, action: 'about' },
+      { label: '[ I ] como jogar', x: cx, action: 'instructions' },
+      { label: 'SAIR [S]', x: cx + 120, action: 'quit' },
+    ] as const
 
-    const instructions = this.add
-      .text(cx + 58, height - 8, '[ I ] como jogar', {
-        fontFamily: 'monospace',
-        fontSize: '8px',
-        color: '#7a89a0',
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true })
-    instructions.on('pointerdown', () => this.scene.start('InstructionsScene'))
+    links.forEach(({ label, x, action }) => {
+      const t = this.add
+        .text(x, height - 8, label, {
+          fontFamily: 'monospace',
+          fontSize: '8px',
+          color: '#7a89a0',
+        })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true })
+
+      const go = () => {
+        if (action === 'about') this.scene.start('AboutScene')
+        else if (action === 'instructions') this.scene.start('InstructionsScene')
+        else this.quitGame()
+      }
+
+      t.on('pointerdown', go)
+      t.on('pointerover', () => t.setColor('#ffe082'))
+      t.on('pointerout', () => t.setColor('#7a89a0'))
+    })
 
     this.input.keyboard!.once('keydown-ENTER', () => {
       this.scene.start('CharacterSelectScene')
@@ -130,5 +137,10 @@ export class TitleScene extends Phaser.Scene {
     this.input.keyboard!.once('keydown-I', () => {
       this.scene.start('InstructionsScene')
     })
+    this.input.keyboard!.once('keydown-S', () => this.quitGame())
+  }
+
+  private quitGame(): void {
+    window.desktop?.quit()
   }
 }

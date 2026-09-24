@@ -1,11 +1,11 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 const APP_ID = 'br.com.joaomjbraga.asaventurasdetuiue_nany'
 const RENDERER_INDEX = join(__dirname, '../renderer/index.html')
 const PRELOAD_SCRIPT = join(__dirname, '../preload/index.cjs')
-const DEV_WINDOW_ICON = app.isPackaged ? undefined : join(__dirname, '../../public/icon.ico')
+const DEV_WINDOW_ICON = app.isPackaged ? undefined : join(__dirname, '../../public/Icon.png')
 const DEV_RENDERER_URL = app.isPackaged ? undefined : process.env.ELECTRON_RENDERER_URL
 const FILE_RENDERER_URL = pathToFileURL(RENDERER_INDEX).toString()
 
@@ -98,5 +98,9 @@ if (!hasSingleInstanceLock) {
 
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit()
+  })
+
+  ipcMain.on('desktop:quit', () => {
+    app.quit()
   })
 }

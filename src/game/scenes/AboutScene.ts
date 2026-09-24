@@ -1,7 +1,7 @@
 import Phaser from 'phaser'
 
 /**
- * Menu "Sobre": por que o jogo existe. É o recado do casal antes da arena —
+ * Menu "Sobre": por que o jogo existe. É o recado do casal antes da arena
  * a homenagem de aniversário para a Anne. Volta ao Título em qualquer tecla
  * de saída (ENTER/ESPAÇO/ESC) ou clique.
  */
