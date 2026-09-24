@@ -3,7 +3,6 @@ import { LEVELS, bgImageKey, type LevelConfig } from '../levels'
 import { createButton } from '../ui'
 import { setSessionLevel } from '../session'
 import { isLevelCompleted } from '../storage'
-import { isTouchDevice } from '../mobile'
 
 interface LevelCard {
   level: LevelConfig
@@ -64,8 +63,9 @@ export class LevelSelectScene extends Phaser.Scene {
     if (this.cards.length > 0) this.placeCursor()
 
     // A partida começa só com uma ação explícita (botão ou ENTER), para um
-    // simples toque/clique no card apenas selecionar — igual ao rank de escolha.
-    createButton(this, cx, height - 42, isTouchDevice() ? 'COMEÇAR' : 'COMEÇAR [ENTER]', () => this.confirmSelected(), {
+    // Um clique no card apenas seleciona — a partida só começa com a tecla
+    // ou o botão de confirmação, como no rank de escolha.
+    createButton(this, cx, height - 42, 'COMEÇAR [ENTER]', () => this.confirmSelected(), {
       width: 160,
       height: 30,
       fontSize: '10px',
@@ -76,18 +76,11 @@ export class LevelSelectScene extends Phaser.Scene {
     }).setDepth(2)
 
     const navigationHint = this.add
-      .text(
-        cx,
-        height - 14,
-        isTouchDevice()
-          ? 'TOQUE: escolher    ARRASTE: rolar    ESC: voltar'
-          : '←/→ ou RODA: rolar · clique: escolher · ENTER: começar    ESC: voltar',
-        {
-          fontFamily: 'monospace',
-          fontSize: '8px',
-          color: '#6b7a8f',
-        },
-      )
+      .text(cx, height - 14, '←/→ ou RODA: rolar · clique: escolher · ENTER: começar    ESC: voltar', {
+        fontFamily: 'monospace',
+        fontSize: '8px',
+        color: '#6b7a8f',
+      })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
     navigationHint.on('pointerdown', () => this.scene.start('CharacterSelectScene'))

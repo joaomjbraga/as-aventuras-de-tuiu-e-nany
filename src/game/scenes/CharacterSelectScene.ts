@@ -2,7 +2,6 @@ import Phaser from 'phaser'
 import { CHARACTERS, type CharacterKey } from '../sprites'
 import { CONTROL_SCHEMES, type ControlSchemeId } from '../controls'
 import { setSessionPlayers, type PlayerId, type SessionPlayer } from '../session'
-import { isTouchDevice } from '../mobile'
 
 const OPTIONS: CharacterKey[] = ['tuio', 'nany']
 
@@ -42,7 +41,6 @@ export class CharacterSelectScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale
     const cx = width / 2
-    const touch = isTouchDevice()
 
     // A cena é reutilizada entre partidas: reseta os registros antes de
     // reconstruir, senão entradas antigas (objetos destruídos) continuam no
@@ -122,34 +120,15 @@ export class CharacterSelectScene extends Phaser.Scene {
       .setStroke('#0d101b', 2)
 
     this.add
-      .text(
-        cx,
-        206,
-        touch ? 'TOQUE NO PERSONAGEM 2X PARA CONFIRMAR' : 'J1: ←/→ + ENTER    J2: A/D + W    [ESC] voltar',
-        {
-          fontFamily: 'monospace',
-          fontSize: '8px',
-          color: '#6b7a8f',
-          align: 'center',
-        },
-      )
-      .setOrigin(0.5)
-
-    const back = this.add
-      .text(cx, height - 2, touch ? 'VOLTAR' : '', {
+      .text(cx, 206, 'J1: ←/→ + ENTER    J2: A/D + W    [ESC] voltar', {
         fontFamily: 'monospace',
         fontSize: '8px',
-        color: '#ffe082',
-        fontStyle: 'bold',
+        color: '#6b7a8f',
+        align: 'center',
       })
       .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true })
-    back.on('pointerdown', () => this.scene.start('TitleScene'))
 
-    // Mobile é uma experiência solo; o segundo cursor permanece apenas no desktop.
-    this.cursors = touch
-      ? [this.makeCursor('P1', 'p1', 0x4fc3f7)]
-      : [this.makeCursor('P1', 'p1', 0x4fc3f7), this.makeCursor('P2', 'p2', 0xffb74d)]
+    this.cursors = [this.makeCursor('P1', 'p1', 0x4fc3f7), this.makeCursor('P2', 'p2', 0xffb74d)]
     this.cursors.forEach((cursor) => this.placeMarker(cursor))
 
     this.enterKey = this.input.keyboard!.addKey('ENTER')
@@ -253,8 +232,7 @@ export class CharacterSelectScene extends Phaser.Scene {
   }
 
   private grayscaleSprite(sprite: Phaser.GameObjects.Sprite): void {
-    // Tint/alpha funcionam também no renderer Canvas de navegadores mobile;
-    // preFX pode não estar disponível ou renderizar a textura de forma vazia.
+    // Tint/alpha são suficientes para o renderer Electron.
     sprite.clearTint()
     sprite.setTint(0x7d8794)
   }
@@ -280,16 +258,10 @@ export class CharacterSelectScene extends Phaser.Scene {
     const p1 = this.cursors.find((c) => c.playerId === 'P1')
     if (p1?.confirmed) {
       this.prompt.setText(
-        isTouchDevice()
-          ? 'Toque novamente no personagem para começar'
-          : 'ENTER para começar · clique de novo no personagem e joga\n(J2: escolha com A/D e confirme com W)',
+        'ENTER para começar · clique de novo no personagem e joga\n(J2: escolha com A/D e confirme com W)',
       )
     } else {
-      this.prompt.setText(
-        isTouchDevice()
-          ? 'Toque no personagem para escolher'
-          : 'J1: escolha com ←/→ e confirme com ENTER (ou clique no personagem)',
-      )
+      this.prompt.setText('J1: escolha com ←/→ e confirme com ENTER (ou clique no personagem)')
     }
   }
 

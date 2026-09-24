@@ -1,7 +1,6 @@
 import Phaser from 'phaser'
 import { applyMute, toggleMute } from '../audio'
 import { isMuted } from '../storage'
-import { isTouchDevice } from '../mobile'
 
 interface PauseOption {
   label: string
@@ -112,18 +111,11 @@ export class PauseScene extends Phaser.Scene {
 
     // Atalhos do menu
     this.add
-      .text(
-        width / 2,
-        210,
-        isTouchDevice()
-          ? 'TOQUE EM UMA OPÇÃO PARA CONTINUAR'
-          : '↑/↓: escolher   ENTER: selecionar   ESC: continuar   M: som',
-        {
-          fontFamily: 'monospace',
-          fontSize: '8px',
-          color: '#7a89a0',
-        },
-      )
+      .text(width / 2, 210, '↑/↓: escolher   ENTER: selecionar   ESC: continuar   M: som', {
+        fontFamily: 'monospace',
+        fontSize: '8px',
+        color: '#7a89a0',
+      })
       .setOrigin(0.5)
       .setDepth(11)
 

@@ -1,0 +1,40 @@
+appId: br.com.joaomjbraga.asaventurasdetuiue_nany
+productName: As Aventuras de Tuiu e Nany
+copyright: Copyright © 2026 João M J Braga
+asar: true
+compression: maximum
+npmRebuild: false
+publish: null
+directories:
+  output: release
+  buildResources: public
+files:
+  - out/**/*
+  - package.json
+  - '!**/*.map'
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  icon: public/icon.ico
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Tuiu e Nany
+
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+  category: Game
+  icon: public/linux-icon.png
+  syncDesktopName: true

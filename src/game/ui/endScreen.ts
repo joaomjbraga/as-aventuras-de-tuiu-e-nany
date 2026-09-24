@@ -1,6 +1,5 @@
 import Phaser from 'phaser'
 import { createButton } from '../ui'
-import { isTouchDevice } from '../mobile'
 
 export interface MatchStats {
   kills: number
@@ -160,11 +159,7 @@ function createEndButtons(
     .text(
       width / 2,
       height - 10,
-      isTouchDevice()
-        ? 'TOQUE EM UM BOTÃO PARA CONTINUAR'
-        : hasNextLevel
-          ? 'ENTER: próxima fase   ESC: menu'
-          : 'ENTER: jogar novamente   ESC: menu',
+      hasNextLevel ? 'ENTER: próxima fase   ESC: menu' : 'ENTER: jogar novamente   ESC: menu',
       {
         fontFamily: 'monospace',
         fontSize: '8px',

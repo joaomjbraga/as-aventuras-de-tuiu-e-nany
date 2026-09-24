@@ -1,7 +1,6 @@
 import Phaser from 'phaser'
 import { FRAME_LAYOUT, getAnimConfigs } from '../sprites'
 import { CONTROL_SCHEMES, type ControlSchemeId } from '../controls'
-import type { VirtualInputState } from '../mobileControls'
 
 export type PlayerState = 'idle' | 'walk' | 'jump'
 
@@ -16,8 +15,6 @@ export interface PlayerConfig {
   bodyHeight?: number
   /** Escala do sprite em jogo (1 = tamanho original do frame). */
   scale?: number
-  /** Entrada virtual opcional para controles touch. */
-  virtualInput?: VirtualInputState
 }
 
 /**
@@ -46,7 +43,6 @@ export class Player {
     right: Phaser.Input.Keyboard.Key
     jump: Phaser.Input.Keyboard.Key[]
   }
-  private virtualInput?: VirtualInputState
 
   private state: PlayerState = 'idle'
   private isFacingRight = true
@@ -70,7 +66,6 @@ export class Player {
     this.id = config.id
     this.name = config.name
     this.spriteKey = config.spriteKey
-    this.virtualInput = config.virtualInput
 
     this.sprite = scene.physics.add.sprite(config.x, config.y, config.spriteKey)
     this.sprite.setCollideWorldBounds(true)
@@ -114,9 +109,9 @@ export class Player {
 
     const body = this.sprite.body as Phaser.Physics.Arcade.Body
 
-    const moveLeft = this.keys.left.isDown || this.virtualInput?.left === true
-    const moveRight = this.keys.right.isDown || this.virtualInput?.right === true
-    const jumpPressed = this.keys.jump.some((key) => key.isDown) || this.virtualInput?.jump === true
+    const moveLeft = this.keys.left.isDown
+    const moveRight = this.keys.right.isDown
+    const jumpPressed = this.keys.jump.some((key) => key.isDown)
     const currentSpeed = this.hasSpeedBoost() ? this.moveSpeed * this.speedBoostFactor : this.moveSpeed
 
     if (moveLeft) {
@@ -225,14 +220,10 @@ export class Player {
 
   /**
    * Botão de pulo pressionado neste frame (just-pressed: ignorado quando o
-   * botão fica segurado). Consome o flag virtual para um toque = uma ação.
-   * Usado pelo pulo duplo e pelo revive (who decides voltar).
+   * botão fica segurado). Usado pelo pulo duplo e pelo revive.
    */
   private jumpJustPressed(): boolean {
-    const keyboardPressed = this.keys.jump.some((key) => Phaser.Input.Keyboard.JustDown(key))
-    const virtualPressed = this.virtualInput?.jumpJustPressed === true
-    if (this.virtualInput) this.virtualInput.jumpJustPressed = false
-    return keyboardPressed || virtualPressed
+    return this.keys.jump.some((key) => Phaser.Input.Keyboard.JustDown(key))
   }
 
   /** Ação de revive (tecla de pulo) pressionada neste frame. */

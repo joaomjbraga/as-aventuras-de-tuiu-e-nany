@@ -1,5 +1,4 @@
 import Phaser from 'phaser'
-import { isTouchDevice } from '../mobile'
 
 /**
  * Menu "Sobre": por que o jogo existe. É o recado do casal antes da arena —
@@ -14,7 +13,6 @@ export class AboutScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale
     const cx = width / 2
-    const touch = isTouchDevice()
 
     this.add.rectangle(cx, height / 2, width, height, 0x11151d)
     this.add.rectangle(cx, 96, 344, 158, 0x161c26).setStrokeStyle(1, 0x3b5486, 0.9)
@@ -60,9 +58,9 @@ export class AboutScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true })
 
     const back = this.add
-      .text(cx, height - 13, touch ? 'TOQUE AQUI PARA VOLTAR' : '[ ENTER / ESPAÇO / ESC ] voltar', {
+      .text(cx, height - 13, '[ ENTER / ESPAÇO / ESC ] voltar', {
         fontFamily: 'monospace',
-        fontSize: touch ? '8px' : '9px',
+        fontSize: '9px',
         color: '#ffe082',
         fontStyle: 'bold',
       })

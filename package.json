@@ -1,36 +1,50 @@
 {
   "name": "as-aventuras-de-tuiu-e-nany",
   "version": "0.0.1",
-  "description": "Jogo 2D em pixel art As Aventuras de Tuiu e Nany",
+  "description": "Jogo desktop 2D em pixel art As Aventuras de Tuiu e Nany",
   "author": {
     "name": "João M J Braga",
     "email": "joaomarcos.jbraga@gmail.com",
     "url": "https://github.com/joaomjbraga"
   },
   "type": "module",
+  "main": "./out/main/index.js",
+  "desktopName": "as-aventuras-de-tuiu-e-nany",
   "engines": {
-    "node": ">=20"
+    "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "npm run typecheck && npm run lint && npm run format:check",
-    "test": "vitest run"
+    "verify": "npm run check && npm test && npm run build",
+    "test": "vitest run",
+    "dist": "npm run build && electron-builder",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:linux": "npm run build && electron-builder --linux AppImage",
+    "dist:appimage": "npm run dist:linux",
+    "postinstall": "node scripts/ensure-electron.cjs"
   },
-  "dependencies": {
-    "phaser": "3.90.0"
+  "allowScripts": {
+    "electron": true,
+    "electron-winstaller": true,
+    "esbuild": true
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/node": "^22.0.0",
+    "@types/node": "^24.0.0",
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.12.0",
+    "phaser": "3.90.0",
     "prettier": "^3.9.8",
     "typescript": "^5.6.0",
     "typescript-eslint": "^8.70.1",

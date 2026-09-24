@@ -21,8 +21,6 @@ import {
 import { multiplierFor, scoreOfKill } from '../score'
 import { resolvePlayerZombieContact, stompDamage } from '../combat'
 import { buildGameOverScreen, buildVictoryScreen } from '../ui/endScreen'
-import { createMobileControls, type MobileControls } from '../mobileControls'
-import { isTouchDevice } from '../mobile'
 import {
   PICKUP_EFFECT_DURATION_MS,
   PICKUP_EFFECTS,
@@ -72,7 +70,6 @@ export class MainScene extends Phaser.Scene {
   private f11Key!: Phaser.Input.Keyboard.Key
   private p2JoinKey?: Phaser.Input.Keyboard.Key
   private joinButton?: Phaser.GameObjects.Container
-  private mobileControls?: MobileControls
 
   private pickupGroup!: Phaser.Physics.Arcade.Group
   private lastPickupAt = 0
@@ -143,11 +140,6 @@ export class MainScene extends Phaser.Scene {
 
     this.scenery = buildScene(this, width, height, this.level)
     this.ground = this.scenery.ground
-    this.mobileControls = createMobileControls(this, {
-      onPause: () => this.openPauseMenu(),
-      onMute: () => toggleMute(this),
-    })
-    this.events.on('resume', this.showMobileControls, this)
 
     this.createPlayers()
     this.createCombat()
@@ -170,9 +162,6 @@ export class MainScene extends Phaser.Scene {
     // (restart/replay criava um novo addEvent sem remover o anterior,
     // acumulando timers a cada "JOGAR NOVAMENTE").
     this.spawnerTimer?.remove()
-    this.mobileControls?.destroy()
-    this.mobileControls = undefined
-    this.events.off('resume', this.showMobileControls, this)
     this.sound.stopByKey(AUDIO.BGM)
     this.sound.stopByKey(AUDIO.GAME_OVER)
 
@@ -182,14 +171,13 @@ export class MainScene extends Phaser.Scene {
   }
 
   /**
-   * Alterna o modo tela cheia (web). Requer gesture do usuário (tecla F11
-   * conta como gesture). Se o navegador não suportar, não faz nada.
+   * Alterna o modo tela cheia do renderer Electron.
    */
   private toggleFullscreen(): void {
     const doc = document.documentElement
     if (!document.fullscreenElement) {
       doc.requestFullscreen().catch(() => {
-        // Navegador rejeitou — silencioso
+        // O renderer Electron rejeitou — silencioso
       })
     } else {
       document.exitFullscreen()
@@ -198,13 +186,8 @@ export class MainScene extends Phaser.Scene {
 
   private openPauseMenu(): void {
     if (this.gameOver || this.victory) return
-    this.mobileControls?.setVisible(false)
     this.scene.pause()
     this.scene.launch('PauseScene')
-  }
-
-  private showMobileControls(): void {
-    this.mobileControls?.setVisible(true)
   }
 
   update(): void {
@@ -213,7 +196,7 @@ export class MainScene extends Phaser.Scene {
       toggleMute(this)
     }
 
-    // F11 alterna o modo tela cheia (web: requestFullscreen / exitFullscreen)
+    // F11 alterna o modo tela cheia do renderer Electron.
     if (Phaser.Input.Keyboard.JustDown(this.f11Key)) {
       this.toggleFullscreen()
     }
@@ -289,7 +272,7 @@ export class MainScene extends Phaser.Scene {
 
   private createPlayers(): void {
     const session = getSession()
-    const entries = isTouchDevice() ? session.players.slice(0, 1) : session.players
+    const entries = session.players
 
     if (entries.length === 0) {
       entries.push({ id: 'P1', characterKey: 'tuio', controls: 'p1' })
@@ -298,7 +281,6 @@ export class MainScene extends Phaser.Scene {
     this.playerGroup = this.physics.add.group()
 
     entries.forEach((entry, i) => {
-      this.mobileControls?.addPlayer(entry.id)
       const def = CHARACTERS[entry.characterKey]
       const { x, y } = this.spawnPointFor(entry.characterKey, i)
 
@@ -312,7 +294,6 @@ export class MainScene extends Phaser.Scene {
         bodyWidth: def.bodyWidth,
         bodyHeight: def.bodyHeight,
         scale: def.scale,
-        virtualInput: this.mobileControls?.getState(entry.id),
       })
 
       this.players.push(player)
@@ -332,7 +313,6 @@ export class MainScene extends Phaser.Scene {
    * Prepara a entrada do P2 numa partida já iniciada: botão + tecla W.
    */
   private setupJoinP2(): void {
-    if (isTouchDevice()) return
     this.p2JoinKey = this.input.keyboard!.addKey('W')
 
     if (this.players.length === 1) {
@@ -364,7 +344,6 @@ export class MainScene extends Phaser.Scene {
     const def = CHARACTERS[remainingKey]
 
     const { x, y } = this.spawnPointFor(remainingKey, 1)
-    this.mobileControls?.addPlayer('P2')
     const player = new Player(this, {
       id: 'P2',
       name: def.name,
@@ -375,7 +354,6 @@ export class MainScene extends Phaser.Scene {
       bodyWidth: def.bodyWidth,
       bodyHeight: def.bodyHeight,
       scale: def.scale,
-      virtualInput: this.mobileControls?.getState('P2'),
     })
 
     this.players.push(player)
@@ -627,12 +605,10 @@ export class MainScene extends Phaser.Scene {
     this.cameras.main.shake(300, 0.012)
   }
 
-  /** Barra de vida do boss (topo central, abaixo do placar e acima dos botões touch). */
+  /** Barra de vida do boss, abaixo do placar. */
   private createBossBar(name: string): void {
     const { width } = this.scale
 
-    // y=56/68: abaixo dos botões pause/mudo do mobile, que ocupam o topo
-    // central (y=30, meio botão 16..44) e cobririam nome e barra do boss.
     this.bossLabel = this.add
       .text(width / 2, 56, `${name.toUpperCase()}`, {
         fontFamily: 'monospace',
@@ -824,7 +800,6 @@ export class MainScene extends Phaser.Scene {
     this.hideAllRevivePrompts()
     this.spawnerTimer?.remove(false)
     this.staticEndScreen()
-    this.mobileControls?.setVisible(false)
 
     this.sound.stopByKey(AUDIO.BGM)
     this.sound.play(AUDIO.GAME_OVER, { volume: 0.75 })
@@ -850,7 +825,6 @@ export class MainScene extends Phaser.Scene {
     this.hideAllRevivePrompts()
     this.spawnerTimer?.remove(false)
     this.staticEndScreen()
-    this.mobileControls?.setVisible(false)
 
     const { width, height } = this.scale
     buildVictoryScreen({

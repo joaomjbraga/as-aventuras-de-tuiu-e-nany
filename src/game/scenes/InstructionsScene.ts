@@ -1,5 +1,4 @@
 import Phaser from 'phaser'
-import { isTouchDevice } from '../mobile'
 
 export class InstructionsScene extends Phaser.Scene {
   constructor() {
@@ -23,21 +22,12 @@ export class InstructionsScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setStroke('#0d101b', 3)
 
-    if (isTouchDevice()) {
-      this.addSection(18, 'CONTROLES TOUCH', [
-        '◀ ▶ mover      ▲ pular / reviver',
-        'Ⅱ pausar       ♪ ligar/desligar som',
-        'Segure ◀/▶ para andar e toque ▲ para pular.',
-        'Pulo duplo: toque ▲ de novo no ar.',
-      ])
-    } else {
-      this.addSection(18, 'CONTROLES', [
-        'J1  ←/→ mover   ↑ ou ESPAÇO pular',
-        'J2  A/D mover   W pular',
-        'ESC pausa   M ativa/desativa o som',
-        'Pulo duplo: aperte o pulo de novo no ar.',
-      ])
-    }
+    this.addSection(18, 'CONTROLES', [
+      'J1  ←/→ mover   ↑ ou ESPAÇO pular',
+      'J2  A/D mover   W pular',
+      'ESC pausa   M ativa/desativa o som',
+      'Pulo duplo: aperte o pulo de novo no ar.',
+    ])
 
     this.addSection(66, 'COMBATE', [
       'Pise no zumbi para causar dano e derrotá-lo.',
@@ -53,12 +43,9 @@ export class InstructionsScene extends Phaser.Scene {
     ])
 
     this.addSection(158, 'SOBREVIVÊNCIA', [
-      ...(isTouchDevice()
-        ? ['Você tem 3 corações.', 'Quando eles acabarem, a partida termina.']
-        : [
-            'Ao cair, aperte o botão de pulo para reviver.',
-            'O revive só funciona enquanto o companheiro estiver em pé.',
-          ]),
+      'Você tem 3 corações.',
+      'Ao cair, aperte o botão de pulo para reviver.',
+      'O revive só funciona enquanto o companheiro estiver em pé.',
     ])
 
     const backButton = this.add
@@ -67,9 +54,9 @@ export class InstructionsScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true })
 
     const back = this.add
-      .text(cx, height - 13, isTouchDevice() ? 'TOQUE AQUI PARA VOLTAR' : '[ ENTER / ESPAÇO / ESC ] voltar', {
+      .text(cx, height - 13, '[ ENTER / ESPAÇO / ESC ] voltar', {
         fontFamily: 'monospace',
-        fontSize: isTouchDevice() ? '8px' : '9px',
+        fontSize: '9px',
         color: '#ffe082',
         fontStyle: 'bold',
       })
