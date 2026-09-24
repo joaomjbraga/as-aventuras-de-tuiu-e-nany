@@ -19,6 +19,11 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO, // WebGL com fallback automático para Canvas
   parent: 'game-container',
 
+  // Dois dedos precisam chegar ao Phaser ao mesmo tempo (andar + pular).
+  input: {
+    activePointers: 4,
+  },
+
   width: BASE_WIDTH,
   height: BASE_HEIGHT,
   backgroundColor: '#151a22',

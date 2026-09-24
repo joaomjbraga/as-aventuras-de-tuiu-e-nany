@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import { LEVELS, bgImageKey, type LevelConfig } from '../levels'
 import { setSessionLevel } from '../session'
 import { isLevelCompleted } from '../storage'
+import { isTouchDevice } from '../mobile'
 
 interface LevelCard {
   level: LevelConfig
@@ -31,6 +32,9 @@ export class LevelSelectScene extends Phaser.Scene {
   private leftKey!: Phaser.Input.Keyboard.Key
   private rightKey!: Phaser.Input.Keyboard.Key
   private escKey!: Phaser.Input.Keyboard.Key
+  private dragStartX = 0
+  private dragging = false
+  private touchConfirmIndex = -1
 
   constructor() {
     super({ key: 'LevelSelectScene' })
@@ -41,6 +45,7 @@ export class LevelSelectScene extends Phaser.Scene {
     const cx = width / 2
 
     this.selectedIndex = 0
+    this.touchConfirmIndex = -1
 
     this.add.rectangle(cx, height / 2, width, height, 0x181d29)
 
@@ -60,11 +65,18 @@ export class LevelSelectScene extends Phaser.Scene {
     if (this.cards.length > 0) this.placeCursor()
 
     this.add
-      .text(cx, height - 14, '←/→ ou RODA: rolar    ENTER: confirmar    ESC: voltar', {
-        fontFamily: 'monospace',
-        fontSize: '8px',
-        color: '#6b7a8f',
-      })
+      .text(
+        cx,
+        height - 14,
+        isTouchDevice()
+          ? 'TOQUE 2X: confirmar    ARRASTE: rolar    ESC: voltar'
+          : '←/→ ou RODA: rolar    ENTER: confirmar    ESC: voltar',
+        {
+          fontFamily: 'monospace',
+          fontSize: '8px',
+          color: '#6b7a8f',
+        },
+      )
       .setOrigin(0.5)
 
     const kb = this.input.keyboard!
@@ -85,6 +97,18 @@ export class LevelSelectScene extends Phaser.Scene {
         this.setScrollOffset(this.scrollOffset + Math.sign(deltaY) * 54)
       },
     )
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      this.dragStartX = pointer.x
+      this.dragging = false
+    })
+    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      if (!pointer.isDown) return
+      const deltaX = pointer.x - this.dragStartX
+      if (Math.abs(deltaX) < 8) return
+      this.dragging = true
+      this.dragStartX = pointer.x
+      this.setScrollOffset(this.scrollOffset - deltaX)
+    })
   }
 
   update(): void {
@@ -176,7 +200,20 @@ export class LevelSelectScene extends Phaser.Scene {
       panel.on('pointerdown', () => {
         this.selectedIndex = i
         this.placeCursor()
-        this.confirmSelected()
+      })
+      panel.on('pointerup', () => {
+        if (this.dragging) return
+        if (!isTouchDevice()) {
+          this.confirmSelected()
+          return
+        }
+
+        if (this.touchConfirmIndex === i) {
+          this.confirmSelected()
+        } else {
+          this.touchConfirmIndex = i
+          this.refreshSelection()
+        }
       })
 
       this.cards.push({ level, panel, thumb, name, done })

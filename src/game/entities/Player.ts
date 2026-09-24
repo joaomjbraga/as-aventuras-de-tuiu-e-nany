@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import { FRAME_LAYOUT, getAnimConfigs } from '../sprites'
 import { CONTROL_SCHEMES, type ControlSchemeId } from '../controls'
+import type { VirtualInputState } from '../mobileControls'
 
 export type PlayerState = 'idle' | 'walk' | 'jump'
 
@@ -15,6 +16,8 @@ export interface PlayerConfig {
   bodyHeight?: number
   /** Escala do sprite em jogo (1 = tamanho original do frame). */
   scale?: number
+  /** Entrada virtual opcional para controles touch. */
+  virtualInput?: VirtualInputState
 }
 
 /**
@@ -43,6 +46,7 @@ export class Player {
     right: Phaser.Input.Keyboard.Key
     jump: Phaser.Input.Keyboard.Key[]
   }
+  private virtualInput?: VirtualInputState
 
   private state: PlayerState = 'idle'
   private isFacingRight = true
@@ -61,10 +65,10 @@ export class Player {
     this.id = config.id
     this.name = config.name
     this.spriteKey = config.spriteKey
+    this.virtualInput = config.virtualInput
 
     this.sprite = scene.physics.add.sprite(config.x, config.y, config.spriteKey)
     this.sprite.setCollideWorldBounds(true)
-    this.sprite.setDepth(1)
 
     // O Arcade Body escala sourceWidth/sourceHeight e o offset pelo scale do
     // sprite, então basta definir a escala antes do corpo de colisão.
@@ -105,13 +109,11 @@ export class Player {
 
     const body = this.sprite.body as Phaser.Physics.Arcade.Body
 
-    const moveLeft = this.keys.left.isDown
-    const moveRight = this.keys.right.isDown
-    const jumpPressed = this.keys.jump.some((key) => key.isDown)
-
+    const moveLeft = this.keys.left.isDown || this.virtualInput?.left === true
+    const moveRight = this.keys.right.isDown || this.virtualInput?.right === true
+    const jumpPressed = this.keys.jump.some((key) => key.isDown) || this.virtualInput?.jump === true
     const currentSpeed = this.hasSpeedBoost() ? this.moveSpeed * this.speedBoostFactor : this.moveSpeed
 
-    // ---- Movimento horizontal ----
     if (moveLeft) {
       this.sprite.setVelocityX(-currentSpeed)
       this.sprite.flipX = true
@@ -199,7 +201,10 @@ export class Player {
 
   /** Ação de revive (tecla de pulo) pressionada neste frame — quem decide se quer voltar. */
   isRevivePressed(): boolean {
-    return this.keys.jump.some((key) => Phaser.Input.Keyboard.JustDown(key))
+    const keyboardPressed = this.keys.jump.some((key) => Phaser.Input.Keyboard.JustDown(key))
+    const virtualPressed = this.virtualInput?.jumpJustPressed === true
+    if (this.virtualInput) this.virtualInput.jumpJustPressed = false
+    return keyboardPressed || virtualPressed
   }
 
   // ---- Power-ups (efeitos temporizados) ----

@@ -14,6 +14,7 @@ import { loadBestKills, markLevelCompleted, saveBestKills, loadBestScore, saveBe
 import { multiplierFor, scoreOfKill } from '../score'
 import { resolvePlayerZombieContact } from '../combat'
 import { buildGameOverScreen, buildVictoryScreen } from '../ui/endScreen'
+import { createMobileControls, type MobileControls } from '../mobileControls'
 import {
   PICKUP_EFFECT_DURATION_MS,
   PICKUP_EFFECTS,
@@ -63,6 +64,7 @@ export class MainScene extends Phaser.Scene {
   private f11Key!: Phaser.Input.Keyboard.Key
   private p2JoinKey?: Phaser.Input.Keyboard.Key
   private joinButton?: Phaser.GameObjects.Container
+  private mobileControls?: MobileControls
 
   private pickupGroup!: Phaser.Physics.Arcade.Group
   private lastPickupAt = 0
@@ -133,6 +135,11 @@ export class MainScene extends Phaser.Scene {
 
     this.scenery = buildScene(this, width, height, this.level)
     this.ground = this.scenery.ground
+    this.mobileControls = createMobileControls(this, {
+      onPause: () => this.openPauseMenu(),
+      onMute: () => toggleMute(this),
+    })
+    this.events.on('resume', this.showMobileControls, this)
 
     this.createPlayers()
     this.createCombat()
@@ -155,6 +162,9 @@ export class MainScene extends Phaser.Scene {
     // (restart/replay criava um novo addEvent sem remover o anterior,
     // acumulando timers a cada "JOGAR NOVAMENTE").
     this.spawnerTimer?.remove()
+    this.mobileControls?.destroy()
+    this.mobileControls = undefined
+    this.events.off('resume', this.showMobileControls, this)
     this.sound.stopByKey(AUDIO.BGM)
     this.sound.stopByKey(AUDIO.GAME_OVER)
 
@@ -178,6 +188,17 @@ export class MainScene extends Phaser.Scene {
     }
   }
 
+  private openPauseMenu(): void {
+    if (this.gameOver || this.victory) return
+    this.mobileControls?.setVisible(false)
+    this.scene.pause()
+    this.scene.launch('PauseScene')
+  }
+
+  private showMobileControls(): void {
+    this.mobileControls?.setVisible(true)
+  }
+
   update(): void {
     // Mudo (tecla M) a qualquer momento durante a partida
     if (Phaser.Input.Keyboard.JustDown(this.muteKey)) {
@@ -191,8 +212,7 @@ export class MainScene extends Phaser.Scene {
 
     // Pausa (ESC): abre o menu de pausa
     if (!this.gameOver && !this.victory && Phaser.Input.Keyboard.JustDown(this.escKey)) {
-      this.scene.pause()
-      this.scene.launch('PauseScene')
+      this.openPauseMenu()
       return
     }
 
@@ -264,6 +284,7 @@ export class MainScene extends Phaser.Scene {
     this.playerGroup = this.physics.add.group()
 
     entries.forEach((entry, i) => {
+      this.mobileControls?.addPlayer(entry.id)
       const def = CHARACTERS[entry.characterKey]
       const { x, y } = this.spawnPointFor(entry.id, i)
 
@@ -277,6 +298,7 @@ export class MainScene extends Phaser.Scene {
         bodyWidth: def.bodyWidth,
         bodyHeight: def.bodyHeight,
         scale: def.scale,
+        virtualInput: this.mobileControls?.getState(entry.id),
       })
 
       this.players.push(player)
@@ -327,6 +349,7 @@ export class MainScene extends Phaser.Scene {
     const def = CHARACTERS[remainingKey]
 
     const { x, y } = this.spawnPointFor('P2', 1)
+    this.mobileControls?.addPlayer('P2')
     const player = new Player(this, {
       id: 'P2',
       name: def.name,
@@ -337,6 +360,7 @@ export class MainScene extends Phaser.Scene {
       bodyWidth: def.bodyWidth,
       bodyHeight: def.bodyHeight,
       scale: def.scale,
+      virtualInput: this.mobileControls?.getState('P2'),
     })
 
     this.players.push(player)
@@ -779,6 +803,7 @@ export class MainScene extends Phaser.Scene {
     this.hideAllRevivePrompts()
     this.spawnerTimer?.remove(false)
     this.staticEndScreen()
+    this.mobileControls?.setVisible(false)
 
     this.sound.stopByKey(AUDIO.BGM)
     this.sound.play(AUDIO.GAME_OVER, { volume: 0.75 })
@@ -803,6 +828,7 @@ export class MainScene extends Phaser.Scene {
     this.hideAllRevivePrompts()
     this.spawnerTimer?.remove(false)
     this.staticEndScreen()
+    this.mobileControls?.setVisible(false)
 
     const { width, height } = this.scale
     buildVictoryScreen({

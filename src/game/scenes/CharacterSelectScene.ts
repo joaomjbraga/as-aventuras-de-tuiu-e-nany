@@ -80,8 +80,10 @@ export class CharacterSelectScene extends Phaser.Scene {
       panel.on('pointerdown', () => this.selectWithMouse(i))
 
       const scale = targetHeight / def.frameHeight
-      const sprite = this.add.sprite(x, feetY - targetHeight / 2, def.key, 0)
-      sprite.setScale(scale)
+      const sprite = this.add
+        .sprite(x, feetY - targetHeight / 2, def.key, 0)
+        .setScale(scale)
+        .setDepth(2)
 
       this.add
         .text(x, 166, def.name.toUpperCase(), {
@@ -217,7 +219,7 @@ export class CharacterSelectScene extends Phaser.Scene {
 
       const active = !!confirmed || isP1Here || isP2Here
       if (active) {
-        opt.sprite.preFX?.clear()
+        opt.sprite.clearTint()
         opt.sprite.setAlpha(1)
       } else {
         this.grayscaleSprite(opt.sprite)
@@ -227,9 +229,10 @@ export class CharacterSelectScene extends Phaser.Scene {
   }
 
   private grayscaleSprite(sprite: Phaser.GameObjects.Sprite): void {
-    sprite.preFX?.clear()
-    const fx = sprite.preFX?.addColorMatrix()
-    fx?.grayscale(1)
+    // Tint/alpha funcionam também no renderer Canvas de navegadores mobile;
+    // preFX pode não estar disponível ou renderizar a textura de forma vazia.
+    sprite.clearTint()
+    sprite.setTint(0x7d8794)
   }
 
   private tryConfirm(cursor: PlayerCursor): void {

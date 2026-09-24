@@ -70,6 +70,8 @@ export class PauseScene extends Phaser.Scene {
         .rectangle(width / 2, y, 190, 28, 0x1c2230)
         .setStrokeStyle(1, 0x4a5a80)
         .setDepth(11)
+        .setInteractive({ useHandCursor: true })
+      rect.on('pointerdown', () => opt.action())
       this.optionRects.push(rect)
 
       const text = this.add

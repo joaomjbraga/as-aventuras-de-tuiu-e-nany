@@ -1,0 +1,16 @@
+{
+  "name": "As Aventuras de Tuiu e Nany",
+  "short_name": "Tuiu e Nany",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#10151f",
+  "theme_color": "#10151f",
+  "icons": [
+    {
+      "src": "/Icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
