@@ -10,6 +10,36 @@ import {
 import { AUDIO } from '../audio'
 import { LEVELS, bgImageKey } from '../levels'
 
+/**
+ * Limites verticais dos pixels não-transparentes de um frame. Normalizar o
+ * canvas inteiro pelo topo fazia pés "dançarem" quando as margens
+ * transparentes mudavam de frame para frame; ancorar pelo fim do conteúdo
+ * mantém os pés fixos no chão entre as animações.
+ */
+function visibleVerticalBounds(img: HTMLImageElement): { y: number; height: number } {
+  const canvas = document.createElement('canvas')
+  canvas.width = img.width
+  canvas.height = img.height
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })!
+  ctx.drawImage(img, 0, 0)
+  const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data
+
+  let minY = canvas.height
+  let maxY = -1
+  for (let y = 0; y < canvas.height; y++) {
+    for (let x = 0; x < canvas.width; x++) {
+      if (data[(y * canvas.width + x) * 4 + 3] > 0) {
+        if (y < minY) minY = y
+        if (y > maxY) maxY = y
+      }
+    }
+  }
+
+  // Frame totalmente transparente: usa o canvas inteiro como fallback.
+  if (maxY < minY) return { y: 0, height: canvas.height }
+  return { y: minY, height: maxY - minY + 1 }
+}
+
 export class PreloadScene extends Phaser.Scene {
   constructor() {
     super({ key: 'PreloadScene' })
@@ -25,19 +55,13 @@ export class PreloadScene extends Phaser.Scene {
       this.load.image(bgImageKey(level), level.art.image)
     })
 
-    const sprites = Object.values(CHARACTERS)
-
     // Carrega os spritesheets dos personagens
-    sprites.forEach((def) => {
+    Object.values(CHARACTERS).forEach((def) => {
       this.load.spritesheet(def.key, def.path, {
         frameWidth: def.frameWidth,
         frameHeight: def.frameHeight,
       })
     })
-
-    // Se algum carregar falhar (arquivo ainda não existe / dimensões erradas),
-    // cria um placeholder em runtime para o jogo não quebrar em dev.
-    this.load.once('loaderror', () => this.createPlaceholderSpritesheets(sprites))
 
     // Áudio: música de fundo + efeitos dos zumbis
     this.load.audio(AUDIO.INTRO, 'audio/intro.mp3')
@@ -73,6 +97,15 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Personagens: se algum spritesheet não carregou (arquivo ausente ou
+    // dimensões erradas, ex.: em dev), cria o placeholder procedural AQUI,
+    // depois que o load terminou. Antes isso era feito no evento 'loaderror',
+    // que disparava com outros arquivos ainda carregando em paralelo: o
+    // placeholder criado ocupava a chave e o spritesheet real era descartado
+    // pelo TextureManager ('key already in use'), deixando os personagens
+    // permanentemente como caixas azuis mesmo com os PNGs válidos.
+    this.createPlaceholderSpritesheets(Object.values(CHARACTERS))
+
     // Placeholder 'zombie' (fallback caso os frames reais não carreguem);
     // buildRealZombieSpritesheets sobrescreve com os spritesheets reais.
     this.generateZombiePlaceholder()
@@ -145,8 +178,13 @@ export class PreloadScene extends Phaser.Scene {
       const frames: HTMLImageElement[] = []
       for (let i = 1; i <= def.frames; i++) {
         const n = String(i).padStart(2, '0')
-        const img = this.textures.get(`${def.key}_${n}`).getSourceImage() as HTMLImageElement | undefined
-        if (!img || !img.width) return // frame ausente → fallback placeholder
+        const textureKey = `${def.key}_${n}`
+        // IMPORTANTE: usar textures.exists() e não textures.get() — para chave
+        // inexistente, get() devolve a textura __MISSING (32px, width > 0), que
+        // passaria na antiga guarda `!img || !img.width` e montaria o
+        // spritesheet com frame quadriculado roxo em vez do fallback.
+        if (!this.textures.exists(textureKey)) return // frame ausente → fallback placeholder
+        const img = this.textures.get(textureKey).getSourceImage() as HTMLImageElement
         frames.push(img)
       }
 
@@ -161,9 +199,15 @@ export class PreloadScene extends Phaser.Scene {
 
       frames.forEach((im, f) => {
         const h = targetH
-        const w = (im.width * h) / im.height
+        const scale = h / im.height
+        const w = im.width * scale
         const x = f * frameW + (frameW - w) / 2
-        ctx.drawImage(im, x, 0, w, h)
+        // Pés ancorados na base do CONTEÚDO (e não no topo do canvas): com as
+        // margens transparentes variando entre frames, desenhar em y=0 fazia
+        // os pés subirem e descerem durante a caminhada.
+        const bounds = visibleVerticalBounds(im)
+        const y = targetH - (bounds.y + bounds.height) * scale
+        ctx.drawImage(im, x, y, w, h)
       })
 
       this.textures.addSpriteSheet(def.key, canvas as unknown as HTMLImageElement, {
@@ -196,8 +240,9 @@ export class PreloadScene extends Phaser.Scene {
       const frames: HTMLImageElement[] = []
       for (let i = 1; i <= def.frames; i++) {
         const n = String(i).padStart(2, '0')
-        const img = this.textures.get(`${def.key}_${n}`).getSourceImage() as HTMLImageElement | undefined
-        if (!img || !img.width) return // frame ausente → mantém o placeholder 'boss'
+        const textureKey = `${def.key}_${n}`
+        if (!this.textures.exists(textureKey)) return // frame ausente → mantém o placeholder 'boss'
+        const img = this.textures.get(textureKey).getSourceImage() as HTMLImageElement
         frames.push(img)
       }
       sheets.push({ key: def.key, frames })
@@ -222,9 +267,13 @@ export class PreloadScene extends Phaser.Scene {
 
     frames.forEach((im, f) => {
       const h = targetHeight
-      const w = (im.width * h) / im.height
+      const scale = h / im.height
+      const w = im.width * scale
       const x = f * frameW + (frameW - w) / 2
-      ctx.drawImage(im, x, 0, w, h)
+      // Ancoragem pela base do conteúdo (ver visibleVerticalBounds).
+      const bounds = visibleVerticalBounds(im)
+      const y = targetHeight - (bounds.y + bounds.height) * scale
+      ctx.drawImage(im, x, y, w, h)
     })
 
     this.textures.addSpriteSheet(textureKey, canvas as unknown as HTMLImageElement, {
@@ -244,8 +293,9 @@ export class PreloadScene extends Phaser.Scene {
 
     const frames: HTMLImageElement[] = []
     for (let i = 1; i <= EXPLOSION.frames; i++) {
-      const img = this.textures.get(`${EXPLOSION.key}_${i}`).getSourceImage() as HTMLImageElement | undefined
-      if (!img || !img.width) return
+      const textureKey = `${EXPLOSION.key}_${i}`
+      if (!this.textures.exists(textureKey)) return
+      const img = this.textures.get(textureKey).getSourceImage() as HTMLImageElement
       frames.push(img)
     }
 

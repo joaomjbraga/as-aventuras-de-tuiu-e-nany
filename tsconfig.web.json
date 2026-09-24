@@ -14,5 +14,5 @@
     "noEmit": true,
     "types": ["vite/client"]
   },
-  "include": ["src/game/**/*", "src/preload/index.d.ts"]
+  "include": ["src/game/**/*"]
 }

@@ -164,6 +164,10 @@ export class CharacterSelectScene extends Phaser.Scene {
     this.cursors.forEach((cursor) => {
       const { left, right } = cursor.keys
 
+      // Cursor já confirmado não se move mais: o startMatch() lê a escolha
+      // fixada pelo cursor confirmado, e não a posição atual do marcador.
+      if (cursor.confirmed) return
+
       if (Phaser.Input.Keyboard.JustDown(left)) {
         cursor.index = (cursor.index - 1 + OPTIONS.length) % OPTIONS.length
         this.placeMarker(cursor)
@@ -277,7 +281,7 @@ export class CharacterSelectScene extends Phaser.Scene {
     if (p1?.confirmed) {
       this.prompt.setText(
         isTouchDevice()
-          ? 'Toque novamente no personagem para começar\n(J2 pode tocar no outro personagem e confirmar)'
+          ? 'Toque novamente no personagem para começar'
           : 'ENTER para começar · clique de novo no personagem e joga\n(J2: escolha com A/D e confirme com W)',
       )
     } else {
