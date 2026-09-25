@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import { COLOR, FONT, TEXT } from './theme'
 
 export interface ButtonOptions {
   width?: number
@@ -26,22 +27,22 @@ export function createButton(
     width = 160,
     height = 30,
     fontSize = '10px',
-    color = '#e8edf7',
-    bgColor = 0x1c2230,
-    bgHover = 0x2a3550,
-    strokeColor = 0x4a5a80,
+    color = TEXT.primary,
+    bgColor = COLOR.menuItem,
+    bgHover = COLOR.selectFillPause,
+    strokeColor = COLOR.menuBorder,
   } = opts
 
   const bg = scene.add.rectangle(0, 0, width, height, bgColor).setStrokeStyle(1, strokeColor)
   const text = scene.add
     .text(0, 0, label, {
-      fontFamily: 'monospace',
+      fontFamily: FONT.family,
       fontSize,
-      fontStyle: 'bold',
+      fontStyle: FONT.bold,
       color,
     })
     .setOrigin(0.5)
-    .setStroke('#0d101b', 2)
+    .setStroke(TEXT.stroke, 2)
 
   const container = scene.add.container(x, y, [bg, text])
   container.setSize(width, height)

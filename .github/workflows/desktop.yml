@@ -1,0 +1,87 @@
+name: desktop
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: verify (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Verificações (typecheck, lint, format, testes)
+        run: npm run check && npm test
+
+  build:
+    name: build (${{ matrix.os }})
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      # AppImage e NSIS só são gerados em runner nativo da plataforma.
+      # Passos separados com `if:` em vez de `if/else` no shell: o shell padrão
+      # do Windows é PowerShell, que não entende a sintaxe POSIX de `[ ... ]`.
+      - name: Empacotar (Windows)
+        if: runner.os == 'Windows'
+        run: npm run dist:win
+
+      - name: Empacotar (Linux)
+        if: runner.os != 'Windows'
+        run: npm run dist:linux
+
+      # `publish: null` no electron-builder.yml significa que nenhum
+      # latest*.yml de atualização é gerado, então cada plataforma publica
+      # apenas o seu artefato. `error` garante que o job só passa se o
+      # instalador/AppImage realmente foi produzido.
+      - name: Publicar artefatos (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: as-aventuras-de-tuiu-e-nany-windows
+          path: release/*.exe
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publicar artefatos (Linux)
+        if: runner.os != 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: as-aventuras-de-tuiu-e-nany-linux
+          path: release/*.AppImage
+          if-no-files-found: error
+          retention-days: 30

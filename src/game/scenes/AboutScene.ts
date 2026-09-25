@@ -1,9 +1,10 @@
 import Phaser from 'phaser'
+import { COLOR, FONT, TEXT } from '../theme'
 
 /**
- * Menu "Sobre": por que o jogo existe. É o recado do casal antes da arena
- * a homenagem de aniversário para a Anne. Volta ao Título em qualquer tecla
- * de saída (ENTER/ESPAÇO/ESC) ou clique.
+ * Menu "Sobre": o recado do casal que dá sentido ao jogo. É a primeira tela
+ * exibida (o PreloadScene desemboca aqui) e sai em qualquer tecla de saída
+ * (ENTER/ESPAÇO/ESC) ou clique.
  */
 export class AboutScene extends Phaser.Scene {
   constructor() {
@@ -14,18 +15,18 @@ export class AboutScene extends Phaser.Scene {
     const { width, height } = this.scale
     const cx = width / 2
 
-    this.add.rectangle(cx, height / 2, width, height, 0x11151d)
-    this.add.rectangle(cx, 192, 688, 316, 0x161c26).setStrokeStyle(2, 0x3b5486, 0.9)
+    this.add.rectangle(cx, height / 2, width, height, COLOR.bgText)
+    this.add.rectangle(cx, 192, 688, 316, COLOR.panelText).setStrokeStyle(2, COLOR.borderText, 0.9)
 
     this.add
       .text(cx, 36, 'SOBRE', {
-        fontFamily: 'monospace',
+        fontFamily: FONT.family,
         fontSize: '32px',
-        fontStyle: 'bold',
-        color: '#ffd54f',
+        fontStyle: FONT.bold,
+        color: TEXT.gold,
       })
       .setOrigin(0.5)
-      .setStroke('#0d101b', 6)
+      .setStroke(TEXT.stroke, 6)
 
     const lines: Array<{ text: string; color?: string; bold?: boolean }> = [
       { text: 'FEITO COM CARINHO POR' },
@@ -43,33 +44,34 @@ export class AboutScene extends Phaser.Scene {
     lines.forEach((line, i) => {
       this.add
         .text(cx, 72 + i * 22, line.text, {
-          fontFamily: 'monospace',
+          fontFamily: FONT.family,
           fontSize: '18px',
-          fontStyle: line.bold ? 'bold' : '',
-          color: line.color ?? '#c8d6e5',
+          fontStyle: line.bold ? FONT.bold : FONT.normal,
+          color: line.color ?? TEXT.body,
         })
         .setOrigin(0.5)
-        .setStroke('#0d101b', 4)
+        .setStroke(TEXT.stroke, 4)
     })
 
     const backButton = this.add
-      .rectangle(cx, height - 26, 380, 44, 0x2a3550, 0.9)
-      .setStrokeStyle(2, 0x8ab0ff, 0.9)
+      .rectangle(cx, height - 26, 380, 44, COLOR.selectFillPause, 0.9)
+      .setStrokeStyle(2, COLOR.selectBorder, 0.9)
       .setInteractive({ useHandCursor: true })
 
-    const back = this.add
+    this.add
       .text(cx, height - 26, '[ ENTER / ESPAÇO / ESC ] voltar', {
-        fontFamily: 'monospace',
+        fontFamily: FONT.family,
         fontSize: '18px',
-        color: '#ffe082',
-        fontStyle: 'bold',
+        color: TEXT.accent,
+        fontStyle: FONT.bold,
       })
       .setOrigin(0.5)
-      .setStroke('#0d101b', 4)
+      .setStroke(TEXT.stroke, 4)
 
     const goBack = () => this.scene.start('TitleScene')
+    // Só o retângulo é interativo: um `Text` sem setInteractive() nunca emite
+    // `pointerdown`, então ligar o listener nele seria código morto.
     backButton.on('pointerdown', goBack)
-    back.on('pointerdown', goBack)
 
     this.input.keyboard!.once('keydown-ENTER', goBack)
     this.input.keyboard!.once('keydown-SPACE', goBack)

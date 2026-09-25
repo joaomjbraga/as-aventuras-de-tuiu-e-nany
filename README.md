@@ -154,8 +154,11 @@ Para adicionar uma nova fase:
 - `src/main/index.ts`: processo principal, janela, ciclo de vida, instância única e navegação segura.
 - `src/preload/index.ts`: ponte mínima via `contextBridge`.
 - `src/game/`: renderer Phaser, entidades, regras, telas e UI.
+- `src/game/theme.ts`: paleta e tipografia compartilhadas por telas e HUD.
 - `src/game/difficultyPresets.ts`: presets Fácil, Médio e Difícil.
 - `src/game/scenes/DifficultySelectScene.ts`: seleção de dificuldade antes da partida.
+- `src/game/ui/verticalMenu.ts`: menu vertical reutilizável (dificuldade e pausa).
+- `src/game/spriteBounds.ts`: limites verticais do conteúdo de um frame (usado ao normalizar spritesheets).
 - `src/assets/`: cenários, sprites, áudio e demais assets do jogo.
 - `public/`: ícones usados pelo `electron-builder` (`Icon.png`, `icon.ico`).
 - `electron.vite.config.ts`: builds separados de main, preload e renderer.

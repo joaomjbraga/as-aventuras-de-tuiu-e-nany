@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import { createButton } from '../ui'
+import { FONT, TEXT } from '../theme'
 
 export interface MatchStats {
   kills: number
@@ -28,33 +29,33 @@ export interface EndScreenOptions {
 export function buildGameOverScreen(opts: EndScreenOptions): void {
   const { scene, width, height, stats, onPrimary, onMenu } = opts
 
-scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.6).setDepth(20)
-    scene.add
-      .text(width / 2, height / 2 - 92, 'FIM DE JOGO', {
-        fontFamily: 'monospace',
-        fontSize: '36px',
-        fontStyle: 'bold',
-        color: '#e8385a',
-      })
-      .setOrigin(0.5)
-      .setStroke('#0d101b', 8)
-      .setDepth(21)
-    scene.add
-      .text(
-        width / 2,
-        height / 2 - 44,
-        `ABATES: ${stats.kills}    PONTOS: ${stats.score}    RECORDE: ${stats.bestScore}`,
-        {
-          fontFamily: 'monospace',
-          fontSize: '18px',
-          color: '#e8edf7',
-        },
-      )
-      .setOrigin(0.5)
-      .setStroke('#0d101b', 6)
-      .setDepth(21)
+  scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.6).setDepth(20)
+  scene.add
+    .text(width / 2, height / 2 - 92, 'FIM DE JOGO', {
+      fontFamily: FONT.family,
+      fontSize: '36px',
+      fontStyle: FONT.bold,
+      color: '#e8385a',
+    })
+    .setOrigin(0.5)
+    .setStroke(TEXT.stroke, 8)
+    .setDepth(21)
+  scene.add
+    .text(
+      width / 2,
+      height / 2 - 44,
+      `ABATES: ${stats.kills}    PONTOS: ${stats.score}    RECORDE: ${stats.bestScore}`,
+      {
+        fontFamily: FONT.family,
+        fontSize: '18px',
+        color: TEXT.primary,
+      },
+    )
+    .setOrigin(0.5)
+    .setStroke(TEXT.stroke, 6)
+    .setDepth(21)
 
-    createEndButtons(scene, width, height, 32, false, onPrimary, onMenu)
+  createEndButtons(scene, width, height, 32, false, onPrimary, onMenu)
 }
 
 /**
@@ -75,68 +76,69 @@ export function buildVictoryScreen(opts: EndScreenOptions): void {
     onMenu,
   } = opts
 
-scene.add.rectangle(width / 2, height / 2, width, height, 0x0a2318, 0.75).setDepth(20)
+  scene.add.rectangle(width / 2, height / 2, width, height, 0x0a2318, 0.75).setDepth(20)
+  scene.add
+    .text(width / 2, height / 2 - 112, 'VITÓRIA!', {
+      fontFamily: FONT.family,
+      fontSize: '36px',
+      fontStyle: FONT.bold,
+      color: '#7cfc8a',
+    })
+    .setOrigin(0.5)
+    .setStroke(TEXT.stroke, 8)
+    .setDepth(21)
+
+  if (campaignComplete) {
+    // Zerou o jogo: realça a conquista em vez da linha habitual de fase.
     scene.add
-      .text(width / 2, height / 2 - 112, 'VITÓRIA!', {
-        fontFamily: 'monospace',
-        fontSize: '36px',
-        fontStyle: 'bold',
-        color: '#7cfc8a',
+      .text(width / 2, height / 2 - 80, 'TODAS AS FASES CONCLUÍDAS!', {
+        fontFamily: FONT.family,
+        fontSize: '20px',
+        fontStyle: FONT.bold,
+        color: TEXT.gold,
       })
       .setOrigin(0.5)
-      .setStroke('#0d101b', 8)
+      .setStroke(TEXT.stroke, 6)
       .setDepth(21)
-
-    if (campaignComplete) {
-      // Zerou o jogo: realça a conquista em vez da linha habitual de fase.
-      scene.add
-        .text(width / 2, height / 2 - 80, 'TODAS AS FASES CONCLUÍDAS!', {
-          fontFamily: 'monospace',
-          fontSize: '20px',
-          fontStyle: 'bold',
-          color: '#ffd54f',
-        })
-        .setOrigin(0.5)
-        .setStroke('#0d101b', 6)
-        .setDepth(21)
-      scene.add
-        .text(width / 2, height / 2 - 32, 'PARABÉNS, você venceu a campanha!', {
-          fontFamily: 'monospace',
-          fontSize: '16px',
-          color: '#c8e6c9',
-        })
-        .setOrigin(0.5)
-        .setStroke('#0d101b', 4)
-        .setDepth(21)
-    } else if (levelName != null && levelVictoryKills != null) {
-      scene.add
-        .text(width / 2, height / 2 - 80, `${levelName} CONCLUÍDA  ${levelVictoryKills} ZUMBIS`, {
-          fontFamily: 'monospace',
-          fontSize: '18px',
-          color: '#c8e6c9',
-        })
-        .setOrigin(0.5)
-        .setDepth(21)
-    }
-
     scene.add
-      .text(
-        width / 2,
-        height / 2 - 27,
-        `ABATES: ${stats.kills}    PONTOS: ${stats.score}    RECORDE: ${stats.bestScore}`,
-        {
-          fontFamily: 'monospace',
-          fontSize: '18px',
-          color: '#e8edf7',
-        },
-      )
+      .text(width / 2, height / 2 - 32, 'PARABÉNS, você venceu a campanha!', {
+        fontFamily: FONT.family,
+        fontSize: '16px',
+        color: '#c8e6c9',
+      })
       .setOrigin(0.5)
-      .setStroke('#0d101b', 6)
+      .setStroke(TEXT.stroke, 4)
       .setDepth(21)
+  } else if (levelName != null && levelVictoryKills != null) {
+    scene.add
+      .text(width / 2, height / 2 - 80, `${levelName} CONCLUÍDA  ${levelVictoryKills} ZUMBIS`, {
+        fontFamily: FONT.family,
+        fontSize: '18px',
+        color: '#c8e6c9',
+      })
+      .setOrigin(0.5)
+      .setStroke(TEXT.stroke, 4)
+      .setDepth(21)
+  }
 
-    spawnConfetti(scene, width)
-    const hasNext = hasNextLevel ?? false
-    createEndButtons(scene, width, height, 52, hasNext, onPrimary, onMenu)
+  scene.add
+    .text(
+      width / 2,
+      height / 2 - 27,
+      `ABATES: ${stats.kills}    PONTOS: ${stats.score}    RECORDE: ${stats.bestScore}`,
+      {
+        fontFamily: FONT.family,
+        fontSize: '18px',
+        color: TEXT.primary,
+      },
+    )
+    .setOrigin(0.5)
+    .setStroke(TEXT.stroke, 6)
+    .setDepth(21)
+
+  spawnConfetti(scene, width)
+  const hasNext = hasNextLevel ?? false
+  createEndButtons(scene, width, height, 52, hasNext, onPrimary, onMenu)
 }
 
 /** Botões da tela final (mesma dupla "principal + menu inicial" em ambos). */
@@ -167,9 +169,9 @@ function createEndButtons(
       height - 20,
       hasNextLevel ? 'ENTER: próxima fase   ESC: menu' : 'ENTER: jogar novamente   ESC: menu',
       {
-        fontFamily: 'monospace',
+        fontFamily: FONT.family,
         fontSize: '16px',
-        color: '#7a89a0',
+        color: TEXT.hint,
       },
     )
     .setOrigin(0.5, 0.5)

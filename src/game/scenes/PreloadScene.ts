@@ -9,35 +9,63 @@ import {
 } from '../sprites'
 import { AUDIO } from '../audio'
 import { LEVELS, bgImageKey } from '../levels'
+import { boundsFromRowFlags, type VerticalBounds } from '../spriteBounds'
 
 /**
  * Limites verticais dos pixels não-transparentes de um frame. Normalizar o
  * canvas inteiro pelo topo fazia pés "dançarem" quando as margens
  * transparentes mudavam de frame para frame; ancorar pelo fim do conteúdo
  * mantém os pés fixos no chão entre as animações.
+ *
+ * Só precisamos saber QUAIS LINHAS têm conteúdo opaco, nunca em que coluna.
+ * Por isso lemos a imagem linha a linha (`getImageData(0, y, w, 1)`) em vez de
+ * varrer o retângulo inteiro: o custo cai para h chamadas de leitura com o
+ * laço por pixel dentro do C++ do navegador, sem nenhum laço JS sobre a área
+ * total da imagem. O resultado é memoizado por frame, então cada textura é
+ * analisada uma única vez.
+ *
+ * A aritmética dos limites vive em `boundsFromRowFlags` (puro e testável);
+ * aqui fica só a leitura do DOM.
  */
-function visibleVerticalBounds(img: HTMLImageElement): { y: number; height: number } {
-  const canvas = document.createElement('canvas')
-  canvas.width = img.width
-  canvas.height = img.height
-  const ctx = canvas.getContext('2d', { willReadFrequently: true })!
-  ctx.drawImage(img, 0, 0)
-  const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data
+const visibleBoundsCache = new WeakMap<HTMLImageElement, VerticalBounds>()
 
-  let minY = canvas.height
-  let maxY = -1
-  for (let y = 0; y < canvas.height; y++) {
-    for (let x = 0; x < canvas.width; x++) {
-      if (data[(y * canvas.width + x) * 4 + 3] > 0) {
-        if (y < minY) minY = y
-        if (y > maxY) maxY = y
-      }
-    }
+function visibleVerticalBounds(img: HTMLImageElement): VerticalBounds {
+  const cached = visibleBoundsCache.get(img)
+  if (cached) return cached
+
+  const width = img.width
+  const height = img.height
+
+  if (width <= 0 || height <= 0) {
+    const empty = { y: 0, height }
+    visibleBoundsCache.set(img, empty)
+    return empty
   }
 
-  // Frame totalmente transparente: usa o canvas inteiro como fallback.
-  if (maxY < minY) return { y: 0, height: canvas.height }
-  return { y: minY, height: maxY - minY + 1 }
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = 1
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })!
+
+  const rowHasContent: boolean[] = []
+  for (let y = 0; y < height; y++) {
+    ctx.clearRect(0, 0, width, 1)
+    ctx.drawImage(img, 0, -y)
+    const alpha = ctx.getImageData(0, 0, width, 1).data
+
+    let hasContent = false
+    for (let i = 3; i < alpha.length; i += 4) {
+      if (alpha[i] > 0) {
+        hasContent = true
+        break
+      }
+    }
+    rowHasContent.push(hasContent)
+  }
+
+  const bounds = boundsFromRowFlags(rowHasContent)
+  visibleBoundsCache.set(img, bounds)
+  return bounds
 }
 
 export class PreloadScene extends Phaser.Scene {
@@ -337,6 +365,10 @@ export class PreloadScene extends Phaser.Scene {
       this.textures.addCanvas('pixel', px)
     }
 
+    // O pickup tem guarda própria: chamá-lo de dentro do `if (heart)` o
+    // deixava ausente sempre que 'heart' já existisse no TextureManager.
+    this.createPickupHeartTexture()
+
     if (this.textures.exists('heart')) return
 
     const heartRows = [
@@ -360,7 +392,6 @@ export class PreloadScene extends Phaser.Scene {
       }
     })
     this.textures.addCanvas('heart', c)
-    this.createPickupHeartTexture()
   }
 
   /** Coração de power-up: desenhado maior (16x16) e já na cor vermelha. */

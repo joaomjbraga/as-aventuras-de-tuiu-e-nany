@@ -47,6 +47,15 @@ export default tseslint.config(
     },
   },
   {
+    // Site estático em doc/: HTML/CSS/JS puros, roda no navegador
+    files: ['doc/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+      },
+    },
+  },
+  {
     rules: {
       '@typescript-eslint/no-explicit-any': 'warn',
     },

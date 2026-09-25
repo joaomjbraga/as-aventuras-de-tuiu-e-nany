@@ -2,13 +2,17 @@ import Phaser from 'phaser'
 import { CHARACTERS, type CharacterKey } from '../sprites'
 import { CONTROL_SCHEMES, type ControlSchemeId } from '../controls'
 import { setSessionPlayers, type PlayerId, type SessionPlayer } from '../session'
+import { COLOR, FONT, TEXT } from '../theme'
 
-const OPTIONS: CharacterKey[] = ['tuio', 'nany']
+/**
+ * Opções desta tela derivadas de `CHARACTERS`: adicionar um personagem em
+ * sprites.ts passa a exibi-lo aqui automaticamente, sem duplicar a lista.
+ */
+const OPTIONS = Object.keys(CHARACTERS) as CharacterKey[]
 
 interface PlayerCursor {
   playerId: PlayerId
   scheme: ControlSchemeId
-  color: number
   index: number
   marker: Phaser.GameObjects.Rectangle
   confirmed: boolean
@@ -48,33 +52,37 @@ export class CharacterSelectScene extends Phaser.Scene {
     this.options = []
     this.takenBy = {}
 
-    this.add.rectangle(cx, height / 2, width, height, 0x181d29)
+    this.add.rectangle(cx, height / 2, width, height, COLOR.bg)
 
     this.add
       .text(cx, 32, 'ESCOLHA SEU PERSONAGEM', {
-        fontFamily: 'monospace',
+        fontFamily: FONT.family,
         fontSize: '26px',
-        color: '#e0e8f0',
-        fontStyle: 'bold',
+        color: TEXT.primary,
+        fontStyle: FONT.bold,
       })
       .setOrigin(0.5)
-      .setStroke('#0d101b', 6)
+      .setStroke(TEXT.stroke, 6)
 
     // Cartões com personagem (sprites normalizados, alinhados pelos pés)
     const targetHeight = 208
     const feetY = 280
+    // Espaçamento derivado da quantidade de opções para a fileira ficar sempre
+    // centralizada, sem depender de quantos personagens existirem.
+    const cardSlot = 256
+    const spread = (OPTIONS.length - 1) * cardSlot
 
     OPTIONS.forEach((key, i) => {
       const def = CHARACTERS[key]
-      const x = cx - 128 + i * 256
+      const x = cx - spread / 2 + i * cardSlot
 
-      const panel = this.add.rectangle(x, 184, 236, 248, 0x131720)
-      panel.setStrokeStyle(1, 0x2c3350)
+      const panel = this.add.rectangle(x, 184, 236, 248, COLOR.panel)
+      panel.setStrokeStyle(1, COLOR.border)
 
       // Seleção com o mouse: clicar em um cartão seleciona o personagem (J1)
       panel.setInteractive({ useHandCursor: true })
       panel.on('pointerover', () => {
-        if (!this.takenBy[key]) panel.setStrokeStyle(1, 0x4fc3f7, 0.5)
+        if (!this.takenBy[key]) panel.setStrokeStyle(1, COLOR.hoverBorder, 0.5)
       })
       panel.on('pointerout', () => this.refreshSelectionVisuals())
       panel.on('pointerdown', () => this.selectWithMouse(i))
@@ -87,20 +95,20 @@ export class CharacterSelectScene extends Phaser.Scene {
 
       this.add
         .text(x, 332, def.name.toUpperCase(), {
-          fontFamily: 'monospace',
+          fontFamily: FONT.family,
           fontSize: '20px',
-          color: '#c8d6e5',
-          fontStyle: 'bold',
+          color: TEXT.body,
+          fontStyle: FONT.bold,
         })
         .setOrigin(0.5)
-        .setStroke('#0d101b', 6)
+        .setStroke(TEXT.stroke, 6)
 
       const confirmedLabel = this.add
         .text(x, 360, '', {
-          fontFamily: 'monospace',
+          fontFamily: FONT.family,
           fontSize: '16px',
-          color: '#7bed9f',
-          fontStyle: 'bold',
+          color: TEXT.ok,
+          fontStyle: FONT.bold,
         })
         .setOrigin(0.5)
 
@@ -109,26 +117,26 @@ export class CharacterSelectScene extends Phaser.Scene {
 
     this.prompt = this.add
       .text(cx, 380, '', {
-        fontFamily: 'monospace',
+        fontFamily: FONT.family,
         fontSize: '18px',
-        color: '#ffe082',
+        color: TEXT.accent,
         align: 'center',
-        fontStyle: 'bold',
+        fontStyle: FONT.bold,
         lineSpacing: 4,
       })
       .setOrigin(0.5)
-      .setStroke('#0d101b', 4)
+      .setStroke(TEXT.stroke, 4)
 
     this.add
       .text(cx, 412, 'J1: ←/→ + ENTER    J2: A/D + W    [ESC] voltar', {
-        fontFamily: 'monospace',
+        fontFamily: FONT.family,
         fontSize: '16px',
         color: '#6b7a8f',
         align: 'center',
       })
       .setOrigin(0.5)
 
-    this.cursors = [this.makeCursor('P1', 'p1', 0x4fc3f7), this.makeCursor('P2', 'p2', 0xffb74d)]
+    this.cursors = [this.makeCursor('P1', 'p1', COLOR.hoverBorder), this.makeCursor('P2', 'p2', COLOR.p2Border)]
     this.cursors.forEach((cursor) => this.placeMarker(cursor))
 
     this.enterKey = this.input.keyboard!.addKey('ENTER')
@@ -184,7 +192,6 @@ export class CharacterSelectScene extends Phaser.Scene {
     return {
       playerId,
       scheme,
-      color,
       index: 0,
       marker,
       confirmed: false,
@@ -212,11 +219,11 @@ export class CharacterSelectScene extends Phaser.Scene {
       const confirmed = this.takenBy[opt.key]
 
       let borderColor: number
-      if (confirmed) borderColor = 0x3fd07a
-      else if (isP1Here && isP2Here) borderColor = 0x9adcff
-      else if (isP1Here) borderColor = 0x4fc3f7
-      else if (isP2Here) borderColor = 0xffb74d
-      else borderColor = 0x2c3350
+      if (confirmed) borderColor = COLOR.confirmBorder
+      else if (isP1Here && isP2Here) borderColor = COLOR.hoverBorderBoth
+      else if (isP1Here) borderColor = COLOR.hoverBorder
+      else if (isP2Here) borderColor = COLOR.p2Border
+      else borderColor = COLOR.border
 
       opt.panel.setStrokeStyle(confirmed ? 2 : 1, borderColor, confirmed ? 1 : 0.85)
 

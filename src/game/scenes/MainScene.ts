@@ -22,6 +22,7 @@ import {
 import { multiplierFor, scoreOfKill } from '../score'
 import { resolvePlayerZombieContact, stompDamage, type PlayerContactSource } from '../combat'
 import { buildGameOverScreen, buildVictoryScreen } from '../ui/endScreen'
+import { COLOR, FONT, TEXT } from '../theme'
 import {
   PICKUP_EFFECTS,
   PICKUP_SAFETY_INTERVAL_MS,
@@ -328,7 +329,7 @@ export class MainScene extends Phaser.Scene {
           width: 300,
           height: 52,
           fontSize: '18px',
-          color: '#ffe082',
+          color: TEXT.accent,
           bgColor: 0x2a2f22,
           bgHover: 0x3a4230,
           strokeColor: 0x8a7a3a,
@@ -608,22 +609,22 @@ export class MainScene extends Phaser.Scene {
 
     this.bossLabel = this.add
       .text(width / 2, 112, `${name.toUpperCase()}`, {
-        fontFamily: 'monospace',
+        fontFamily: FONT.family,
         fontSize: '16px',
-        fontStyle: 'bold',
+        fontStyle: FONT.bold,
         color: '#ff5d6c',
       })
       .setOrigin(0.5, 0)
-      .setStroke('#0d101b', 4)
+      .setStroke(TEXT.stroke, 4)
       .setDepth(11)
 
     this.bossBarBack = this.add
-      .rectangle(width / 2, 136, 340, 14, 0x181d29)
-      .setStrokeStyle(2, 0xff5d6c, 0.9)
+      .rectangle(width / 2, 136, 340, 14, COLOR.bossBarBack)
+      .setStrokeStyle(2, COLOR.bossBar, 0.9)
       .setDepth(10)
 
     this.bossBarFill = this.add
-      .rectangle(width / 2 - 170, 136, 340, 10, 0xff5d6c)
+      .rectangle(width / 2 - 170, 136, 340, 10, COLOR.bossBar)
       .setOrigin(0, 0.5)
       .setDepth(11)
   }
@@ -653,14 +654,14 @@ export class MainScene extends Phaser.Scene {
   private showFloatingScore(x: number, y: number, value: number): void {
     const label = this.add
       .text(x, y - 44, `+${value}`, {
-        fontFamily: 'monospace',
+        fontFamily: FONT.family,
         fontSize: '18px',
-        fontStyle: 'bold',
-        color: '#ffe082',
+        fontStyle: FONT.bold,
+        color: TEXT.accent,
       })
       .setOrigin(0.5)
       .setDepth(3)
-      .setStroke('#0d101b', 6)
+      .setStroke(TEXT.stroke, 6)
     this.tweens.add({
       targets: label,
       y: y - 92,
@@ -766,16 +767,16 @@ export class MainScene extends Phaser.Scene {
         player.sprite.y - 148,
         `${player.name.toUpperCase()} CAIU!\nAPERTE ${label} PARA REVIVER`,
         {
-          fontFamily: 'monospace',
+          fontFamily: FONT.family,
           fontSize: '18px',
-          fontStyle: 'bold',
-          color: '#ffd54f',
+          fontStyle: FONT.bold,
+          color: TEXT.gold,
           align: 'center',
         },
       )
       .setOrigin(0.5)
       .setDepth(12)
-      .setStroke('#0d101b', 6)
+      .setStroke(TEXT.stroke, 6)
     this.tweens.add({ targets: prompt, alpha: 0.55, duration: 960, yoyo: true, repeat: -1 })
     this.revivePrompts.set(player.id, prompt)
   }
@@ -882,7 +883,7 @@ export class MainScene extends Phaser.Scene {
 
     // Vinheta de perigo: pulsa quando alguém está com o último coração
     this.vignette = this.add
-      .rectangle(width / 2, height / 2, width, height, 0xff1a2e, 0.14)
+      .rectangle(width / 2, height / 2, width, height, COLOR.danger, 0.14)
       .setDepth(8)
       .setVisible(false)
     this.tweens.add({
@@ -897,20 +898,20 @@ export class MainScene extends Phaser.Scene {
     // Placar de abates (topo central) com o multiplicador de combo
     this.killsText = this.add
       .text(width / 2, 8, 'ZOMBIES: 999  x10', {
-        fontFamily: 'monospace',
+        fontFamily: FONT.family,
         fontSize: '18px',
-        fontStyle: 'bold',
-        color: '#e8edf7',
+        fontStyle: FONT.bold,
+        color: TEXT.primary,
         letterSpacing: 2,
       })
       .setOrigin(0.5, 0)
       .setDepth(11)
-    this.killsText.setStroke('#0d101b', 6)
+    this.killsText.setStroke(TEXT.stroke, 6)
 
     this.add
-      .rectangle(width / 2, 0, 300, 52, 0x0a0c14, 0.45)
+      .rectangle(width / 2, 0, 300, 52, COLOR.hudBack, 0.45)
       .setOrigin(0.5, 0)
-      .setStrokeStyle(2, 0x2c3350, 0.7)
+      .setStrokeStyle(2, COLOR.hudP1, 0.7)
       .setDepth(9)
 
     this.killsText.setText('ZOMBIES: 0')
@@ -924,7 +925,7 @@ export class MainScene extends Phaser.Scene {
       // Corações só re-pintam quando o HP mudou
       if (this.lastHpByPlayer.get(player.id) !== player.hp) {
         hearts.forEach((heart, h) => {
-          heart.setTintFill(h < player.hp ? 0xff4d5d : 0x251f33)
+          heart.setTintFill(h < player.hp ? COLOR.heart : COLOR.heartEmpty)
         })
         this.lastHpByPlayer.set(player.id, player.hp)
       }
@@ -934,7 +935,7 @@ export class MainScene extends Phaser.Scene {
     // ou quando o multiplicador de combo está acima de x1
     const isRecord = this.kills > 0 && this.kills >= this.bestKills
     const boosted = this.mult > 1
-    const color = isRecord || boosted ? '#ffe082' : '#e8edf7'
+    const color = isRecord || boosted ? TEXT.accent : TEXT.primary
     const label = `ZOMBIES: ${this.kills}${boosted ? `  x${this.mult}` : ''}`
     if (label !== this.lastKillsLabel) {
       this.killsText.setText(label)
@@ -981,27 +982,27 @@ export class MainScene extends Phaser.Scene {
   private addPlayerHud(player: Player, index: number): void {
     const { width } = this.scale
     const isP1 = index === 0
-    const nameColor = isP1 ? '#8fd8ff' : '#ff9fc2'
+    const nameColor = isP1 ? TEXT.p1 : TEXT.p2
     const hearts: Phaser.GameObjects.Image[] = []
     const originX = isP1 ? 24 : width - 24
     const dir = isP1 ? 1 : -1
 
     const name = this.add
       .text(originX, 8, player.name.toUpperCase(), {
-        fontFamily: 'monospace',
+        fontFamily: FONT.family,
         fontSize: '18px',
-        fontStyle: 'bold',
+        fontStyle: FONT.bold,
         color: nameColor,
       })
       .setOrigin(isP1 ? 0 : 1, 0)
       .setDepth(11)
-    name.setStroke('#0d101b', 6)
+    name.setStroke(TEXT.stroke, 6)
 
     const panelW = name.width + player.maxHp * 24 + 40
     this.add
-      .rectangle(isP1 ? 0 : width, 0, panelW, 52, 0x0a0c14, 1)
+      .rectangle(isP1 ? 0 : width, 0, panelW, 52, COLOR.hudBack, 1)
       .setOrigin(isP1 ? 0 : 1, 0)
-      .setStrokeStyle(2, isP1 ? 0x2c3350 : 0x4a2c3e, 0.9)
+      .setStrokeStyle(2, isP1 ? COLOR.hudP1 : COLOR.hudP2, 0.9)
       .setDepth(9)
 
     const heartStart = originX + dir * (name.width + 18)

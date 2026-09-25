@@ -1,6 +1,8 @@
 import Phaser from 'phaser'
 import { CHARACTERS } from '../sprites'
 import { playIntro } from '../audio'
+import { resetSession } from '../session'
+import { COLOR, FONT, TEXT } from '../theme'
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -11,14 +13,22 @@ export class TitleScene extends Phaser.Scene {
     const { width, height } = this.scale
     const cx = width / 2
 
+    // O título é o hub de todos os caminhos de volta à arena (fim de jogo,
+    // vitória, atalho T na pausa). Zera a sessão aqui para que personagens,
+    // cenário e dificuldade da partida anterior não vazem para a próxima.
+    resetSession()
+
     playIntro(this)
 
     // Fundo
-    this.add.rectangle(cx, height / 2, width, height, 0x151a22)
+    this.add.rectangle(cx, height / 2, width, height, COLOR.bgText)
 
-    // "Planeta" simples no fundo
+    // "Planeta" simples no fundo: disco azul com um terminador (shadow) e borda.
+    // O alpha do terminador precisa ser 0 — com 1.0 ele cobria o disco inteiro
+    // e o planeta virava um círculo preto.
     this.add.circle(width - 40, 40, 22, 0x2a3a5c)
-    this.add.circle(width - 40, 40, 22, 0x000000, 1.0).setStrokeStyle(1, 0x3b5486)
+    this.add.circle(width - 30, 33, 22, 0x000000, 0.35)
+    this.add.circle(width - 40, 40, 22, 0x000000, 0).setStrokeStyle(1, 0x3b5486)
 
     // Estrelinhas decorativas
     for (let i = 0; i < 24; i++) {
@@ -30,23 +40,23 @@ export class TitleScene extends Phaser.Scene {
     // Título
     this.add
       .text(cx, 76, 'AS AVENTURAS DE', {
-        fontFamily: 'monospace',
+        fontFamily: FONT.family,
         fontSize: '24px',
-        color: '#9fb4cd',
-        fontStyle: 'bold',
+        color: TEXT.hint,
+        fontStyle: FONT.bold,
       })
       .setOrigin(0.5)
-      .setStroke('#0d101b', 6)
+      .setStroke(TEXT.stroke, 6)
 
     this.add
       .text(cx, 120, 'TUIU & NANY', {
-        fontFamily: 'monospace',
+        fontFamily: FONT.family,
         fontSize: '40px',
-        color: '#ffd54f',
-        fontStyle: 'bold',
+        color: TEXT.gold,
+        fontStyle: FONT.bold,
       })
       .setOrigin(0.5)
-      .setStroke('#0d101b', 8)
+      .setStroke(TEXT.stroke, 8)
 
     // Personagens lado a lado (normalizados, alinhados pelos pés)
     const chars = Object.values(CHARACTERS)
@@ -58,34 +68,34 @@ export class TitleScene extends Phaser.Scene {
       const x = cx - gap / 2 + i * gap
       const sprite = this.add.sprite(x, feetY - targetHeight / 2, def.key, 0)
       sprite.setScale(targetHeight / def.frameHeight)
-this.tweens.add({
-      targets: sprite,
-      y: feetY - targetHeight / 2 - 10,
-      duration: 1800 + i * 300,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
-    })
+      this.tweens.add({
+        targets: sprite,
+        y: feetY - targetHeight / 2 - 10,
+        duration: 1800 + i * 300,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      })
       this.add
         .text(x, 340, def.name.toUpperCase(), {
-          fontFamily: 'monospace',
+          fontFamily: FONT.family,
           fontSize: '16px',
-          color: '#c8d6e5',
+          color: TEXT.body,
         })
         .setOrigin(0.5)
-        .setStroke('#0d101b', 4)
+        .setStroke(TEXT.stroke, 4)
     })
 
     // Pista
     const hint = this.add
       .text(cx, height - 56, '[ ENTER ] para começar', {
-        fontFamily: 'monospace',
+        fontFamily: FONT.family,
         fontSize: '20px',
-        color: '#ffe082',
-        fontStyle: 'bold',
+        color: TEXT.accent,
+        fontStyle: FONT.bold,
       })
       .setOrigin(0.5)
-      .setStroke('#0d101b', 4)
+      .setStroke(TEXT.stroke, 4)
 
     // Também dá para clicar
     hint.setInteractive({ useHandCursor: true })
@@ -110,9 +120,9 @@ this.tweens.add({
     links.forEach(({ label, x, action }) => {
       const t = this.add
         .text(x, height - 16, label, {
-          fontFamily: 'monospace',
+          fontFamily: FONT.family,
           fontSize: '16px',
-          color: '#7a89a0',
+          color: TEXT.hint,
         })
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true })
@@ -124,8 +134,8 @@ this.tweens.add({
       }
 
       t.on('pointerdown', go)
-      t.on('pointerover', () => t.setColor('#ffe082'))
-      t.on('pointerout', () => t.setColor('#7a89a0'))
+      t.on('pointerover', () => t.setColor(TEXT.accent))
+      t.on('pointerout', () => t.setColor(TEXT.hint))
     })
 
     this.input.keyboard!.once('keydown-ENTER', () => {

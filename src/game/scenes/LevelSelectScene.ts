@@ -3,13 +3,13 @@ import { LEVELS, bgImageKey, type LevelConfig } from '../levels'
 import { createButton } from '../ui'
 import { setSessionLevel } from '../session'
 import { isLevelCompleted } from '../storage'
+import { COLOR, FONT, TEXT } from '../theme'
 
 interface LevelCard {
   level: LevelConfig
   panel: Phaser.GameObjects.Rectangle
   thumb: Phaser.GameObjects.Image
   name: Phaser.GameObjects.Text
-  done?: Phaser.GameObjects.Text
 }
 
 /**
@@ -34,6 +34,8 @@ export class LevelSelectScene extends Phaser.Scene {
   private escKey!: Phaser.Input.Keyboard.Key
   private dragStartX = 0
   private dragging = false
+  private cardsMask?: Phaser.Display.Masks.GeometryMask
+  private maskGraphics?: Phaser.GameObjects.Graphics
 
   constructor() {
     super({ key: 'LevelSelectScene' })
@@ -45,31 +47,30 @@ export class LevelSelectScene extends Phaser.Scene {
 
     this.selectedIndex = 0
 
-    this.add.rectangle(cx, height / 2, width, height, 0x181d29)
+    this.add.rectangle(cx, height / 2, width, height, COLOR.bg)
 
     this.add
       .text(cx, 28, 'ESCOLHA O CENÁRIO', {
-        fontFamily: 'monospace',
+        fontFamily: FONT.family,
         fontSize: '26px',
-        color: '#e0e8f0',
-        fontStyle: 'bold',
+        color: TEXT.primary,
+        fontStyle: FONT.bold,
       })
       .setOrigin(0.5)
-      .setStroke('#0d101b', 6)
+      .setStroke(TEXT.stroke, 6)
 
     this.buildCards()
 
-    this.cursor = this.add.rectangle(0, 0, 32, 8, 0x4fc3f7, 1).setOrigin(0.5).setDepth(5)
+    this.cursor = this.add.rectangle(0, 0, 32, 8, COLOR.hoverBorder, 1).setOrigin(0.5).setDepth(5)
     if (this.cards.length > 0) this.placeCursor()
 
-    // A partida começa só com uma ação explícita (botão ou ENTER), para um
-    // Um clique no card apenas seleciona a partida só começa com a tecla
-    // ou o botão de confirmação, como no rank de escolha.
+    // A partida começa só com uma ação explícita (botão ou ENTER): um clique no
+    // card apenas seleciona, como no CharacterSelectScene.
     createButton(this, cx, height - 84, 'COMEÇAR [ENTER]', () => this.confirmSelected(), {
       width: 320,
       height: 60,
       fontSize: '20px',
-      color: '#ffe082',
+      color: TEXT.accent,
       bgColor: 0x2a2f22,
       bgHover: 0x3a4230,
       strokeColor: 0x8a7a3a,
@@ -77,7 +78,7 @@ export class LevelSelectScene extends Phaser.Scene {
 
     const navigationHint = this.add
       .text(cx, height - 28, '←/→ ou RODA: rolar · clique: escolher · ENTER: começar    ESC: voltar', {
-        fontFamily: 'monospace',
+        fontFamily: FONT.family,
         fontSize: '16px',
         color: '#6b7a8f',
       })
@@ -107,6 +108,11 @@ export class LevelSelectScene extends Phaser.Scene {
       this.dragStartX = pointer.x
       this.dragging = false
     })
+    // Soltar o botão precisa encerrar o arrasto. Sem este handler, soltar sobre
+    // um card deixava `dragging` ligado e o `pointerup` do panel era ignorado.
+    this.input.on('pointerup', () => {
+      this.dragging = false
+    })
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
       if (!pointer.isDown) return
       const deltaX = pointer.x - this.dragStartX
@@ -115,6 +121,19 @@ export class LevelSelectScene extends Phaser.Scene {
       this.dragStartX = pointer.x
       this.setScrollOffset(this.scrollOffset - deltaX)
     })
+  }
+
+  /**
+   * Descarta a máscara de recorte: o `Graphics` foi criado fora da display
+   * list e não seria destruído automaticamente, vazando um por reentrada.
+   */
+  shutdown(): void {
+    this.cardsMask?.destroy()
+    this.maskGraphics?.destroy()
+    this.cardsMask = undefined
+    this.maskGraphics = undefined
+    this.cards = []
+    this.dragging = false
   }
 
   update(): void {
@@ -147,18 +166,23 @@ export class LevelSelectScene extends Phaser.Scene {
     this.scrollOffset = 0
 
     this.cardsContainer = this.add.container(this.viewportLeft, 0).setDepth(1)
+    // O Graphics da máscara é criado fora da display list (`false`), logo a
+    // limpeza da cena não o destrói: seguramos a referência e destruímos em
+    // shutdown() para não acumular um por reentrada na cena.
     const maskGraphics = this.make.graphics({}, false)
     maskGraphics.fillStyle(0xffffff)
     maskGraphics.fillRect(this.viewportLeft, 76, this.viewportWidth, height - 136)
-    this.cardsContainer.setMask(maskGraphics.createGeometryMask())
+    this.cardsMask = maskGraphics.createGeometryMask()
+    this.cardsContainer.setMask(this.cardsMask)
+    this.maskGraphics = maskGraphics
 
     const cardStartX = this.cardWidth / 2
 
     LEVELS.forEach((level, i) => {
       const x = cardStartX + i * (this.cardWidth + this.cardGap)
 
-      const panel = this.add.rectangle(x, cardY, this.cardWidth, cardH, 0x131720)
-      panel.setStrokeStyle(1, 0x2c3350)
+      const panel = this.add.rectangle(x, cardY, this.cardWidth, cardH, COLOR.panel)
+      panel.setStrokeStyle(1, COLOR.border)
 
       // Miniatura da arte de fundo da fase (textura `bg-<id>-img`), com ajuste
       // de escala para caber no card sem distorção (imagens widescreen).
@@ -173,26 +197,26 @@ export class LevelSelectScene extends Phaser.Scene {
 
       const name = this.add
         .text(x, cardY + 86, level.name.toUpperCase(), {
-          fontFamily: 'monospace',
+          fontFamily: FONT.family,
           fontSize: '20px',
-          color: '#c8d6e5',
-          fontStyle: 'bold',
+          color: TEXT.body,
+          fontStyle: FONT.bold,
         })
         .setOrigin(0.5)
-        .setStroke('#0d101b', 6)
+        .setStroke(TEXT.stroke, 6)
 
       // Fase já concluída: '✓' dourado no canto do card
       let done: Phaser.GameObjects.Text | undefined
       if (isLevelCompleted(level.id)) {
         done = this.add
           .text(x + this.cardWidth / 2 - 12, cardY - cardH / 2 + 10, '✓', {
-            fontFamily: 'monospace',
+            fontFamily: FONT.family,
             fontSize: '24px',
             color: '#ffd54f',
-            fontStyle: 'bold',
+            fontStyle: FONT.bold,
           })
           .setOrigin(1, 0)
-          .setStroke('#0d101b', 4)
+          .setStroke(TEXT.stroke, 4)
       }
 
       this.cardsContainer.add([panel, thumb, namePlate, name])
@@ -200,7 +224,7 @@ export class LevelSelectScene extends Phaser.Scene {
 
       panel.setInteractive({ useHandCursor: true })
       panel.on('pointerover', () => {
-        if (this.selectedIndex !== i) panel.setStrokeStyle(1, 0x4fc3f7, 0.5)
+        if (this.selectedIndex !== i) panel.setStrokeStyle(1, COLOR.hoverBorder, 0.5)
       })
       panel.on('pointerout', () => this.refreshSelection())
       panel.on('pointerdown', () => {
@@ -214,7 +238,7 @@ export class LevelSelectScene extends Phaser.Scene {
         this.refreshSelection()
       })
 
-      this.cards.push({ level, panel, thumb, name, done })
+      this.cards.push({ level, panel, thumb, name })
     })
 
     this.refreshSelection()
@@ -253,9 +277,9 @@ export class LevelSelectScene extends Phaser.Scene {
   private refreshSelection(): void {
     this.cards.forEach((card, i) => {
       const active = i === this.selectedIndex
-      card.panel.setStrokeStyle(active ? 2 : 1, active ? 0x8ab0ff : 0x2c3350, active ? 1 : 0.85)
+      card.panel.setStrokeStyle(active ? 2 : 1, active ? COLOR.selectBorder : COLOR.border, active ? 1 : 0.85)
       card.thumb.setAlpha(active ? 1 : 0.65)
-      card.name.setColor(active ? '#ffffff' : '#c8d6e5')
+      card.name.setColor(active ? '#ffffff' : TEXT.body)
     })
   }
 

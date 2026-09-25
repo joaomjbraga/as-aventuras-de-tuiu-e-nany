@@ -1,6 +1,8 @@
 import Phaser from 'phaser'
 import { MUSIC_VOLUME_STEP, adjustMusicVolume, applyMute, applyMusicVolume, toggleMute } from '../audio'
 import { isMuted } from '../storage'
+import { FONT, TEXT } from '../theme'
+import { MENU_STYLE, VerticalMenu } from '../ui/verticalMenu'
 
 type PauseOptionId = 'resume' | 'restart' | 'title' | 'volume' | 'mute' | 'quit'
 
@@ -16,18 +18,15 @@ const OPTION_WIDTH = 460
 const OPTION_HEIGHT = 44
 
 export class PauseScene extends Phaser.Scene {
+  private menu!: VerticalMenu
   private options: PauseOption[] = []
-  private optionRects: Phaser.GameObjects.Rectangle[] = []
-  private optionTexts: Phaser.GameObjects.Text[] = []
-  private cursor!: Phaser.GameObjects.Text
-  private selectedIndex = 0
   private musicVolume = 0
 
-  private moveUpKeys: Phaser.Input.Keyboard.Key[]
-  private moveDownKeys: Phaser.Input.Keyboard.Key[]
-  private volumeDownKeys: Phaser.Input.Keyboard.Key[]
-  private volumeUpKeys: Phaser.Input.Keyboard.Key[]
-  private selectKeys: Phaser.Input.Keyboard.Key[]
+  private moveUpKeys: Phaser.Input.Keyboard.Key[] = []
+  private moveDownKeys: Phaser.Input.Keyboard.Key[] = []
+  private volumeDownKeys: Phaser.Input.Keyboard.Key[] = []
+  private volumeUpKeys: Phaser.Input.Keyboard.Key[] = []
+  private selectKeys: Phaser.Input.Keyboard.Key[] = []
   private escKey!: Phaser.Input.Keyboard.Key
   private restartKey!: Phaser.Input.Keyboard.Key
   private titleKey!: Phaser.Input.Keyboard.Key
@@ -36,11 +35,6 @@ export class PauseScene extends Phaser.Scene {
 
   constructor() {
     super({ key: 'PauseScene' })
-    this.moveUpKeys = []
-    this.moveDownKeys = []
-    this.volumeDownKeys = []
-    this.volumeUpKeys = []
-    this.selectKeys = []
   }
 
   create(): void {
@@ -49,24 +43,17 @@ export class PauseScene extends Phaser.Scene {
     applyMute(this)
     this.musicVolume = applyMusicVolume(this.musicScene())
 
-    // A cena é reutilizada a cada pausa: limpa as listas da abertura anterior
-    // (objetos destruídos) e zera o cursor, senão o highlight/atualização de SOM
-    // passam a operar em entradas antigas e não afetam os elementos visíveis.
-    this.optionRects = []
-    this.optionTexts = []
-    this.selectedIndex = 0
-
     this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.6).setDepth(10)
 
     this.add
       .text(width / 2, 60, 'PAUSA', {
-        fontFamily: 'monospace',
+        fontFamily: FONT.family,
         fontSize: '40px',
-        fontStyle: 'bold',
-        color: '#e0e8f0',
+        fontStyle: FONT.bold,
+        color: TEXT.primary,
       })
       .setOrigin(0.5)
-      .setStroke('#0d101b', 8)
+      .setStroke(TEXT.stroke, 8)
       .setDepth(11)
 
     // Opções navegáveis por teclado (sem depender do mouse)
@@ -79,51 +66,46 @@ export class PauseScene extends Phaser.Scene {
       { id: 'quit', label: 'SAIR', action: () => this.quitGame() },
     ]
 
-    this.options.forEach((opt, i) => {
-      const y = OPTION_FIRST_Y + i * OPTION_SPACING
-      const rect = this.add
-        .rectangle(width / 2, y, OPTION_WIDTH, OPTION_HEIGHT, 0x1c2230)
-        .setStrokeStyle(2, 0x4a5a80)
-        .setDepth(11)
-        .setInteractive({ useHandCursor: true })
-      rect.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-        if (opt.id === 'volume' && pointer.rightButtonDown()) this.adjustMusicVolume(-MUSIC_VOLUME_STEP)
-        else opt.action()
-      })
-      this.optionRects.push(rect)
-
-      const text = this.add
-        .text(width / 2, y, opt.label, {
-          fontFamily: 'monospace',
-          fontSize: '20px',
-          fontStyle: 'bold',
-          color: '#e8edf7',
-        })
-        .setOrigin(0.5)
-        .setStroke('#0d101b', 4)
-        .setDepth(11)
-      this.optionTexts.push(text)
-    })
-
-    this.cursor = this.add
-      .text(width / 2 - OPTION_WIDTH / 2 - 22, OPTION_FIRST_Y, '▶', {
-        fontFamily: 'monospace',
-        fontSize: '24px',
-        fontStyle: 'bold',
-        color: '#ffe082',
-      })
-      .setOrigin(0.5)
-      .setDepth(11)
+    // A cena é reutilizada a cada pausa: o VerticalMenu é reconstruído do zero
+    // a partir das opções atuais, então nenhum highlight/rótulo da abertura
+    // anterior sobrevive. `PauseOption` satisfaz `VerticalMenuItem`
+    // estruturalmente, então a lista é passada direto e `setLabel` atualiza
+    // a mesma entrada que o `update()` lê.
+    this.menu = new VerticalMenu(
+      this,
+      {
+        firstY: OPTION_FIRST_Y,
+        spacing: OPTION_SPACING,
+        width: OPTION_WIDTH,
+        height: OPTION_HEIGHT,
+        cursorX: width / 2 - OPTION_WIDTH / 2 - 22,
+        depth: 11,
+        fontSize: '20px',
+        cursorColor: TEXT.accent,
+        // Botão direito na linha de volume DIMINUI o volume; o esquerdo executa
+        // a ação (que também aumenta).
+        onActivate: (index, pointer) => {
+          const option = this.options[index]
+          if (option.id === 'volume' && pointer.rightButtonDown()) {
+            this.adjustMusicVolume(-MUSIC_VOLUME_STEP)
+            return
+          }
+          option.action()
+        },
+      },
+      MENU_STYLE,
+      this.options,
+    )
 
     this.add
       .text(
         width / 2,
-        402,
+        height - 30,
         '↑/↓: escolher   ←/→ ou A/D: volume   ENTER/SPACE: selecionar\nESC: continuar   M: mudo   R: reiniciar   T: título   Q: sair',
         {
-          fontFamily: 'monospace',
+          fontFamily: FONT.family,
           fontSize: '14px',
-          color: '#9aa9c0',
+          color: TEXT.controls,
           align: 'center',
           lineSpacing: 4,
         },
@@ -142,12 +124,10 @@ export class PauseScene extends Phaser.Scene {
     this.titleKey = kb.addKey('T')
     this.muteKey = kb.addKey('M')
     this.quitKey = kb.addKey('Q')
-
-    this.highlightOption()
   }
 
   update(): void {
-    const selectedOption = this.options[this.selectedIndex]
+    const selectedOption = this.options[this.menu.index]
     if (selectedOption?.id === 'volume') {
       if (this.volumeDownKeys.some((key) => Phaser.Input.Keyboard.JustDown(key))) {
         this.adjustMusicVolume(-MUSIC_VOLUME_STEP)
@@ -160,15 +140,15 @@ export class PauseScene extends Phaser.Scene {
     }
 
     if (this.moveUpKeys.some((key) => Phaser.Input.Keyboard.JustDown(key))) {
-      this.move(-1)
+      this.menu.move(-1)
       return
     }
     if (this.moveDownKeys.some((key) => Phaser.Input.Keyboard.JustDown(key))) {
-      this.move(1)
+      this.menu.move(1)
       return
     }
     if (this.selectKeys.some((key) => Phaser.Input.Keyboard.JustDown(key))) {
-      this.options[this.selectedIndex].action()
+      this.options[this.menu.index]?.action()
       return
     }
     if (Phaser.Input.Keyboard.JustDown(this.escKey)) {
@@ -201,34 +181,19 @@ export class PauseScene extends Phaser.Scene {
 
   private adjustMusicVolume(delta: number): void {
     this.musicVolume = adjustMusicVolume(this.musicScene(), delta)
-    const index = this.options.findIndex((option) => option.id === 'volume')
-    if (index >= 0) {
-      this.options[index].label = this.volumeLabel()
-      this.optionTexts[index].setText(this.options[index].label)
-    }
+    this.relabel('volume', this.volumeLabel())
   }
 
   private toggleSound(): void {
     const muted = toggleMute(this)
-    const index = this.options.findIndex((option) => option.id === 'mute')
-    if (index >= 0) {
-      this.options[index].label = `SOM: ${muted ? 'OFF' : 'ON'}`
-      this.optionTexts[index].setText(this.options[index].label)
-    }
+    this.relabel('mute', `SOM: ${muted ? 'OFF' : 'ON'}`)
   }
 
-  private move(delta: number): void {
-    this.selectedIndex = (this.selectedIndex + delta + this.options.length) % this.options.length
-    this.highlightOption()
-  }
-
-  private highlightOption(): void {
-    this.optionRects.forEach((rect, i) => {
-      const active = i === this.selectedIndex
-      rect.setFillStyle(active ? 0x2a3550 : 0x1c2230)
-      rect.setStrokeStyle(2, active ? 0x8ab0ff : 0x4a5a80, active ? 1 : 0.8)
-    })
-    this.cursor.setY(OPTION_FIRST_Y + this.selectedIndex * OPTION_SPACING)
+  /** Atualiza o rótulo de uma opção (volume e mudo mudam de valor). */
+  private relabel(id: PauseOptionId, label: string): void {
+    const index = this.options.findIndex((option) => option.id === id)
+    if (index < 0) return
+    this.menu.setLabel(index, label)
   }
 
   private resumeGame(): void {

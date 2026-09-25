@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>As Aventuras de Tuiu e Nany</title>
+    <meta
+      name="description"
+      content="Jogo desktop 2D em pixel art, co-op local para duas pessoas. Tuiu e Nany enfrentam zumbis em cenários que contam a história de um casal."
+    />
+    <meta name="theme-color" content="#0b0f1a" />
+    <meta property="og:title" content="As Aventuras de Tuiu e Nany" />
+    <meta
+      property="og:description"
+      content="Jogo desktop 2D em pixel art, co-op local para duas pessoas. Tuiu e Nany enfrentam zumbis em cenários que contam a história de um casal."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="assets/video-thumb.jpg" />
+    <link rel="icon" href="assets/video-thumb.jpg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+    <p class="aviso-local" data-aviso-local hidden>
+      <strong>O trailer não toca com a página aberta pelo sistema de arquivos.</strong> O YouTube exige um cabeçalho
+      <code>Referer</code> e recusa o player com o Erro 153 quando a página vem de <code>file://</code>. Sirva a pasta
+      por HTTP: <code>python3 -m http.server 8000 --directory doc</code> e abra <code>http://localhost:8000</code>.
+      Enquanto isso,
+      <a href="https://youtu.be/LKFTkYi2UM8" target="_blank" rel="noopener noreferrer">o trailer está no YouTube ↗</a>.
+    </p>
+
+    <!-- ============ topo ============ -->
+    <header class="topo">
+      <div class="topo__interna">
+        <a class="emblema" href="#conteudo" aria-label="As Aventuras de Tuiu e Nany, início">
+          <span class="emblema__marca" aria-hidden="true">&amp;</span>
+          <span class="emblema__nome">TUIU <em>&amp;</em> NANY</span>
+        </a>
+
+        <nav class="topo__nav" aria-label="Seções">
+          <a href="#missao">missão</a>
+          <a href="#campanha">campanha</a>
+          <a href="#dificuldade">dificuldade</a>
+          <a href="#equipe">equipe</a>
+          <a href="#armamento">armamento</a>
+          <a href="#suporte">suporte</a>
+        </nav>
+
+        <div class="topo__estado">
+          <p class="estado__versao">v0.0.1</p>
+          <p class="estado__texto"><span class="estado__ponto" aria-hidden="true"></span> em desenvolvimento</p>
+        </div>
+
+        <form class="topo__busca" role="search">
+          <label class="sr" for="campo-busca">Buscar no site</label>
+          <input id="campo-busca" type="search" placeholder="buscar" autocomplete="off" data-busca />
+          <p class="topo__busca-aviso" data-busca-aviso role="status" hidden></p>
+        </form>
+      </div>
+      <p class="linha-luz" aria-hidden="true"></p>
+    </header>
+
+    <main class="conteudo" id="conteudo">
+      <!-- ============ herói ============ -->
+      <section class="heroi">
+        <div class="heroi__moldura">
+          <iframe
+            class="heroi__video"
+            data-video
+            src="https://www.youtube-nocookie.com/embed/LKFTkYi2UM8?autoplay=1&amp;loop=1&amp;mute=1&amp;controls=0&amp;playlist=LKFTkYi2UM8&amp;rel=0&amp;playsinline=1&amp;enablejsapi=1&amp;disablekb=1"
+            title="Vídeo de apresentação de As Aventuras de Tuiu e Nany, em loop e sem som"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            referrerpolicy="strict-origin-when-cross-origin"
+          ></iframe>
+          <div class="heroi__veu" aria-hidden="true"></div>
+
+          <div class="heroi__texto">
+            <p class="heroi__etiqueta">projeto independente // jogo de desktop</p>
+            <h1 class="heroi__titulo">As Aventuras de<br /><strong>Tuiu</strong> e <strong>Nany</strong></h1>
+            <p class="heroi__resumo">
+              Apocalipse zumbi em pixel art para duas pessoas no mesmo teclado. Quatro cenários que contam a história de
+              um casal, e um chefe em cada um deles com o nome de alguém que importa.
+            </p>
+            <div class="heroi__acoes">
+              <a
+                class="botao botao--ouro"
+                href="https://github.com/joaomjbraga/as-aventuras-de-tuiu-e-nany/releases"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Baixar para desktop
+              </a>
+              <a class="botao botao--contorno" href="#campanha">Ver as 4 campanhas</a>
+            </div>
+          </div>
+
+          <div class="heroi__controles">
+            <button
+              class="heroi__parar"
+              type="button"
+              data-parar-video
+              aria-pressed="false"
+              aria-label="Pausar o vídeo de apresentação"
+            >
+              <span data-parar-icone aria-hidden="true">II</span>
+            </button>
+            <a class="heroi__youtube" href="https://youtu.be/LKFTkYi2UM8" target="_blank" rel="noopener noreferrer"
+              >no youtube ↗</a
+            >
+          </div>
+        </div>
+
+        <ul class="heroi__indicadores">
+          <li><strong>4</strong><span>cenários</span></li>
+          <li><strong>2</strong><span>jogadores</span></li>
+          <li><strong>3</strong><span>dificuldades</span></li>
+          <li><strong>120</strong><span>hp no chefe final</span></li>
+        </ul>
+      </section>
+
+      <!-- ============ missão ============ -->
+      <section class="secao" id="missao">
+        <header class="secao__cabeca">
+          <p class="secao__indice">01 // missão</p>
+          <h2 class="secao__titulo">Por que este jogo existe</h2>
+        </header>
+        <div class="missao">
+          <div class="missao__texto">
+            <p>
+              No dia 22 de setembro de 2021, duas pessoas começaram a namorar. Cinco anos depois, pensando no que daria
+              para marcar a data, veio a ideia:
+              <em>e se a gente vivesse um apocalipse zumbi?</em>
+            </p>
+            <p>
+              Um jogo de zumbi com dois personagens estava fácil. O que não queria era algo genérico. Tuiu e Nany
+              nasceram dentro desse mundo justamente para que a aventura fosse sobre os dois — e, se a aventura era
+              sobre os dois, os lugares também precisavam fazer parte da história. Cada fase saiu de um lugar por onde
+              os dois já passaram, e os chefes são pessoas dessa história.
+            </p>
+            <p>
+              Roda offline, num teclado só, sem pedir conta, login nem internet. Quem joga sozinho controla os dois.
+              Quem tem companhia divide o teclado, e o segundo jogador entra no meio da partida, quando a coisa já está
+              feia.
+            </p>
+          </div>
+          <aside class="placa">
+            <h3 class="placa__titulo">Ficha técnica</h3>
+            <dl>
+              <div>
+                <dt>Plataforma</dt>
+                <dd>Windows 10/11 · Linux</dd>
+              </div>
+              <div>
+                <dt>Motor</dt>
+                <dd>Electron 44 + Phaser 3.90</dd>
+              </div>
+              <div>
+                <dt>Linguagem</dt>
+                <dd>TypeScript 5.6</dd>
+              </div>
+              <div>
+                <dt>Instalador</dt>
+                <dd>NSIS + portátil · AppImage</dd>
+              </div>
+              <div>
+                <dt>Controles</dt>
+                <dd>Teclado único, 2 jogadores</dd>
+              </div>
+              <div>
+                <dt>Rede</dt>
+                <dd>Não usada</dd>
+              </div>
+              <div>
+                <dt>Licença</dt>
+                <dd>Código aberto, sem DRM</dd>
+              </div>
+            </dl>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============ campanha ============ -->
+      <section class="secao" id="campanha">
+        <header class="secao__cabeca">
+          <p class="secao__indice">02 // campanha</p>
+          <h2 class="secao__titulo">Quatro cenários, quatro chefes</h2>
+          <p class="secao__legenda">
+            Vença o chefe e a próxima fase é sorteada. A vida do chefe praticamente dobra da primeira para a última.
+          </p>
+        </header>
+
+        <div class="seletor" role="tablist" aria-label="Escolher cenário">
+          <button type="button" role="tab" class="alvo" data-fase="casa" aria-selected="true">
+            <span class="alvo__foto">
+              <img src="assets/casa.jpg" alt="" />
+              <span class="alvo__num">01</span>
+            </span>
+            <span class="alvo__nome">Casa</span>
+            <span class="alvo__meta">meta 20 abates</span>
+          </button>
+          <button type="button" role="tab" class="alvo" data-fase="ieab" aria-selected="false">
+            <span class="alvo__foto">
+              <img src="assets/ieab.jpg" alt="" />
+              <span class="alvo__num">02</span>
+            </span>
+            <span class="alvo__nome">IEAB</span>
+            <span class="alvo__meta">meta 25 abates</span>
+          </button>
+          <button type="button" role="tab" class="alvo" data-fase="castro-alves" aria-selected="false">
+            <span class="alvo__foto">
+              <img src="assets/castro-alves.jpg" alt="" />
+              <span class="alvo__num">03</span>
+            </span>
+            <span class="alvo__nome">Castro Alves</span>
+            <span class="alvo__meta">meta 30 abates</span>
+          </button>
+          <button type="button" role="tab" class="alvo" data-fase="cetep" aria-selected="false">
+            <span class="alvo__foto">
+              <img src="assets/cetep.jpg" alt="" />
+              <span class="alvo__num">04</span>
+            </span>
+            <span class="alvo__nome">CETEP</span>
+            <span class="alvo__meta">meta 35 abates</span>
+          </button>
+        </div>
+
+        <div class="hangar" data-detalhe-fase>
+          <div class="hangar__foto">
+            <img data-fase-foto src="assets/casa.jpg" alt="Cenário Casa" />
+            <p class="hangar__selo" data-fase-indice>cenário 01</p>
+          </div>
+
+          <div class="hangar__dados">
+            <h3 class="hangar__nome" data-fase-nome>CASA</h3>
+            <p class="hangar__frase" data-fase-frase>O começo de tudo, no lugar onde a aventura nasceu.</p>
+
+            <p class="hangar__chefe-rotulo">Chefe do cenário</p>
+            <p class="hangar__chefe" data-fase-chefe>ZUMBI-CHEFE</p>
+
+            <div class="medidores">
+              <div class="medidor">
+                <p class="medidor__rotulo">Vida do chefe <span data-fase-vida>56</span></p>
+                <div class="medidor__trilho">
+                  <span class="medidor__cheio" data-fase-vida-barra style="width: 47%"></span>
+                </div>
+              </div>
+              <div class="medidor">
+                <p class="medidor__rotulo">Velocidade do chefe <span data-fase-velocidade>60</span></p>
+                <div class="medidor__trilho">
+                  <span class="medidor__cheio medidor__cheio--aco" data-fase-vel-barra style="width: 71%"></span>
+                </div>
+              </div>
+              <div class="medidor">
+                <p class="medidor__rotulo">Zumbis simultâneos <span data-fase-zumbis>14</span></p>
+                <div class="medidor__trilho">
+                  <span class="medidor__cheio medidor__cheio--oliva" data-fase-zumbis-barra style="width: 70%"></span>
+                </div>
+              </div>
+              <div class="medidor">
+                <p class="medidor__rotulo">Meta de abates <span data-fase-meta>20</span></p>
+                <div class="medidor__trilho">
+                  <span class="medidor__cheio medidor__cheio--perigo" data-fase-meta-barra style="width: 57%"></span>
+                </div>
+              </div>
+            </div>
+
+            <p class="hangar__nota">
+              O chefe só toma 1 de dano por pisão. O número de vida acima é, ao mesmo tempo, o número de pisões
+              necessários para derrubar cada chefe.
+            </p>
+          </div>
+        </div>
+
+        <div class="capturas">
+          <button class="capturas__item" type="button" data-captura="assets/casa.jpg" data-legenda="Casa">
+            <img src="assets/casa.jpg" alt="Abrir captura do cenário Casa" />
+          </button>
+          <button class="capturas__item" type="button" data-captura="assets/ieab.jpg" data-legenda="IEAB">
+            <img src="assets/ieab.jpg" alt="Abrir captura do cenário IEAB" />
+          </button>
+          <button
+            class="capturas__item"
+            type="button"
+            data-captura="assets/castro-alves.jpg"
+            data-legenda="Castro Alves"
+          >
+            <img src="assets/castro-alves.jpg" alt="Abrir captura do cenário Castro Alves" />
+          </button>
+          <button class="capturas__item" type="button" data-captura="assets/cetep.jpg" data-legenda="CETEP">
+            <img src="assets/cetep.jpg" alt="Abrir captura do cenário CETEP" />
+          </button>
+          <button class="capturas__ver" type="button" data-ver-todas>
+            <span>ver todas</span>
+            <span aria-hidden="true">+4</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ============ dificuldade ============ -->
+      <section class="secao" id="dificuldade">
+        <header class="secao__cabeca">
+          <p class="secao__indice">03 // parametrização</p>
+          <h2 class="secao__titulo">Dificuldade</h2>
+          <p class="secao__legenda">
+            Não é só vida: mexe na velocidade dos inimigos, no intervalo entre spawns, em quantos ficam vivos ao mesmo
+            tempo, na meta de abates e na resistência do chefe. Estes são os multiplicadores que o jogo aplica sobre o
+            valor de cada cenário.
+          </p>
+        </header>
+
+        <div class="dificuldades">
+          <div class="dificuldade">
+            <p class="dificuldade__nome dificuldade__nome--facil">Fácil</p>
+            <p class="dificuldade__resumo">Para quem está vendo o jogo pela primeira vez</p>
+            <ul class="dificuldade__lista">
+              <li><span>Velocidade do inimigo</span><b>0,82×</b></li>
+              <li><span>Zumbis simultâneos</span><b>0,75×</b></li>
+              <li><span>Intervalo de spawn</span><b>1,35×</b></li>
+              <li><span>Aceleração da pressão</span><b>1,30×</b></li>
+              <li><span>Meta de abates</span><b>0,80×</b></li>
+              <li><span>Vida do chefe</span><b>0,70×</b></li>
+              <li><span>Velocidade do chefe</span><b>0,80×</b></li>
+            </ul>
+          </div>
+          <div class="dificuldade dificuldade--padrao">
+            <p class="dificuldade__nome dificuldade__nome--medio">Médio</p>
+            <p class="dificuldade__resumo">O padrão do jogo</p>
+            <ul class="dificuldade__lista">
+              <li><span>Velocidade do inimigo</span><b>0,90×</b></li>
+              <li><span>Zumbis simultâneos</span><b>0,90×</b></li>
+              <li><span>Intervalo de spawn</span><b>1,12×</b></li>
+              <li><span>Aceleração da pressão</span><b>1,10×</b></li>
+              <li><span>Meta de abates</span><b>0,90×</b></li>
+              <li><span>Vida do chefe</span><b>0,85×</b></li>
+              <li><span>Velocidade do chefe</span><b>0,90×</b></li>
+            </ul>
+          </div>
+          <div class="dificuldade">
+            <p class="dificuldade__nome dificuldade__nome--dificil">Difícil</p>
+            <p class="dificuldade__resumo">Para quem já conhece cada canto do cenário</p>
+            <ul class="dificuldade__lista">
+              <li><span>Velocidade do inimigo</span><b>1,15×</b></li>
+              <li><span>Zumbis simultâneos</span><b>1,15×</b></li>
+              <li><span>Intervalo de spawn</span><b>0,82×</b></li>
+              <li><span>Aceleração da pressão</span><b>0,80×</b></li>
+              <li><span>Meta de abates</span><b>1,15×</b></li>
+              <li><span>Vida do chefe</span><b>1,35×</b></li>
+              <li><span>Velocidade do chefe</span><b>1,15×</b></li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="secao__nota">
+          Com <b>0,80×</b> na meta, a primeira fase pede 16 abates em vez de 20. Os números acima são os multiplicadores
+          literais de <code>difficultyPresets.ts</code>.
+        </p>
+      </section>
+
+      <!-- ============ equipe ============ -->
+      <section class="secao" id="equipe">
+        <header class="secao__cabeca">
+          <p class="secao__indice">04 // tripulação</p>
+          <h2 class="secao__titulo">Elenco</h2>
+          <p class="secao__legenda">
+            As mecânicas são iguais. O que muda é quem está do outro lado do teclado — e por isso o segundo jogador
+            costuma ser o que mais sofre na hora de perder.
+          </p>
+        </header>
+
+        <div class="tripulacao">
+          <article class="membro">
+            <p class="membro__slot">slot 01</p>
+            <h3 class="membro__nome">Tuiu</h3>
+            <p class="membro__papel">Atirador de flanco</p>
+            <p>
+              O primeiro a pegar o teclado. Puxa a atenção pelo lado de fora, vira e volta para acertar pelas costas.
+            </p>
+            <p class="membro__teclas"><kbd>←</kbd> <kbd>→</kbd> mover <kbd>ESPAÇO</kbd> pular</p>
+          </article>
+          <article class="membro membro--dois">
+            <p class="membro__slot">slot 02</p>
+            <h3 class="membro__nome">Nany</h3>
+            <p class="membro__papel">Reforço de entrada</p>
+            <p>Entra no meio da partida, quando a coisa já está feia, e vira o lado que estava perdendo tempo.</p>
+            <p class="membro__teclas"><kbd>A</kbd> <kbd>D</kbd> mover <kbd>W</kbd> pular</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============ armamento ============ -->
+      <section class="secao" id="armamento">
+        <header class="secao__cabeca">
+          <p class="secao__indice">05 // armamento</p>
+          <h2 class="secao__titulo">Mecânica principal</h2>
+          <p class="secao__legenda">
+            Uma regra só, cinco formas de usá-la. É o mesmo código que roda no jogo, e o simulador ao lado é essa regra
+            funcionando.
+          </p>
+        </header>
+
+        <div class="armamento">
+          <ul class="armas">
+            <li>
+              <p class="armas__nome">Pulo duplo</p>
+              <p>Solte e aperte de novo perto do ponto mais alto. Separa um pisão inútil de um abate limpo.</p>
+            </li>
+            <li>
+              <p class="armas__nome">Golpe pelas costas</p>
+              <p>
+                Pisão normal tira 2 de dano e nunca derruba o zumbi comum de primeira. Com pulo duplo são 3 e mata na
+                hora.
+              </p>
+            </li>
+            <li>
+              <p class="armas__nome">Combo até x10</p>
+              <p>Abates seguidos sobem o multiplicador. Levar dano zera tudo.</p>
+            </li>
+            <li>
+              <p class="armas__nome">Contato lateral</p>
+              <p>Custa um coração, com 1,5 s de invulnerabilidade.</p>
+            </li>
+            <li>
+              <p class="armas__nome">Co-op de sofá</p>
+              <p>
+                Duas pessoas no mesmo teclado. O segundo entra depois, com a tecla <kbd>W</kbd> ou pelo botão na tela.
+              </p>
+            </li>
+          </ul>
+
+          <div class="simulador">
+            <div class="simulador__cabeca">
+              <p class="simulador__titulo">Simulador // campo de treino</p>
+              <p class="simulador__hud" aria-hidden="true">
+                <span class="simulador__vidas" data-demo-vidas>III</span>
+                <span data-demo-combo>combo x0</span>
+                <span data-demo-abates>abates 0</span>
+              </p>
+            </div>
+            <div class="simulador__moldura">
+              <canvas
+                class="simulador__tela"
+                data-demo
+                width="224"
+                height="126"
+                tabindex="0"
+                role="img"
+                aria-label="Simulador jogável da mecânica de pisão com pulo duplo"
+              ></canvas>
+            </div>
+            <p class="simulador__teclas">
+              <kbd>←</kbd> <kbd>→</kbd> mover <span aria-hidden="true">·</span> <kbd>ESPAÇO</kbd> pular
+              <span aria-hidden="true">·</span> <kbd>R</kbd> reiniciar
+            </p>
+            <p class="simulador__aviso" data-demo-aviso>Clique na tela para o campo de treino receber o teclado.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ suporte ============ -->
+      <section class="secao" id="suporte">
+        <header class="secao__cabeca">
+          <p class="secao__indice">06 // suporte</p>
+          <h2 class="secao__titulo">Requisitos de sistema</h2>
+        </header>
+
+        <div class="plataformas" role="tablist" aria-label="Sistema operacional">
+          <button type="button" role="tab" class="plataforma ativa" data-req="windows" aria-selected="true">
+            Windows
+          </button>
+          <button type="button" role="tab" class="plataforma" data-req="linux" aria-selected="false">Linux</button>
+        </div>
+
+        <div class="req-painel" data-req-painel="windows" role="tabpanel">
+          <table class="spec">
+            <caption>
+              Mínimos
+            </caption>
+            <tbody>
+              <tr>
+                <th scope="row">Sistema</th>
+                <td>Windows 10 ou 11, 64 bits</td>
+              </tr>
+              <tr>
+                <th scope="row">Processador</th>
+                <td>2 núcleos</td>
+              </tr>
+              <tr>
+                <th scope="row">Memória</th>
+                <td>4 GB de RAM</td>
+              </tr>
+              <tr>
+                <th scope="row">Gráficos</th>
+                <td>WebGL. Sem isso o jogo cai para renderização em canvas</td>
+              </tr>
+              <tr>
+                <th scope="row">Armazenamento</th>
+                <td>250 MB</td>
+              </tr>
+              <tr>
+                <th scope="row">Periféricos</th>
+                <td>Teclado. São dois jogadores no mesmo teclado</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="req-nota">Instalador NSIS e versão portátil, ambos x64.</p>
+        </div>
+
+        <div class="req-painel" data-req-painel="linux" role="tabpanel" hidden>
+          <table class="spec">
+            <caption>
+              Mínimos
+            </caption>
+            <tbody>
+              <tr>
+                <th scope="row">Sistema</th>
+                <td>Linux x64, com suporte a AppImage</td>
+              </tr>
+              <tr>
+                <th scope="row">Processador</th>
+                <td>2 núcleos</td>
+              </tr>
+              <tr>
+                <th scope="row">Memória</th>
+                <td>4 GB de RAM</td>
+              </tr>
+              <tr>
+                <th scope="row">Gráficos</th>
+                <td>WebGL. Sem isso o jogo cai para renderização em canvas</td>
+              </tr>
+              <tr>
+                <th scope="row">Armazenamento</th>
+                <td>250 MB</td>
+              </tr>
+              <tr>
+                <th scope="row">Permissões</th>
+                <td>O executável precisa de bit de execução</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="req-nota">O AppImage precisa de um ambiente Linux nativo para ser gerado.</p>
+        </div>
+
+        <h3 class="subtitulo">Conquistas propostas</h3>
+        <p class="secao__nota">
+          O jogo ainda não tem sistema de conquistas. A lista abaixo é a proposta que existe no código-fonte, com a
+          condição que cada uma checa. A porcentagem de jogadores fica vazia até existir.
+        </p>
+        <ul class="medalhas">
+          <li class="medalha">
+            <span class="medalha__disco" aria-hidden="true"></span>
+            <p class="medalha__nome">Primeiro abate</p>
+            <p class="medalha__desc">Pise em um zumbi comum.</p>
+            <p class="medalha__pct">—</p>
+          </li>
+          <li class="medalha">
+            <span class="medalha__disco" aria-hidden="true"></span>
+            <p class="medalha__nome">Pulo duplo sujo</p>
+            <p class="medalha__desc">Matar um zumbi só com o pulo duplo.</p>
+            <p class="medalha__pct">—</p>
+          </li>
+          <li class="medalha">
+            <span class="medalha__disco" aria-hidden="true"></span>
+            <p class="medalha__nome">Combo x5</p>
+            <p class="medalha__desc">Cinco abates seguidos sem levar dano.</p>
+            <p class="medalha__pct">—</p>
+          </li>
+          <li class="medalha">
+            <span class="medalha__disco" aria-hidden="true"></span>
+            <p class="medalha__nome">Combo x10</p>
+            <p class="medalha__desc">Dez abates seguidos sem levar dano.</p>
+            <p class="medalha__pct">—</p>
+          </li>
+          <li class="medalha">
+            <span class="medalha__disco" aria-hidden="true"></span>
+            <p class="medalha__nome">Sem um arranhão</p>
+            <p class="medalha__desc">Terminar um cenário sem perder vida.</p>
+            <p class="medalha__pct">—</p>
+          </li>
+          <li class="medalha">
+            <span class="medalha__disco" aria-hidden="true"></span>
+            <p class="medalha__nome">De onde vem o nome</p>
+            <p class="medalha__desc">Enfrentar o Zumbi-Chefe da Casa.</p>
+            <p class="medalha__pct">—</p>
+          </li>
+          <li class="medalha">
+            <span class="medalha__disco" aria-hidden="true"></span>
+            <p class="medalha__nome">Intervalo</p>
+            <p class="medalha__desc">Enfrentar o Guardião do IEAB.</p>
+            <p class="medalha__pct">—</p>
+          </li>
+          <li class="medalha">
+            <span class="medalha__disco" aria-hidden="true"></span>
+            <p class="medalha__nome">Verso fácil</p>
+            <p class="medalha__desc">Enfrentar o Poeta Sombrio.</p>
+            <p class="medalha__pct">—</p>
+          </li>
+          <li class="medalha">
+            <span class="medalha__disco" aria-hidden="true"></span>
+            <p class="medalha__nome">A prova final</p>
+            <p class="medalha__desc">Enfrentar o Mestre Técnico no CETEP.</p>
+            <p class="medalha__pct">—</p>
+          </li>
+          <li class="medalha">
+            <span class="medalha__disco" aria-hidden="true"></span>
+            <p class="medalha__nome">De sofá</p>
+            <p class="medalha__desc">Jogar um cenário inteiro com dois jogadores.</p>
+            <p class="medalha__pct">—</p>
+          </li>
+          <li class="medalha">
+            <span class="medalha__disco" aria-hidden="true"></span>
+            <p class="medalha__nome">Cinco anos</p>
+            <p class="medalha__desc">Concluir os quatro cenários.</p>
+            <p class="medalha__pct">—</p>
+          </li>
+        </ul>
+
+        <h3 class="subtitulo">Código e instalação</h3>
+        <div class="terminal">
+          <code id="comando-clone">git clone https://github.com/joaomjbraga/as-aventuras-de-tuiu-e-nany.git</code>
+          <button class="terminal__copiar" type="button" data-copiar="#comando-clone">copiar</button>
+        </div>
+        <table class="spec spec--comandos">
+          <caption>
+            Comandos
+          </caption>
+          <tbody>
+            <tr>
+              <th scope="row">Desenvolvimento</th>
+              <td><code>npm run dev</code></td>
+            </tr>
+            <tr>
+              <th scope="row">Verificar</th>
+              <td><code>npm run verify</code></td>
+            </tr>
+            <tr>
+              <th scope="row">Instalador Windows</th>
+              <td><code>npm run dist:win</code></td>
+            </tr>
+            <tr>
+              <th scope="row">AppImage Linux</th>
+              <td><code>npm run dist:linux</code></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="secao__nota">
+          Node 22, 24 ou 26 para desenvolver. Electron <code>^44.4.5</code>, Phaser <code>3.90.0</code>, TypeScript
+          <code>^5.6.0</code>. O jogo nunca foi distribuído, então não há número de jogadores nem porcentagem de
+          conqueridor — preferimos deixar vazio a inventar.
+        </p>
+
+        <div class="acoes-finais">
+          <button class="botao botao--contorno" type="button" data-lista-desejos aria-pressed="false">
+            <span aria-hidden="true" data-desejo-icone>+</span>
+            <span data-desejo-texto>Salvar nos favoritos</span>
+          </button>
+          <a
+            class="botao botao--contorno"
+            href="https://github.com/joaomjbraga/as-aventuras-de-tuiu-e-nany"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Código no GitHub ↗</a
+          >
+        </div>
+      </section>
+    </main>
+
+    <!-- ============ rodapé ============ -->
+    <footer class="rodape">
+      <p class="linha-luz" aria-hidden="true"></p>
+      <div class="rodape__interna">
+        <p class="rodape__nav">
+          <a href="#missao">missão</a>
+          <a href="#campanha">campanha</a>
+          <a href="#dificuldade">dificuldade</a>
+          <a href="#equipe">equipe</a>
+          <a href="#armamento">armamento</a>
+          <a href="#suporte">suporte</a>
+        </p>
+        <p class="rodape__legal">
+          © <span data-ano>2026</span> João M J Braga. Jogo de fã, sem fins lucrativos, sem vínculo com os lugares, as
+          marcas ou as pessoas citadas. O <code>contextBridge</code> do Electron é o que mantém o jogo preso ao desktop.
+        </p>
+      </div>
+    </footer>
+
+    <!-- ============ visor de capturas ============ -->
+    <div class="visor" data-visor hidden>
+      <div class="visor__caixa" role="dialog" aria-modal="true" aria-label="Captura ampliada">
+        <button class="visor__fechar" type="button" data-visor-fechar aria-label="Fechar">✕</button>
+        <img class="visor__img" data-visor-img src="assets/casa.jpg" alt="" />
+        <div class="visor__barra">
+          <button class="visor__seta" type="button" data-visor-ant aria-label="Anterior">‹</button>
+          <p class="visor__cont" data-visor-cont>1 / 5</p>
+          <button class="visor__seta" type="button" data-visor-prox aria-label="Próxima">›</button>
+        </div>
+        <p class="visor__legenda" data-visor-legenda>Casa</p>
+      </div>
+    </div>
+
+    <p class="pista" role="status" aria-live="polite" data-pista hidden></p>
+
+    <script src="demo.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
