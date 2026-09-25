@@ -18,9 +18,6 @@ export interface PlayerConfig {
   scale?: number
 }
 
-/** Cor do brilho do escudo (azul gelo). */
-const SHIELD_TINT = 0x7fd4ff
-
 /**
  * Um jogador controlável. Cada instância lê seu próprio esquema de
  * controles (P1 = setas/espaço, P2 = A/D/W), então dá para ter vários
@@ -45,16 +42,12 @@ export class Player {
 
   private state: PlayerState = 'idle'
   private immuneUntil = 0
-  private shieldUntil = 0
-  private speedUntil = 0
-  private damageBoostUntil = 0
 
   // Física (ajustável para o "jeitão" do jogo)
   private moveSpeed = 320
   private jumpForce = 900
   private doubleJumpForce = 520
   private readonly doubleJumpTriggerSpeed = 300
-  private readonly speedBoostFactor = 1.5
 
   // Pulo duplo: conta quantos pulos já foram usados até o personagem tocar o chão.
   private jumpsUsed = 0
@@ -114,13 +107,12 @@ export class Player {
 
     const moveLeft = this.keys.left.isDown
     const moveRight = this.keys.right.isDown
-    const currentSpeed = this.hasSpeedBoost() ? this.moveSpeed * this.speedBoostFactor : this.moveSpeed
 
     if (moveLeft) {
-      this.sprite.setVelocityX(-currentSpeed)
+      this.sprite.setVelocityX(-this.moveSpeed)
       this.sprite.flipX = true
     } else if (moveRight) {
-      this.sprite.setVelocityX(currentSpeed)
+      this.sprite.setVelocityX(this.moveSpeed)
       this.sprite.flipX = false
     } else {
       this.sprite.setVelocityX(0)
@@ -195,23 +187,14 @@ export class Player {
     } else if (this.sprite.alpha !== 1) {
       this.sprite.alpha = 1
     }
-
-    // Brilho azulado enquanto estiver com escudo
-    const shieldActive = this.scene.time.now < this.shieldUntil
-    if (shieldActive && this.sprite.tintTopLeft !== SHIELD_TINT) {
-      this.sprite.setTint(SHIELD_TINT)
-    } else if (!shieldActive && this.sprite.tintTopLeft === SHIELD_TINT) {
-      this.sprite.clearTint()
-    }
   }
 
   /**
-   * Aplica dano se o jogador não estiver invulnerável nem com escudo.
+   * Aplica dano se o jogador estiver vivo e não estiver invulnerável.
    * Retorna true se o dano foi aplicado.
    */
   damage(amount: number): boolean {
     if (!this.isAlive) return false
-    if (this.scene.time.now < this.shieldUntil) return false // escudo bloqueia o dano
     if (this.scene.time.now < this.immuneUntil) return false
 
     this.hp = Math.max(0, this.hp - amount)
@@ -264,28 +247,6 @@ export class Player {
   /** Ação de revive (tecla de pulo) pressionada neste frame. */
   isRevivePressed(): boolean {
     return this.jumpJustPressed()
-  }
-
-  // ---- Power-ups (efeitos temporizados) ----
-
-  activateShield(durationMs: number): void {
-    this.shieldUntil = Math.max(this.shieldUntil, this.scene.time.now + durationMs)
-  }
-
-  activateSpeed(durationMs: number): void {
-    this.speedUntil = Math.max(this.speedUntil, this.scene.time.now + durationMs)
-  }
-
-  hasSpeedBoost(): boolean {
-    return this.scene.time.now < this.speedUntil
-  }
-
-  activateDamageBoost(durationMs: number): void {
-    this.damageBoostUntil = Math.max(this.damageBoostUntil, this.scene.time.now + durationMs)
-  }
-
-  hasDamageBoost(): boolean {
-    return this.scene.time.now < this.damageBoostUntil
   }
 
   /** Ressuscita o jogador em (x, y) com vida cheia e invulnerabilidade curta. */

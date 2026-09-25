@@ -33,7 +33,7 @@ export interface ZombieContactTarget {
   headY: number
   /** Altura do sprite do zumbi (usada para calcular a margem de tolerância). */
   spriteHeight: number
-  /** Dano causado pelo pisão (base 2, ×2 com power-up). */
+  /** Dano causado pelo pisão. */
   damageAmount: number
   /** Executa o pisão no alvo; true = o zumbi morreu deste golpe. */
   stomp(fromX: number, amount: number): boolean
@@ -66,8 +66,6 @@ export function resolvePlayerZombieContact(player: PlayerContactSource, zombie: 
 }
 
 export interface StompDamageSource {
-  /** Jogador com o power-up de dano em dobro. */
-  damageBoost: boolean
   /** A queda atual veio de um pulo duplo (pisão mais forte). */
   doubleJump: boolean
   /** Vida atual do alvo, usada para impedir que um pisão normal mate de primeira. */
@@ -75,14 +73,14 @@ export interface StompDamageSource {
 }
 
 /**
- * Dano causado por um pisão: base 2 (×2 com o power-up de dano) e +50% quando
- * o jogador cai sobre o zumbi depois de usar o pulo duplo.
+ * Dano causado por um pisão: base 2 e +50% quando o jogador cai sobre o zumbi
+ * depois de usar o pulo duplo.
  *
  * Um pisão normal nunca zera a vida de um alvo que ainda tem 2 ou mais HP.
  * Ele pode, porém, retirar o último HP de um zumbi já ferido.
  */
-export function stompDamage({ damageBoost, doubleJump, targetHp }: StompDamageSource): number {
-  const base = damageBoost ? 4 : 2
+export function stompDamage({ doubleJump, targetHp }: StompDamageSource): number {
+  const base = 2
   const damage = doubleJump ? Math.round(base * 1.5) : base
   if (doubleJump) return damage
 

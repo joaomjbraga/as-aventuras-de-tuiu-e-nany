@@ -360,55 +360,10 @@ export class PreloadScene extends Phaser.Scene {
       }
     })
     this.textures.addCanvas('heart', c)
-
-    this.createPickupTextures()
-  }
-
-  /**
-   * Texturas brancas dos power-ups temporizados (a cor da tinta é aplicada
-   * por tint no uso). O coração do HUD já serve de pickup.
-   */
-  private createPickupTextures(): void {
-    const masks: Record<string, string[]> = {
-      'power-shield': ['..##..', '.####.', '.####.', '.####.', '.####.', '.####.', '.####.', '..##..'],
-      'power-speed': [
-        '..#...',
-        '..##..',
-        '.###..',
-        '.####.',
-        '####..',
-        '####..',
-        '.####.',
-        '.###..',
-        '..##..',
-        '..#...',
-      ],
-      'power-double': ['....', '.##.', '#..#', '....', '.##.', '.#..', '....', '.#..', '.##.', '....'],
-    }
-
-    for (const [key, rows] of Object.entries(masks)) {
-      if (this.textures.exists(key)) continue
-      const c = document.createElement('canvas')
-      c.width = rows[0].length
-      c.height = rows.length
-      const g = c.getContext('2d')!
-      g.fillStyle = '#fff'
-      rows.forEach((row, y) => {
-        for (let x = 0; x < row.length; x++) {
-          if (row[x] === '#') g.fillRect(x, y, 1, 1)
-        }
-      })
-      this.textures.addCanvas(key, c)
-    }
-
     this.createPickupHeartTexture()
   }
 
-  /**
-   * Coração de power-up: desenhado maior (16x16) e já na cor vermelha,
-   * com um brilho no canto superior para dar volume. Ao contrário das outras
-   * texturas de power-up, não precisa de tint no uso.
-   */
+  /** Coração de power-up: desenhado maior (16x16) e já na cor vermelha. */
   private createPickupHeartTexture(): void {
     if (this.textures.exists('pickup-heart')) return
 

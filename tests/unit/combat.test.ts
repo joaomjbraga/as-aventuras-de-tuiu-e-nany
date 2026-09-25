@@ -87,35 +87,23 @@ describe('resolvePlayerZombieContact', () => {
 
 describe('stompDamage', () => {
   it('pisão normal causa 2 de dano em um zumbi com 3 de vida', () => {
-    expect(stompDamage({ damageBoost: false, doubleJump: false, targetHp: 3 })).toBe(2)
+    expect(stompDamage({ doubleJump: false, targetHp: 3 })).toBe(2)
   })
 
   it('zumbi comum sobrevive ao pisão normal e é derrotado de primeira pelo pisão duplo', () => {
     const zombieHp = 3
-    const afterNormalStomp = zombieHp - stompDamage({ damageBoost: false, doubleJump: false, targetHp: zombieHp })
-    const afterDoubleStomp = zombieHp - stompDamage({ damageBoost: false, doubleJump: true, targetHp: zombieHp })
+    const afterNormalStomp = zombieHp - stompDamage({ doubleJump: false, targetHp: zombieHp })
+    const afterDoubleStomp = zombieHp - stompDamage({ doubleJump: true, targetHp: zombieHp })
 
     expect(afterNormalStomp).toBe(1)
     expect(afterDoubleStomp).toBe(0)
   })
 
-  it('Dano x2 também não permite que o primeiro pisão normal mate o zumbi comum', () => {
-    expect(stompDamage({ damageBoost: true, doubleJump: false, targetHp: 3 })).toBe(2)
-  })
-
-  it('pisão com power-up causa 4 quando a proteção contra morte não precisa ser aplicada', () => {
-    expect(stompDamage({ damageBoost: true, doubleJump: false, targetHp: 10 })).toBe(4)
-  })
-
   it('pisão normal retira o último HP de um zumbi já ferido', () => {
-    expect(stompDamage({ damageBoost: false, doubleJump: false, targetHp: 1 })).toBe(1)
+    expect(stompDamage({ doubleJump: false, targetHp: 1 })).toBe(1)
   })
 
-  it('queda após o pulo duplo causa mais dano que o normal (+50%)', () => {
-    expect(stompDamage({ damageBoost: false, doubleJump: true, targetHp: 3 })).toBe(3)
-  })
-
-  it('queda após o pulo duplo com power-up de dano causa 6', () => {
-    expect(stompDamage({ damageBoost: true, doubleJump: true, targetHp: 3 })).toBe(6)
+  it('queda após o pulo duplo causa 3 de dano', () => {
+    expect(stompDamage({ doubleJump: true, targetHp: 3 })).toBe(3)
   })
 })

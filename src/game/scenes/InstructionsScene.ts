@@ -37,9 +37,8 @@ export class InstructionsScene extends Phaser.Scene {
     ])
 
     this.addSection(228, 'ITENS E COMBO', [
-      'Coração: recupera 1 coração ou dá pontos.',
-      'Escudo: bloqueia dano   Veloz: aumenta a velocidade.',
-      'Dano x2: aumenta o dano, mas não mata de primeira sem pulo duplo.',
+      'O coração é o único item que os zumbis deixam.',
+      'Ele recupera 1 coração ou vira pontos com a vida cheia.',
       'Abates seguidos aumentam o combo até x10.',
     ])
 
