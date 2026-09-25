@@ -1,11 +1,19 @@
 import Phaser from 'phaser'
-import { applyMute, toggleMute } from '../audio'
+import { MUSIC_VOLUME_STEP, adjustMusicVolume, applyMute, applyMusicVolume, toggleMute } from '../audio'
 import { isMuted } from '../storage'
 
+type PauseOptionId = 'resume' | 'restart' | 'title' | 'volume' | 'mute' | 'quit'
+
 interface PauseOption {
+  id: PauseOptionId
   label: string
   action: () => void
 }
+
+const OPTION_FIRST_Y = 100
+const OPTION_SPACING = 50
+const OPTION_WIDTH = 460
+const OPTION_HEIGHT = 44
 
 export class PauseScene extends Phaser.Scene {
   private options: PauseOption[] = []
@@ -13,9 +21,12 @@ export class PauseScene extends Phaser.Scene {
   private optionTexts: Phaser.GameObjects.Text[] = []
   private cursor!: Phaser.GameObjects.Text
   private selectedIndex = 0
+  private musicVolume = 0
 
   private moveUpKeys: Phaser.Input.Keyboard.Key[]
   private moveDownKeys: Phaser.Input.Keyboard.Key[]
+  private volumeDownKeys: Phaser.Input.Keyboard.Key[]
+  private volumeUpKeys: Phaser.Input.Keyboard.Key[]
   private selectKeys: Phaser.Input.Keyboard.Key[]
   private escKey!: Phaser.Input.Keyboard.Key
   private restartKey!: Phaser.Input.Keyboard.Key
@@ -27,6 +38,8 @@ export class PauseScene extends Phaser.Scene {
     super({ key: 'PauseScene' })
     this.moveUpKeys = []
     this.moveDownKeys = []
+    this.volumeDownKeys = []
+    this.volumeUpKeys = []
     this.selectKeys = []
   }
 
@@ -34,6 +47,7 @@ export class PauseScene extends Phaser.Scene {
     const { width, height } = this.scale
 
     applyMute(this)
+    this.musicVolume = applyMusicVolume(this.musicScene())
 
     // A cena é reutilizada a cada pausa: limpa as listas da abertura anterior
     // (objetos destruídos) e zera o cursor, senão o highlight/atualização de SOM
@@ -57,23 +71,25 @@ export class PauseScene extends Phaser.Scene {
 
     // Opções navegáveis por teclado (sem depender do mouse)
     this.options = [
-      { label: 'CONTINUAR', action: () => this.resumeGame() },
-      { label: 'REINICIAR', action: () => this.restartGame() },
-      { label: 'VOLTAR AO TÍTULO', action: () => this.goToTitle() },
-      { label: `SOM: ${isMuted() ? 'OFF' : 'ON'}`, action: () => this.toggleSound() },
-      { label: 'SAIR', action: () => this.quitGame() },
+      { id: 'resume', label: 'CONTINUAR', action: () => this.resumeGame() },
+      { id: 'restart', label: 'REINICIAR', action: () => this.restartGame() },
+      { id: 'title', label: 'VOLTAR AO TÍTULO', action: () => this.goToTitle() },
+      { id: 'volume', label: this.volumeLabel(), action: () => this.adjustMusicVolume(MUSIC_VOLUME_STEP) },
+      { id: 'mute', label: `SOM: ${isMuted() ? 'OFF' : 'ON'}`, action: () => this.toggleSound() },
+      { id: 'quit', label: 'SAIR', action: () => this.quitGame() },
     ]
 
-    const firstY = 112
-
     this.options.forEach((opt, i) => {
-      const y = firstY + i * 60
+      const y = OPTION_FIRST_Y + i * OPTION_SPACING
       const rect = this.add
-        .rectangle(width / 2, y, 380, 56, 0x1c2230)
+        .rectangle(width / 2, y, OPTION_WIDTH, OPTION_HEIGHT, 0x1c2230)
         .setStrokeStyle(2, 0x4a5a80)
         .setDepth(11)
         .setInteractive({ useHandCursor: true })
-      rect.on('pointerdown', () => opt.action())
+      rect.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        if (opt.id === 'volume' && pointer.rightButtonDown()) this.adjustMusicVolume(-MUSIC_VOLUME_STEP)
+        else opt.action()
+      })
       this.optionRects.push(rect)
 
       const text = this.add
@@ -90,7 +106,7 @@ export class PauseScene extends Phaser.Scene {
     })
 
     this.cursor = this.add
-      .text(width / 2 - 212, firstY, '▶', {
+      .text(width / 2 - OPTION_WIDTH / 2 - 22, OPTION_FIRST_Y, '▶', {
         fontFamily: 'monospace',
         fontSize: '24px',
         fontStyle: 'bold',
@@ -99,31 +115,27 @@ export class PauseScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(11)
 
-    // Atalhos da partida
     this.add
-      .text(width / 2, 392, 'J1: ←/→ mover · ESPAÇO pular\nJ2: A/D mover · W pular', {
-        fontFamily: 'monospace',
-        fontSize: '16px',
-        color: '#9aa9c0',
-        align: 'center',
-        lineSpacing: 4,
-      })
-      .setOrigin(0.5)
-      .setDepth(11)
-
-    // Atalhos do menu
-    this.add
-      .text(width / 2, 420, '↑/↓: escolher   ENTER: selecionar   ESC: continuar   M: som   Q: sair', {
-        fontFamily: 'monospace',
-        fontSize: '16px',
-        color: '#7a89a0',
-      })
+      .text(
+        width / 2,
+        402,
+        '↑/↓: escolher   ←/→ ou A/D: volume   ENTER/SPACE: selecionar\nESC: continuar   M: mudo   R: reiniciar   T: título   Q: sair',
+        {
+          fontFamily: 'monospace',
+          fontSize: '14px',
+          color: '#9aa9c0',
+          align: 'center',
+          lineSpacing: 4,
+        },
+      )
       .setOrigin(0.5)
       .setDepth(11)
 
     const kb = this.input.keyboard!
     this.moveUpKeys = ['UP', 'W'].map((key) => kb.addKey(key))
     this.moveDownKeys = ['DOWN', 'S'].map((key) => kb.addKey(key))
+    this.volumeDownKeys = ['LEFT', 'A'].map((key) => kb.addKey(key))
+    this.volumeUpKeys = ['RIGHT', 'D'].map((key) => kb.addKey(key))
     this.selectKeys = ['ENTER', 'SPACE', 'P'].map((key) => kb.addKey(key))
     this.escKey = kb.addKey('ESC')
     this.restartKey = kb.addKey('R')
@@ -135,6 +147,18 @@ export class PauseScene extends Phaser.Scene {
   }
 
   update(): void {
+    const selectedOption = this.options[this.selectedIndex]
+    if (selectedOption?.id === 'volume') {
+      if (this.volumeDownKeys.some((key) => Phaser.Input.Keyboard.JustDown(key))) {
+        this.adjustMusicVolume(-MUSIC_VOLUME_STEP)
+        return
+      }
+      if (this.volumeUpKeys.some((key) => Phaser.Input.Keyboard.JustDown(key))) {
+        this.adjustMusicVolume(MUSIC_VOLUME_STEP)
+        return
+      }
+    }
+
     if (this.moveUpKeys.some((key) => Phaser.Input.Keyboard.JustDown(key))) {
       this.move(-1)
       return
@@ -167,9 +191,26 @@ export class PauseScene extends Phaser.Scene {
     }
   }
 
+  private musicScene(): Phaser.Scene {
+    return this.scene.get('MainScene') ?? this
+  }
+
+  private volumeLabel(): string {
+    return `MÚSICA: ${Math.round(this.musicVolume * 100)}%  [←/→]`
+  }
+
+  private adjustMusicVolume(delta: number): void {
+    this.musicVolume = adjustMusicVolume(this.musicScene(), delta)
+    const index = this.options.findIndex((option) => option.id === 'volume')
+    if (index >= 0) {
+      this.options[index].label = this.volumeLabel()
+      this.optionTexts[index].setText(this.options[index].label)
+    }
+  }
+
   private toggleSound(): void {
     const muted = toggleMute(this)
-    const index = this.options.findIndex((o) => o.label.startsWith('SOM:'))
+    const index = this.options.findIndex((option) => option.id === 'mute')
     if (index >= 0) {
       this.options[index].label = `SOM: ${muted ? 'OFF' : 'ON'}`
       this.optionTexts[index].setText(this.options[index].label)
@@ -187,7 +228,7 @@ export class PauseScene extends Phaser.Scene {
       rect.setFillStyle(active ? 0x2a3550 : 0x1c2230)
       rect.setStrokeStyle(2, active ? 0x8ab0ff : 0x4a5a80, active ? 1 : 0.8)
     })
-    this.cursor.setY(112 + this.selectedIndex * 60)
+    this.cursor.setY(OPTION_FIRST_Y + this.selectedIndex * OPTION_SPACING)
   }
 
   private resumeGame(): void {

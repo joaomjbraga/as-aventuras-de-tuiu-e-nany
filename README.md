@@ -111,7 +111,7 @@ O workflow `.github/workflows/desktop.yml` valida o projeto e gera os artefatos 
 | J1      | ← / → | ↑ ou ESPAÇO | ENTER     |
 | J2      | A / D | W           | W         |
 
-- **ESC**: pausa o jogo (menu com continuar/reiniciar/título/sair).
+- **ESC**: pausa o jogo. No menu, use **←/→** (J1) ou **A/D** (J2) para ajustar o volume da música em passos de 10%; a preferência é salva.
 - **M**: ativa/desativa o som.
 - **F11**: alterna tela cheia.
 - Na tela inicial: **S** ou clique em `[ S ] sair` encerra o jogo.

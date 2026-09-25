@@ -6,6 +6,7 @@
 export const STORAGE_KEYS = {
   BEST_KILLS: 'tuio.best-kills',
   BEST_SCORE: 'tuio.best-score',
+  MUSIC_VOLUME: 'tuio.music-volume',
   MUTED: 'tuio.muted',
   COMPLETED_LEVELS: 'tuio.completed-levels',
 } as const
@@ -41,6 +42,20 @@ export function loadBestScore(): number {
 
 export function saveBestScore(value: number): void {
   write(STORAGE_KEYS.BEST_SCORE, Math.max(0, Math.floor(value)))
+}
+
+export const DEFAULT_MUSIC_VOLUME = 0.4
+
+/** Volume persistido da música, entre 0 e 1. */
+export function loadMusicVolume(): number {
+  const value = readNumber(STORAGE_KEYS.MUSIC_VOLUME)
+  if (value === null) return DEFAULT_MUSIC_VOLUME
+  return Math.round(Math.min(1, Math.max(0, value)) * 100) / 100
+}
+
+export function saveMusicVolume(value: number): void {
+  const normalized = Math.round(Math.min(1, Math.max(0, value)) * 100) / 100
+  write(STORAGE_KEYS.MUSIC_VOLUME, normalized)
 }
 
 /** Fases já concluídas (ids), para destacar na seleção de cenários. */
