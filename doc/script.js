@@ -58,8 +58,3 @@ if (video) {
     video.remove()
   })
 }
-
-/* Ano no crédito, para não ficar desatualizado no Ano Novo. */
-document.querySelectorAll('[data-ano]').forEach((elemento) => {
-  elemento.textContent = String(new Date().getFullYear())
-})

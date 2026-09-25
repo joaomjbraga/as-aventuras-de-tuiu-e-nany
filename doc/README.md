@@ -26,7 +26,7 @@ e responde em menos de dois segundos, sem rolagem.
 | ------------ | -------------------------------------------------------------------------------- |
 | `index.html` | A tela única: vídeo, filtros de pixel art, título e botões.                      |
 | `styles.css` | Paleta do jogo, tipografia monoespaçada e os filtros de pixel art sobre o vídeo. |
-| `script.js`  | Garante a reprodução do vídeo, ano do crédito.                                   |
+| `script.js`  | Garante a reprodução do vídeo.                                                   |
 | `assets/`    | `as-Aventuras-de-Tuiu-e-Nany.webm` — o trailer (WebM/VP9, 18,7 MB).              |
 |              | `logo-windows.png` e `linux-512.png` — as marcas dos botões.                     |
 
@@ -82,8 +82,29 @@ atalho, e sim nos modificadores por plataforma.
 Isso também removeu a requisição de imagem do HTML: não existe mais `<img>`,
 os arquivos são buscados só pela folha de estilo.
 
-Os dois botões apontam para a mesma página de releases, que é onde o GitHub
-lista o instalador do Windows e o AppImage.
+Os dois botões baixam o artefato direto, sem passar pela página de releases:
+
+```
+https://github.com/joaomjbraga/as-aventuras-de-tuiu-e-nany/releases/latest/download/<arquivo>
+```
+
+O `releases/latest` é um alias do GitHub que resolve sozinho qual é a release
+mais recente, então **estas URLs não precisam ser atualizadas a cada release**.
+O `<arquivo>` é o `artifactName` do `electron-builder.json5`:
+`as-aventuras-de-tuiu-e-nany-windows.exe` e `as-aventuras-de-tuiu-e-nany-linux.AppImage`.
+
+O `latest` só funciona porque o `artifactName` **não** tem `${version}`. Com a
+versão no nome do arquivo, cada release renomearia o artefato e o `latest` deixaria
+de encontrar o que servir, porque ele resolve a release mas ainda exige o nome
+exato do arquivo. As duas metades andam juntas: se mudar o `artifactName`, os
+`href` daqui precisam mudar junto.
+
+**Pré-lançamento não sai por este link.** O `release.yml` marca versão com
+sufixo (`0.1.0-beta.1`) como prerelease, e o GitHub pula prereleases no
+`latest`. Publicar um beta não muda o que a vitrine baixa; ela continua
+servindo a última versão estável. Isso é de propósito, mas se um dia quiser
+divulgar beta pela vitrine, o caminho é outro (link com a tag, ou o badge de
+prerelease apontando para a release específica).
 
 ## Ajustar o quanto o vídeo aparece
 
@@ -96,9 +117,9 @@ o trailer estiver claro demais ou escuro demais:
 | `--scanline`     | Opacidade da linha de scanline. Mais alto escurece a imagem toda.       |
 
 A vinheta (`.cena__vinheta`) tem um terceiro controle, em opacidade dentro do
-gradiente, mas ela é a rede de segurança do texto do canto — o crédito depende
-dela. Se o título dourado perder leitura, mexa no `--video-filtro`; deixe a
-vinheta para o último recurso.
+gradiente, mas ela é a rede de segurança do texto sobre o vídeo. Se o título
+dourado perder leitura, mexa no `--video-filtro`; deixe a vinheta para o último
+recurso.
 
 O coração abaixo do título é o mesmo desenho de 9x8 que o `PreloadScene`
 gera no jogo, redesenhado em SVG (`viewBox="0 0 33 8"`, três instâncias).

@@ -43,7 +43,6 @@
   /* Deslocamento da sombra sólida. Um valor só, para o "peso" de
      pixel se manter igual em todo o site. */
   --peso: 4px;
-  --margem: 18px;
 }
 
 *,
@@ -351,35 +350,16 @@ a {
 }
 
 /* =========================================================
-   Canto da cena
-   ========================================================= */
-
-.cena__credito {
-  position: absolute;
-  left: var(--margem);
-  bottom: var(--margem);
-  z-index: 4;
-  margin: 0;
-  font-size: 10.5px;
-  letter-spacing: 0.1em;
-  color: var(--fraco);
-  text-shadow: 0 1px 6px rgb(13 16 27 / 90%);
-}
-
-/* =========================================================
    Responsivo
    ========================================================= */
 
 @media (max-width: 640px) {
   :root {
-    --margem: 12px;
     --peso: 3px;
   }
 
   .cena {
-    /* O respiro de baixo existe para o crédito, que fica ancorado
-       no canto, não colidir com o botão. */
-    padding: 48px 18px 72px;
+    padding: 48px 18px;
   }
 
   .cena__pre {
@@ -401,13 +381,6 @@ a {
      quebrar a linha, então basta deixar a largura fluir. */
   .botao {
     width: 100%;
-  }
-
-  /* Em tela estreita o crédito deixa de ser uma ponta de linha e
-     passa a ser uma frase centralizada acima do canto. */
-  .cena__credito {
-    right: var(--margem);
-    text-align: center;
   }
 }
 

@@ -97,10 +97,24 @@
 
         <p class="cena__rotulo">baixar o jogo</p>
 
+        <!--
+          Cada botão baixa o artefato direto, sem passar pela página de
+          releases. `releases/latest` faz o GitHub resolver sozinho qual é a
+          versão mais recente, então estas URLs não precisam ser tocadas a
+          cada release — desde que o nome do arquivo continue igual, o que é
+          garantido pelo `artifactName` sem ${version} no electron-builder.json5.
+
+          Uma consequência do `latest`: pré-lançamento não conta. O release.yml
+          marca versão com sufixo (0.1.0-beta.1) como prerelease, e o GitHub
+          pula essas, então um beta não chega por este link.
+
+          O target="_blank" continua valendo: se der 404, a aba do GitHub abre
+          por cima e a vitrine segue intacta atrás.
+        -->
         <div class="cena__acoes">
           <a
             class="botao"
-            href="https://github.com/joaomjbraga/as-aventuras-de-tuiu-e-nany/releases"
+            href="https://github.com/joaomjbraga/as-aventuras-de-tuiu-e-nany/releases/latest/download/as-aventuras-de-tuiu-e-nany-windows.exe"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -109,7 +123,7 @@
           </a>
           <a
             class="botao"
-            href="https://github.com/joaomjbraga/as-aventuras-de-tuiu-e-nany/releases"
+            href="https://github.com/joaomjbraga/as-aventuras-de-tuiu-e-nany/releases/latest/download/as-aventuras-de-tuiu-e-nany-linux.AppImage"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -118,8 +132,6 @@
           </a>
         </div>
       </div>
-
-      <p class="cena__credito">© <span data-ano>2026</span> João M J Braga</p>
     </main>
 
     <script src="script.js"></script>
