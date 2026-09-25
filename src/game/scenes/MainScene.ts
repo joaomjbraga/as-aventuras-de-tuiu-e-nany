@@ -2,12 +2,12 @@ import Phaser from 'phaser'
 import { Player } from '../entities/Player'
 import { Zombie } from '../entities/Zombie'
 import { Boss } from '../entities/Boss'
-import { CHARACTERS, ZOMBIE_TARGET_HEIGHT, ZOMBIE_VARIANTS, type CharacterKey } from '../sprites'
+import { CHARACTER_FOOT_INSET, CHARACTERS, ZOMBIE_TARGET_HEIGHT, ZOMBIE_VARIANTS, type CharacterKey } from '../sprites'
 import { advanceSessionLevel, getSession, getSessionLevel, setSessionPlayers, type PlayerId } from '../session'
 import { buildScene, type SceneResult } from '../scenery'
 import { AUDIO, applyMute, playBgm, toggleMute } from '../audio'
 import { createButton } from '../ui'
-import { groundCenterYFor, groundTopFor, spawnXFor } from '../layout'
+import { groundTopFor, spawnXFor, spriteCenterYForGround } from '../layout'
 import { canSpawnZombie, hasWon, spawnIntervalMs } from '../difficulty'
 import { allLevelsCompleted, randomNextLevel, type LevelConfig } from '../levels'
 import {
@@ -19,7 +19,7 @@ import {
   saveBestScore,
 } from '../storage'
 import { multiplierFor, scoreOfKill } from '../score'
-import { resolvePlayerZombieContact, stompDamage } from '../combat'
+import { resolvePlayerZombieContact, stompDamage, type PlayerContactSource } from '../combat'
 import { buildGameOverScreen, buildVictoryScreen } from '../ui/endScreen'
 import {
   PICKUP_EFFECT_DURATION_MS,
@@ -40,6 +40,14 @@ interface HudEffect {
   until: number
   duration: number
   barWidth: number
+}
+
+interface PlayerZombieContactSnapshot {
+  player: Player
+  zombie: Zombie
+  playerContact: PlayerContactSource
+  zombieTopY: number
+  zombieSpriteHeight: number
 }
 
 export class MainScene extends Phaser.Scene {
@@ -89,6 +97,10 @@ export class MainScene extends Phaser.Scene {
   private lastBossVisible = false
   private lastBossHp = -1
 
+  // Captura o contato antes de o Arcade separar os bodies. O callback normal
+  // recebe velocities/blocked.down já alterados pela própria colisão.
+  private playerContactSnapshots = new WeakMap<Phaser.Physics.Arcade.Sprite, PlayerZombieContactSnapshot>()
+
   constructor() {
     super({ key: 'MainScene' })
   }
@@ -122,6 +134,7 @@ export class MainScene extends Phaser.Scene {
     this.lastKillsColor = ''
     this.lastBossVisible = false
     this.lastBossHp = -1
+    this.playerContactSnapshots = new WeakMap()
 
     // Fase atual da campanha (vinda da sessão: seleção/avanço de fase).
     this.level = getSessionLevel()
@@ -225,11 +238,11 @@ export class MainScene extends Phaser.Scene {
       this.tryJoinP2()
     }
 
-// Segurança dos power-ups: se não houver drop há um bom tempo, garante um
-      // pickup na arena para o jogador não ficar sem opções.
-      if (this.kills > 0 && this.time.now - this.lastPickupAt > PICKUP_SAFETY_INTERVAL_MS) {
-        this.spawnPickup(Phaser.Math.Between(96, this.scale.width - 96), this.groundTop - 60)
-      }
+    // Segurança dos power-ups: se não houver drop há um bom tempo, garante um
+    // pickup na arena para o jogador não ficar sem opções.
+    if (this.kills > 0 && this.time.now - this.lastPickupAt > PICKUP_SAFETY_INTERVAL_MS) {
+      this.spawnPickup(Phaser.Math.Between(96, this.scale.width - 96), this.groundTop - 60)
+    }
 
     this.players.forEach((player) => {
       player.update()
@@ -381,13 +394,11 @@ export class MainScene extends Phaser.Scene {
     // Spawns com margem segura, longe das bordas e do meio da arena, para um
     // personagem não nascer em cima de nenhum obstáculo do cenário.
     const x = spawnXFor(width, index)
-    // A altura do corpo é por personagem (Nany tem frame maior que o Tuiu,
-    // mas as escalas em jogo são calibradas para a mesma altura); usar sempre
-    // a do Tuiu afundava a Nany alguns pixels dentro do chão. Como players[i]
-    // ainda não existe quando a chamada sai de createPlayers, a chave é
-    // recebida explicitamente em vez de inferida do jogador.
+    // O body é ancorado um pouco acima da base do frame. Alinhar o sprite pelo
+    // centro do body afundaria Tuiu/Nany no chão; usamos a base real do body.
     const def = CHARACTERS[characterKey] ?? CHARACTERS.tuio
-    return { x, y: groundCenterYFor(this.groundTop, def.bodyHeight * def.scale) }
+    const y = spriteCenterYForGround(this.groundTop, def.frameHeight, def.scale, CHARACTER_FOOT_INSET)
+    return { x, y }
   }
 
   private get groundTop(): number {
@@ -403,9 +414,16 @@ export class MainScene extends Phaser.Scene {
 
     this.physics.add.collider(this.zombieGroup, this.ground)
     this.physics.add.collider(this.zombieGroup, this.zombieGroup)
-    this.physics.add.collider(this.playerGroup, this.zombieGroup, (a, b) => {
-      this.onPlayerZombieContact(a as ArcadeObject, b as ArcadeObject)
-    })
+    this.physics.add.collider(
+      this.playerGroup,
+      this.zombieGroup,
+      (a, b) => {
+        this.onPlayerZombieContact(a as ArcadeObject, b as ArcadeObject)
+      },
+      (a, b) => {
+        this.capturePlayerZombieContact(a as ArcadeObject, b as ArcadeObject)
+      },
+    )
 
     const { width } = this.scale
     const diff = this.level.difficulty
@@ -674,52 +692,75 @@ export class MainScene extends Phaser.Scene {
     })
   }
 
-  private onPlayerZombieContact(object1: ArcadeObject, object2: ArcadeObject): void {
-    const playerSpr = object1 as Phaser.Physics.Arcade.Sprite
-    const zombieSpr = object2 as Phaser.Physics.Arcade.Sprite
-    const player = this.players.find((p) => p.sprite === playerSpr)
-    const zombie = zombieSpr as Zombie
-    if (!player || zombie.isDying) return
+  private resolvePlayerZombiePair(
+    object1: ArcadeObject,
+    object2: ArcadeObject,
+  ): { player: Player; zombie: Zombie; playerSprite: Phaser.Physics.Arcade.Sprite } | null {
+    const zombie = object1 instanceof Zombie ? object1 : object2 instanceof Zombie ? object2 : null
+    if (!zombie) return null
 
-    const playerBody = playerSpr.body as Phaser.Physics.Arcade.Body
-    const zombieBody = zombieSpr.body as Phaser.Physics.Arcade.Body
+    const playerSprite = (zombie === object1 ? object2 : object1) as Phaser.Physics.Arcade.Sprite
+    const player = this.players.find((candidate) => candidate.sprite === playerSprite)
+    return player ? { player, zombie, playerSprite } : null
+  }
 
-    // Regras de pisão × contato lateral ficam na lógica pura (combat.ts),
-    // testável sem Phaser; aqui só traduzimos o desfecho em efeitos.
-    // Usamos a altura do SPRITE (displayHeight), não do corpo de colisão,
-    // para alinhar o pisão com a imagem visual — o corpo é menor que o sprite
-    // (margem transparente), e usar o corpo deixava o zumbi "morrer" em
-    // contatos laterais que visualmente eram de lado.
-    const outcome = resolvePlayerZombieContact(
-      {
-        x: playerSpr.x,
-        feetY: playerSpr.y + playerSpr.displayHeight / 2,
+  /**
+   * O processCallback roda antes de o Arcade separar os bodies. Guardar este
+   * snapshot evita que blocked.down/velocity já alterados pela colisão fazem
+   * um pisão ser classificado como dano ao jogador.
+   */
+  private capturePlayerZombieContact(object1: ArcadeObject, object2: ArcadeObject): void {
+    const pair = this.resolvePlayerZombiePair(object1, object2)
+    if (!pair || pair.zombie.isDying || !pair.playerSprite.body || !pair.zombie.body) return
+
+    const playerBody = pair.playerSprite.body as Phaser.Physics.Arcade.Body
+    const zombieBody = pair.zombie.body as Phaser.Physics.Arcade.Body
+
+    this.playerContactSnapshots.set(pair.playerSprite, {
+      player: pair.player,
+      zombie: pair.zombie,
+      playerContact: {
+        x: playerBody.center.x,
+        feetY: playerBody.bottom,
+        isAirborne: !playerBody.blocked.down,
         velocityY: playerBody.velocity.y,
       },
-      {
-        isDying: zombie.isDying,
-        x: zombieSpr.x,
-        headY: zombieSpr.y - zombieSpr.displayHeight / 2,
-        spriteHeight: zombieSpr.displayHeight,
-        damageAmount: stompDamage({
-          damageBoost: player.hasDamageBoost(),
-          doubleJump: player.hasDoubleJumped(),
-        }),
-        stomp: (fromX, amount) => zombie.stompDamage(fromX, amount),
-      },
-    )
+      zombieTopY: zombieBody.top,
+      zombieSpriteHeight: zombieBody.height,
+    })
+  }
+
+  private onPlayerZombieContact(object1: ArcadeObject, object2: ArcadeObject): void {
+    const pair = this.resolvePlayerZombiePair(object1, object2)
+    if (!pair) return
+
+    const snapshot = this.playerContactSnapshots.get(pair.playerSprite)
+    this.playerContactSnapshots.delete(pair.playerSprite)
+    if (!snapshot || snapshot.zombie.isDying || pair.zombie.isDying) return
+
+    const { player, zombie } = snapshot
+    const outcome = resolvePlayerZombieContact(snapshot.playerContact, {
+      isDying: zombie.isDying,
+      x: zombie.x,
+      headY: snapshot.zombieTopY,
+      spriteHeight: snapshot.zombieSpriteHeight,
+      damageAmount: stompDamage({
+        damageBoost: player.hasDamageBoost(),
+        doubleJump: player.hasDoubleJumped(),
+        targetHp: zombie.hp,
+      }),
+      stomp: (fromX, amount) => zombie.stompDamage(fromX, amount),
+    })
 
     if (outcome === 'stomp-kill') {
       player.bounce(-240)
       this.cameras.main.shake(180, 0.012)
       this.hitStop()
     } else if (outcome === 'stomp') {
-      player.bounce(-120) // continua "quicando" mesmo no cooldown de dano
+      player.bounce(-120)
     } else if (outcome === 'hit') {
       if (player.damage(1)) {
-        // Som de ferido específico por personagem (Tuiu/Nany)
         this.sound.play(player.spriteKey === 'nany' ? AUDIO.FEMALE_DEATH : AUDIO.MAN_DEATH, { volume: 0.7 })
-        // Dano quebra a sequência de abates sem levar dano (combo)
         this.breakCombo()
       }
     }
@@ -741,13 +782,18 @@ export class MainScene extends Phaser.Scene {
   private showRevivePrompt(player: Player): void {
     const label = player.id === 'P2' ? 'W' : '↑ / ESPAÇO'
     const prompt = this.add
-      .text(player.sprite.x, player.sprite.y - 148, `${player.name.toUpperCase()} CAIU!\nAPERTE ${label} PARA REVIVER`, {
-        fontFamily: 'monospace',
-        fontSize: '18px',
-        fontStyle: 'bold',
-        color: '#ffd54f',
-        align: 'center',
-      })
+      .text(
+        player.sprite.x,
+        player.sprite.y - 148,
+        `${player.name.toUpperCase()} CAIU!\nAPERTE ${label} PARA REVIVER`,
+        {
+          fontFamily: 'monospace',
+          fontSize: '18px',
+          fontStyle: 'bold',
+          color: '#ffd54f',
+          align: 'center',
+        },
+      )
       .setOrigin(0.5)
       .setDepth(12)
       .setStroke('#0d101b', 6)

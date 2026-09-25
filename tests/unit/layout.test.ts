@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { GROUND_HEIGHT, PLAYER_SPAWN_X_FACTORS, groundCenterYFor, groundTopFor, spawnXFor } from '../../src/game/layout'
+import {
+  GROUND_HEIGHT,
+  PLAYER_SPAWN_X_FACTORS,
+  groundCenterYFor,
+  groundTopFor,
+  spawnXFor,
+  spriteCenterYForGround,
+} from '../../src/game/layout'
 
 describe('layout', () => {
   it('calcula o topo do chão a partir da altura do viewport', () => {
@@ -8,6 +15,15 @@ describe('layout', () => {
 
   it('centraliza um corpo apoiado no chão', () => {
     expect(groundCenterYFor(168, 64)).toBe(136)
+  })
+
+  it('alinha a base ancorada do body de Tuiu e Nany na mesma linha do chão', () => {
+    const groundTop = 336
+    const tuioY = spriteCenterYForGround(groundTop, 74, 1.7, 4)
+    const nanyY = spriteCenterYForGround(groundTop, 84, 1.5, 4)
+
+    expect(tuioY).toBeCloseTo(279.9)
+    expect(nanyY).toBeCloseTo(279)
   })
 
   it('posiciona P1 à esquerda e P2 à direita', () => {

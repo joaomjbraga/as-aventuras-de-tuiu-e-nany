@@ -2,17 +2,15 @@
  * Lógica pura do contato jogador↔zumbi (sem Phaser), para ser testável.
  *
  * Regras:
- * - Pontapé/queda no topo da cabeça do zumbi = "pisão" (stomp). Mata o zumbi
- *   (retorna true do stomp) ou apenas quica no cooldown de dano.
- * - Contato lateral = dano ao jogador.
- * - Jogador caindo rápido demais não se machuca em contato lateral
- *   (velocityY < -60 só pode pisar).
+ * - Jogador no ar, descendo e acima do centro do zumbi = "pisão" (stomp).
+ *   Mata o zumbi ou apenas quica no cooldown de dano.
+ * - Contato lateral ou com o jogador no chão = dano ao jogador.
+ * - Jogador subindo atravessa o zumbi sem causar dano.
  * - Zumbi morrendo não interage.
  *
- * A margem de tolerância do pisão é proporcional à altura do sprite do zumbi
- * (20% da altura), para funcionar com zumbis de tamanhos diferentes (116px,
- * 128px, boss de 160px). Uma margem fixa deixava alguns zumbis sem morrer ao
- * serem pisados.
+ * A margem de tolerância é medida a partir do centro do zumbi e cresce 20% da
+ * altura do sprite. Isso cobre os bodies Arcade mayores que a arte visível sem
+ * transformar contatos claramente laterais em pisões.
  */
 
 export type ContactOutcome = 'stomp-kill' | 'stomp' | 'hit' | 'falling' | 'dead'
@@ -22,6 +20,8 @@ export interface PlayerContactSource {
   x: number
   /** Posição dos pés do jogador (y do sprite + halfHeight do corpo). */
   feetY: number
+  /** O corpo Arcade do jogador ainda está livre do chão? */
+  isAirborne: boolean
   /** Velocidade vertical atual do jogador. */
   velocityY: number
 }
@@ -47,17 +47,21 @@ export interface ZombieContactTarget {
 export function resolvePlayerZombieContact(player: PlayerContactSource, zombie: ZombieContactTarget): ContactOutcome {
   if (zombie.isDying) return 'dead'
 
-  // Margem proporcional à altura do zumbi: 116px → 23px, 128px → 26px, 160px → 32px.
-  // Isso garante que todos os zumbis (incluindo o boss) aceitem o pisão.
+  const zombieCenterY = zombie.headY + zombie.spriteHeight / 2
   const tolerance = Math.round(zombie.spriteHeight * 0.2)
+  const isDescending = player.isAirborne && player.velocityY >= 0
+  const feetAboveStompArea = player.feetY <= zombieCenterY + tolerance
 
-  // Pés do jogador acima da cabeça do zumbi = pisão
-  if (player.feetY <= zombie.headY + tolerance && player.velocityY >= -60) {
+  // Um personagem descendo sobre a parte superior do zumbi só causa dano ao
+  // zumbi. O collider já garante que existe sobreposição horizontal.
+  if (isDescending && feetAboveStompArea) {
     return zombie.stomp(player.x, zombie.damageAmount) ? 'stomp-kill' : 'stomp'
   }
 
-  // Contato lateral só machuca se o jogador não estiver subindo rápido demais
-  if (player.velocityY >= -60) return 'hit'
+  // No chão ou descendo pela lateral/parte inferior: o jogador é ferido.
+  if (!player.isAirborne || player.velocityY >= 0) return 'hit'
+
+  // Subindo: passa pelo inimigo sem dano e sem pisão.
   return 'falling'
 }
 
@@ -66,13 +70,22 @@ export interface StompDamageSource {
   damageBoost: boolean
   /** A queda atual veio de um pulo duplo (pisão mais forte). */
   doubleJump: boolean
+  /** Vida atual do alvo, usada para impedir que um pisão normal mate de primeira. */
+  targetHp: number
 }
 
 /**
  * Dano causado por um pisão: base 2 (×2 com o power-up de dano) e +50% quando
  * o jogador cai sobre o zumbi depois de usar o pulo duplo.
+ *
+ * Um pisão normal nunca zera a vida de um alvo que ainda tem 2 ou mais HP.
+ * Ele pode, porém, retirar o último HP de um zumbi já ferido.
  */
-export function stompDamage({ damageBoost, doubleJump }: StompDamageSource): number {
+export function stompDamage({ damageBoost, doubleJump, targetHp }: StompDamageSource): number {
   const base = damageBoost ? 4 : 2
-  return doubleJump ? Math.round(base * 1.5) : base
+  const damage = doubleJump ? Math.round(base * 1.5) : base
+  if (doubleJump) return damage
+
+  const protectedDamage = Math.max(1, targetHp - 1)
+  return Math.min(damage, protectedDamage)
 }

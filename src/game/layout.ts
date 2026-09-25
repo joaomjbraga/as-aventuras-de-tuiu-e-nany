@@ -19,6 +19,21 @@ export function groundCenterYFor(groundTop: number, bodyHeight: number): number 
   return groundTop - bodyHeight / 2
 }
 
+/**
+ * Centro do sprite quando a base do body está ancorada em `groundTop`.
+ * O body termina `footInset` pixels acima do frame, portanto o centro visual
+ * não coincide com o centro do body Arcade.
+ */
+export function spriteCenterYForGround(
+  groundTop: number,
+  frameHeight: number,
+  scale: number,
+  footInset: number,
+): number {
+  const bodyBottomFromCenter = (frameHeight - footInset - frameHeight / 2) * scale
+  return groundTop - bodyBottomFromCenter
+}
+
 /** X de spawn horizontal de um jogador (P1 à esquerda, P2 à direita). */
 export function spawnXFor(width: number, index: number): number {
   const factor = index === 0 ? PLAYER_SPAWN_X_FACTORS.p1 : PLAYER_SPAWN_X_FACTORS.p2

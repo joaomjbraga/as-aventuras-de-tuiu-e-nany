@@ -21,12 +21,15 @@ export interface SpritesheetDef {
 
 export interface CharacterDef extends SpritesheetDef {
   name: string
-  /** Tamanho do corpo de colisão (arcade), menor que o frame por causa da margem transparente. */
+  /** Tamanho source do corpo Arcade; deve ser menor que o frame visível. */
   bodyWidth: number
   bodyHeight: number
   /** Escala aplicada ao sprite em jogo (física é ajustada automaticamente). */
   scale: number
 }
+
+/** Margem transparente entre o frame e a linha dos pés usada pelo body. */
+export const CHARACTER_FOOT_INSET = 4
 
 /**
  * Índices de frames no spritesheet.
@@ -50,8 +53,8 @@ export const CHARACTERS = {
     path: 'sprites/tuio.png',
     frameWidth: 43,
     frameHeight: 74,
-    bodyWidth: 51,
-    bodyHeight: 116,
+    bodyWidth: 28,
+    bodyHeight: 58,
     scale: 1.7,
   },
   nany: {
@@ -60,8 +63,8 @@ export const CHARACTERS = {
     path: 'sprites/nany.png',
     frameWidth: 48,
     frameHeight: 84,
-    bodyWidth: 51,
-    bodyHeight: 120,
+    bodyWidth: 32,
+    bodyHeight: 66,
     // Maior que o Tuiu para compensar o frame mais alto (84 vs 74) e ficarem
     // com a mesma altura em jogo: 84 * 1.5 ≈ 74 * 1.7.
     scale: 1.5,

@@ -13,11 +13,12 @@ function makeZombie(overrides: Partial<ZombieContactTarget> = {}): ZombieContact
   }
 }
 
-function makePlayer(overrides: Partial<{ x: number; feetY: number; velocityY: number }> = {}) {
+function makePlayer(overrides: Partial<{ x: number; feetY: number; isAirborne: boolean; velocityY: number }> = {}) {
   return {
     x: 150,
     feetY: 126,
-    velocityY: 0,
+    isAirborne: true,
+    velocityY: 120,
     ...overrides,
   }
 }
@@ -25,38 +26,44 @@ function makePlayer(overrides: Partial<{ x: number; feetY: number; velocityY: nu
 describe('resolvePlayerZombieContact', () => {
   it('pisão mata o zumbi quando o stomp destrói o alvo', () => {
     const zombie = makeZombie({ stomp: () => true })
-    expect(resolvePlayerZombieContact(makePlayer({ feetY: 130 }), zombie)).toBe('stomp-kill')
+    expect(resolvePlayerZombieContact(makePlayer(), zombie)).toBe('stomp-kill')
   })
 
   it('pisão sem morte vira apenas um quique (cooldown do zumbi)', () => {
     const zombie = makeZombie({ stomp: () => false })
-    expect(resolvePlayerZombieContact(makePlayer({ feetY: 130 }), zombie)).toBe('stomp')
+    expect(resolvePlayerZombieContact(makePlayer(), zombie)).toBe('stomp')
   })
 
-  it('pés dentro da margem de tolerância (20% da altura) ainda contam como pisão', () => {
-    const zombie = makeZombie()
-    // spriteHeight 128 → tolerance = 26
-    expect(resolvePlayerZombieContact(makePlayer({ feetY: zombie.headY + 26 }), zombie)).toBe('stomp')
-  })
-
-  it('contato lateral (pés abaixo da cabeça) causa dano ao jogador', () => {
-    const zombie = makeZombie()
-    expect(resolvePlayerZombieContact(makePlayer({ feetY: 160 }), zombie)).toBe('hit')
-  })
-
-  it('jogador subindo rápido não se machuca em contato lateral', () => {
-    const zombie = makeZombie()
-    expect(resolvePlayerZombieContact(makePlayer({ feetY: 160, velocityY: -120 }), zombie)).toBe('falling')
-  })
-
-  it('jogador subindo rápido demais não pisa nem se machuca (passa por cima)', () => {
+  it('pulo normal descendo sobre o zumbi causa pisão, não dano ao jogador', () => {
     const zombie = makeZombie({ stomp: () => true })
-    expect(resolvePlayerZombieContact(makePlayer({ feetY: 100, velocityY: -240 }), zombie)).toBe('falling')
+    expect(resolvePlayerZombieContact(makePlayer({ feetY: 180, velocityY: 240 }), zombie)).toBe('stomp-kill')
   })
 
-  it('pés recém saídos do chão com subida leve ainda pisa', () => {
+  it('pés dentro da margem de 20% acima do centro ainda contam como pisão', () => {
+    const zombie = makeZombie()
+    const zombieCenterY = zombie.headY + zombie.spriteHeight / 2
+    const tolerance = Math.round(zombie.spriteHeight * 0.2)
+    expect(resolvePlayerZombieContact(makePlayer({ feetY: zombieCenterY + tolerance }), zombie)).toBe('stomp')
+  })
+
+  it('contato lateral durante a descida causa dano ao jogador', () => {
+    const zombie = makeZombie()
+    expect(resolvePlayerZombieContact(makePlayer({ feetY: 240 }), zombie)).toBe('hit')
+  })
+
+  it('contato no chão continua causando dano ao jogador', () => {
+    const zombie = makeZombie()
+    expect(resolvePlayerZombieContact(makePlayer({ feetY: 180, isAirborne: false, velocityY: 0 }), zombie)).toBe('hit')
+  })
+
+  it('jogador subindo não pisa nem causa dano ao jogador', () => {
     const zombie = makeZombie({ stomp: () => true })
-    expect(resolvePlayerZombieContact(makePlayer({ feetY: 120, velocityY: -30 }), zombie)).toBe('stomp-kill')
+    expect(resolvePlayerZombieContact(makePlayer({ feetY: 180, velocityY: -120 }), zombie)).toBe('falling')
+  })
+
+  it('jogador subindo com velocidade leve também não gera pisão', () => {
+    const zombie = makeZombie({ stomp: () => true })
+    expect(resolvePlayerZombieContact(makePlayer({ feetY: 120, velocityY: -30 }), zombie)).toBe('falling')
   })
 
   it('zumbi morrendo não interage', () => {
@@ -73,25 +80,42 @@ describe('resolvePlayerZombieContact', () => {
         return true
       },
     })
-    resolvePlayerZombieContact(makePlayer({ x: 42, feetY: 120 }), zombie)
+    resolvePlayerZombieContact(makePlayer({ x: 42, feetY: 180 }), zombie)
     expect(calls).toEqual([{ fromX: 42, amount: 4 }])
   })
 })
 
 describe('stompDamage', () => {
-  it('pisão normal causa 2 de dano (zumbi padrão de 3 de vida morre em 2 pisões)', () => {
-    expect(stompDamage({ damageBoost: false, doubleJump: false })).toBe(2)
+  it('pisão normal causa 2 de dano em um zumbi com 3 de vida', () => {
+    expect(stompDamage({ damageBoost: false, doubleJump: false, targetHp: 3 })).toBe(2)
   })
 
-  it('pisão com power-up de dano causa 4', () => {
-    expect(stompDamage({ damageBoost: true, doubleJump: false })).toBe(4)
+  it('zumbi comum sobrevive ao pisão normal e é derrotado de primeira pelo pisão duplo', () => {
+    const zombieHp = 3
+    const afterNormalStomp = zombieHp - stompDamage({ damageBoost: false, doubleJump: false, targetHp: zombieHp })
+    const afterDoubleStomp = zombieHp - stompDamage({ damageBoost: false, doubleJump: true, targetHp: zombieHp })
+
+    expect(afterNormalStomp).toBe(1)
+    expect(afterDoubleStomp).toBe(0)
+  })
+
+  it('Dano x2 também não permite que o primeiro pisão normal mate o zumbi comum', () => {
+    expect(stompDamage({ damageBoost: true, doubleJump: false, targetHp: 3 })).toBe(2)
+  })
+
+  it('pisão com power-up causa 4 quando a proteção contra morte não precisa ser aplicada', () => {
+    expect(stompDamage({ damageBoost: true, doubleJump: false, targetHp: 10 })).toBe(4)
+  })
+
+  it('pisão normal retira o último HP de um zumbi já ferido', () => {
+    expect(stompDamage({ damageBoost: false, doubleJump: false, targetHp: 1 })).toBe(1)
   })
 
   it('queda após o pulo duplo causa mais dano que o normal (+50%)', () => {
-    expect(stompDamage({ damageBoost: false, doubleJump: true })).toBe(3)
+    expect(stompDamage({ damageBoost: false, doubleJump: true, targetHp: 3 })).toBe(3)
   })
 
   it('queda após o pulo duplo com power-up de dano causa 6', () => {
-    expect(stompDamage({ damageBoost: true, doubleJump: true })).toBe(6)
+    expect(stompDamage({ damageBoost: true, doubleJump: true, targetHp: 3 })).toBe(6)
   })
 })

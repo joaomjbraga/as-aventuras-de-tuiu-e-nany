@@ -26,11 +26,12 @@ export class InstructionsScene extends Phaser.Scene {
       'J1  ←/→ mover   ↑ ou ESPAÇO pular',
       'J2  A/D mover   W pular',
       'ESC pausa   M ativa/desativa o som',
-      'Pulo duplo: aperte o pulo de novo no ar.',
+      'Pulo duplo: solte e aperte de novo perto do ponto mais alto.',
     ])
 
     this.addSection(132, 'COMBATE', [
-      'Pise no zumbi para causar dano e derrotá-lo.',
+      'Pisão normal nunca mata o zumbi comum de primeira.',
+      'Após o pulo duplo, o pisão causa 3 e mata de primeira.',
       'Contato lateral tira um coração.',
       'Atingir a meta libera o boss da fase.',
     ])
@@ -38,7 +39,7 @@ export class InstructionsScene extends Phaser.Scene {
     this.addSection(228, 'ITENS E COMBO', [
       'Coração: recupera 1 coração ou dá pontos.',
       'Escudo: bloqueia dano   Veloz: aumenta a velocidade.',
-      'Dano x2: dobra o dano dos pisões.',
+      'Dano x2: aumenta o dano, mas não mata de primeira sem pulo duplo.',
       'Abates seguidos aumentam o combo até x10.',
     ])
 

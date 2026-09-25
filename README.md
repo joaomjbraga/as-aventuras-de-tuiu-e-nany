@@ -121,9 +121,10 @@ O workflow `.github/workflows/desktop.yml` valida o projeto e gera os artefatos 
 
 ## Mecânica
 
-- Pise em cima do zumbi para derrotá-lo; contato lateral tira vida.
-- **Pulo duplo**: aperte o pulo de novo no ar para um impulso extra (ajuda a alcançar a cabeça do chefão).
-- **Pisão forte**: cair sobre um zumbi logo depois de usar o pulo duplo causa 50% mais dano.
+- Pise em cima do zumbi para causar dano; contato lateral tira vida.
+- **Pisão normal**: nunca zera a vida de um zumbi que ainda tenha 2 ou mais pontos de vida; um zumbi comum com 3 de vida sobrevive ao primeiro pisão, mesmo com **Dano x2**.
+- **Pulo duplo**: solte o pulo e aperte-o novamente perto do ponto mais alto; uma pressão muito cedo fica guardada e é executada quando o personagem já estiver desacelerando.
+- **Pisão forte**: o pisão depois do pulo duplo causa 3 de dano e derrota um zumbi comum de primeira.
 - Os abates valem pontos multiplicados pela sequência de abates sem levar dano (combo): cada abate sobe o multiplicador (x1 → x10); levar dano zera o combo.
 - Cada jogador tem 3 corações; ao cair, o jogador reviverá quando escolher (pulo do próprio personagem) se ainda houver companheiro em pé.
 - Todos os jogadores caídos ao mesmo tempo = fim de jogo.

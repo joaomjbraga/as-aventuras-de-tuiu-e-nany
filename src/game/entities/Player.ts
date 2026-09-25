@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
-import { FRAME_LAYOUT, getAnimConfigs } from '../sprites'
+import { CHARACTER_FOOT_INSET, FRAME_LAYOUT, getAnimConfigs } from '../sprites'
 import { CONTROL_SCHEMES, type ControlSchemeId } from '../controls'
+import { canTriggerDoubleJump, doubleJumpVelocityY, isNewJumpPress, resolveJumpAction } from '../jump'
 
 export type PlayerState = 'idle' | 'walk' | 'jump'
 
@@ -17,16 +18,14 @@ export interface PlayerConfig {
   scale?: number
 }
 
+/** Cor do brilho do escudo (azul gelo). */
+const SHIELD_TINT = 0x7fd4ff
+
 /**
  * Um jogador controlável. Cada instância lê seu próprio esquema de
  * controles (P1 = setas/espaço, P2 = A/D/W), então dá para ter vários
  * em cena simultaneamente (co-op local).
  */
-const FOOT_INSET = 4
-
-/** Cor do brilho do escudo (azul gelo). */
-const SHIELD_TINT = 0x7fd4ff
-
 export class Player {
   readonly id: string
   readonly name: string
@@ -53,12 +52,14 @@ export class Player {
   // Física (ajustável para o "jeitão" do jogo)
   private moveSpeed = 320
   private jumpForce = 900
-  private doubleJumpForce = 780
+  private doubleJumpForce = 520
+  private readonly doubleJumpTriggerSpeed = 300
   private readonly speedBoostFactor = 1.5
 
   // Pulo duplo: conta quantos pulos já foram usados até o personagem tocar o chão.
   private jumpsUsed = 0
   private readonly maxJumps = 2
+  private doubleJumpBuffered = false
 
   /** Estado anterior da tecla de pulo (para detectar borda de pressão). */
   private wasJumpDown = false
@@ -84,7 +85,7 @@ export class Player {
       this.sprite.setBodySize(config.bodyWidth, config.bodyHeight, false)
       this.sprite.body!.setOffset(
         (this.sprite.width - config.bodyWidth) / 2,
-        this.sprite.height - config.bodyHeight - FOOT_INSET,
+        this.sprite.height - config.bodyHeight - CHARACTER_FOOT_INSET,
       )
     }
 
@@ -126,34 +127,45 @@ export class Player {
     }
 
     // ---- Pulo (simples no chão + pulo duplo no ar) ----
-    // Usa jumpJustPressed (apenas no frame da pressão), não jumpPressed
-    // (segurado). Senão, manter a tecla segurada fazia o jogo reaplicar
-    // o pulo a cada frame que o personagem tocava o chão, criando a
-    // sensação de "flutuação" que o jogador relatou.
-    const jumpJustPressed = this.jumpJustPressed()
-    const jumpHeld = this.keys.jump.some((key) => key.isDown)
+    // blocked.down pode continuar marcado por um frame depois de aplicar a
+    // velocidade do salto. Considerar apenas o bloqueio com velocidade não
+    // negativa evita que o primeiro pulo seja consumido como se ainda estivesse
+    // no chão.
+    const isGrounded = body.blocked.down && body.velocity.y >= 0
+    if (isGrounded) {
+      this.jumpsUsed = 0
+      this.doubleJumpBuffered = false
+    }
 
-    // Caiu ou pousou: libera os pulos de novo.
-    if (body.blocked.down) this.jumpsUsed = 0
+    const jumpAction = resolveJumpAction({
+      isGrounded,
+      justPressed: this.jumpJustPressed(),
+      jumpsUsed: this.jumpsUsed,
+      maxJumps: this.maxJumps,
+    })
+    const doubleJumpReady = canTriggerDoubleJump(body.velocity.y, this.doubleJumpTriggerSpeed)
+    let jumpedThisFrame = false
 
-    if (body.blocked.down && jumpJustPressed) {
-      this.jumpsUsed = 1
+    if (jumpAction === 'first') {
+      this.jumpsUsed += 1
       this.sprite.setVelocityY(-this.jumpForce)
       this.setState('jump')
-    } else if (!body.blocked.down && this.jumpsUsed < this.maxJumps) {
-      // Pulo duplo: aciona enquanto a tecla estiver pressionada no ar.
-      // Usa jumpHeld (segurado) em vez de jumpJustPressed para que o
-      // jogador possa ativar o pulo duplo sem precisar soltar e
-      // reapertar a tecla — basta manter segurada desde o chão.
-      if (jumpHeld) {
-        this.jumpsUsed += 1
-        this.sprite.setVelocityY(-this.doubleJumpForce)
-        this.setState('jump')
+      jumpedThisFrame = true
+    } else if (jumpAction === 'double') {
+      if (doubleJumpReady) {
+        this.performDoubleJump()
+        jumpedThisFrame = true
+      } else {
+        // Uma pressionada muito cedo fica registrada e dispara perto do ápice.
+        this.doubleJumpBuffered = true
       }
+    } else if (this.doubleJumpBuffered && !isGrounded && this.jumpsUsed < this.maxJumps && doubleJumpReady) {
+      this.performDoubleJump()
+      jumpedThisFrame = true
     }
 
     // ---- Máquina de estados ----
-    if (!body.blocked.down) {
+    if (jumpedThisFrame || !isGrounded) {
       // No ar (pulou ou caiu de uma plataforma)
       if (this.state !== 'jump') this.setState('jump')
     } else if (moveLeft || moveRight) {
@@ -164,7 +176,7 @@ export class Player {
 
     // Se a animação de pulo está no frame de aterrissagem (8) mas o
     // personagem ainda está no ar, segura no frame "ar" (7).
-    if (this.state === 'jump' && !body.blocked.down && this.sprite.anims.currentFrame?.isLast) {
+    if (this.state === 'jump' && !isGrounded && this.sprite.anims.currentFrame?.isLast) {
       this.sprite.setFrame(FRAME_LAYOUT.JUMP[1])
     }
 
@@ -219,6 +231,14 @@ export class Player {
     if (this.isAlive) this.sprite.setVelocityY(forceY)
   }
 
+  private performDoubleJump(): void {
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body
+    this.jumpsUsed += 1
+    this.doubleJumpBuffered = false
+    this.sprite.setVelocityY(doubleJumpVelocityY(body.velocity.y, this.doubleJumpForce))
+    this.setState('jump')
+  }
+
   /**
    * true enquanto a queda atual ainda vier de um pulo duplo (ou seja, até o
    * personagem tocar o chão). Usado para o pisão dar mais dano aos zumbis.
@@ -236,7 +256,7 @@ export class Player {
    */
   private jumpJustPressed(): boolean {
     const isDown = this.keys.jump.some((key) => key.isDown)
-    const justPressed = isDown && !this.wasJumpDown
+    const justPressed = isNewJumpPress(this.wasJumpDown, isDown)
     this.wasJumpDown = isDown
     return justPressed
   }
@@ -282,6 +302,7 @@ export class Player {
     this.sprite.body!.reset(x, y)
     this.sprite.setVelocity(0, 0)
     this.jumpsUsed = 0
+    this.doubleJumpBuffered = false
     this.wasJumpDown = false
     this.setState('idle')
   }
