@@ -100,6 +100,23 @@ export const ZOMBIE_VARIANTS: ZombieVariantDef[] = [
 export const ZOMBIE_TARGET_HEIGHT = 128
 
 /**
+ * Chave da textura de uma variante de zumbi: o spritesheet real normalizado
+ * quando a PreloadScene conseguiu montá-lo, e o placeholder procedural 'zombie'
+ * caso contrário.
+ *
+ * O teste de existência vem injetado em `exists` (em vez do módulo puxar o
+ * TextureManager) para `sprites.ts` continuar puro e testável. A cena e a
+ * entidade `Zombie` precisam concordar com a resposta: enquanto a MainScene
+ * assumia que a textura teria sempre ZOMBIE_TARGET_HEIGHT de altura para
+ * posicionar o spawn, o placeholder tem 80px e o zumbi nascia meio enterrado
+ * no chão.
+ */
+export function zombieTextureKey(variant: number, exists: (key: string) => boolean): string {
+  const key = `zombie${variant}`
+  return exists(key) ? key : 'zombie'
+}
+
+/**
  * Explosão de abate dos zumbis: 6 frames individuais (PNGs de tamanhos
  * variados) empacotados em runtime num spritesheet quadrado normalizado
  * (PreloadScene), exibido no local da morte no lugar das partículas.

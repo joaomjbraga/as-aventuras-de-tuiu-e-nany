@@ -1,0 +1,51 @@
+{
+  appId: 'br.com.joaomjbraga.asaventurasdetuiue_nany',
+  productName: 'As Aventuras de Tuiu e Nany',
+  copyright: 'Copyright © 2026 João M J Braga',
+  asar: true,
+  compression: 'maximum',
+  npmRebuild: false,
+  publish: null,
+
+  // Nome dos artefatos, o mesmo nas duas plataformas.
+  //
+  // O padrão do electron-builder usa ${productName}, que aqui é "As Aventuras
+  // de Tuiu e Nany". Isso produziria "As Aventuras de Tuiu e Nany 0.0.1.exe":
+  // legível, mas com espaços, o que deixa a URL de download direto
+  // percent-encoded e o nome longo na página de release. ${name} é o
+  // identificador do package.json, que já é um slug.
+  //
+  // Fica na raiz de propósito: o electron-builder usa este valor como padrão
+  // para qualquer target que não declare o seu (a resolução é
+  // "artifactName do target → artifactName da plataforma → artifactName da
+  // raiz"). Assim o .exe portátil e o AppImage saem com o mesmo nome, e o
+  // padrão não precisa ser repetido em `portable` e `linux`.
+  artifactName: '${name}-${version}.${ext}',
+
+  directories: {
+    output: 'release',
+    buildResources: 'public',
+  },
+
+  files: ['out/**/*', 'package.json', '!**/*.map'],
+
+  // Windows: só o executável portátil, sem instalador. O .exe roda direto da
+  // pasta onde o usuário salvar.
+  //
+  // Sem seção `nsis` aqui de propósito: o target portátil não herda dela
+  // (as PortableOptions não têm oneClick/perMachine/shortcutName) e o
+  // template portable.nsi só extrai, executa e limpa — não existe atalho de
+  // área de trabalho nem de menu Iniciar para configurar.
+  win: {
+    target: [{ target: 'portable', arch: ['x64'] }],
+    icon: 'public/icon.ico',
+  },
+
+  // Linux: AppImage, que também é portátil (roda da pasta, sem instalar).
+  linux: {
+    target: [{ target: 'AppImage', arch: ['x64'] }],
+    category: 'Game',
+    icon: 'public/Icon.png',
+    syncDesktopName: true,
+  },
+}

@@ -4,10 +4,10 @@ Jogo desktop 2D em pixel art (co-op local) no qual Tuiu e Nany enfrentam zumbis.
 
 ## Plataformas suportadas
 
-- **Windows:** instalador NSIS e executável portátil `.exe`
+- **Windows:** executável portátil `.exe` (roda direto da pasta, sem instalar)
 - **Linux:** AppImage
 
-O AppImage deve ser gerado em um ambiente Linux nativo ou pelo workflow de CI.
+Os dois artefatos são portáteis: não há instalador, e nada é gravado no sistema. O AppImage deve ser gerado em um ambiente Linux nativo ou pelo workflow de CI.
 
 ## Por que este jogo existe
 
@@ -75,10 +75,7 @@ npm run preview
 npm run dist:win
 ```
 
-Gera:
-
-- Instalador NSIS `.exe`
-- Executável portátil `.exe`
+Gera o executável portátil `.exe` em `release/`.
 
 ### Linux
 
@@ -102,7 +99,32 @@ Ou:
 npm run verify
 ```
 
-O workflow `.github/workflows/desktop.yml` valida o projeto e gera os artefatos em runners nativos do Windows e do Linux.
+### Publicar uma release
+
+A versão em `package.json` é a fonte da verdade. O workflow
+`.github/workflows/release.yml` roda a cada push em `main` e compara essa versão
+com a última tag do repositório: se forem diferentes, ele cria a tag, roda o gate
+de qualidade, gera os dois instaladores em runners nativos e publica a release
+com as notas tiradas dos commits.
+
+Ou seja, para publicar não é preciso criar tag na mão. Bastam dois passos:
+
+1. editar a versão em `package.json`
+2. `git push origin main`
+
+Um push que não mexe na versão não publica nada. Uma versão com sufixo
+(`0.1.0-beta.1`) sai marcada como pré-lançamento. O job de publicação é
+idempotente: se rodar de novo, reaproveita a tag e a release e apenas reenvia os
+artefatos.
+
+O workflow `.github/workflows/desktop.yml` cobre os pull requests: valida o
+projeto e gera os artefatos, mas não publica release. Ele não roda em push para
+`main` justamente para não duplicar o build do `release.yml`.
+
+Os dois workflows exigem `contents: read`, e o job `publicar` do `release.yml`
+pede `contents: write` para conseguir subir a tag. O `GITHUB_TOKEN` do próprio
+repositório já tem as duas permissões, então não é preciso configurar secret
+nenhum.
 
 ## Controles
 
@@ -162,7 +184,7 @@ Para adicionar uma nova fase:
 - `src/assets/`: cenários, sprites, áudio e demais assets do jogo.
 - `public/`: ícones usados pelo `electron-builder` (`Icon.png`, `icon.ico`).
 - `electron.vite.config.ts`: builds separados de main, preload e renderer.
-- `electron-builder.yml`: alvos Windows (NSIS/portátil) e Linux (AppImage).
+- `electron-builder.json5`: alvos Windows (portátil) e Linux (AppImage).
 - `scripts/ensure-electron.cjs`: garante o download do binário do Electron após a instalação.
 
 O renderer é carregado por URL durante o desenvolvimento e por `file://` no pacote de produção. Os caminhos de assets do HTML são relativos.

@@ -2,7 +2,7 @@ import Phaser from 'phaser'
 import { Player } from '../entities/Player'
 import { Zombie } from '../entities/Zombie'
 import { Boss } from '../entities/Boss'
-import { CHARACTER_FOOT_INSET, CHARACTERS, ZOMBIE_TARGET_HEIGHT, ZOMBIE_VARIANTS, type CharacterKey } from '../sprites'
+import { CHARACTER_FOOT_INSET, CHARACTERS, ZOMBIE_TARGET_HEIGHT, zombieTextureKey, type CharacterKey } from '../sprites'
 import { advanceSessionLevel, getSession, getSessionLevel, setSessionPlayers, type PlayerId } from '../session'
 import { buildScene, type SceneResult } from '../scenery'
 import { AUDIO, applyMute, playBgm, toggleMute } from '../audio'
@@ -439,14 +439,20 @@ export class MainScene extends Phaser.Scene {
   }
 
   private spawnZombie(x: number): void {
-    // Sorteia a variante aqui para alinhar a altura do spawn com a
-    // normalização do spritesheet (cada zumbi pode ter altura própria).
+    // Sorteia a variante aqui para alinhar o Y do spawn com a altura real do
+    // spritesheet que o Zombie vai usar: a normalização dá a cada variante uma
+    // altura própria (116–128px) e o placeholder procedural 'zombie' tem 80px,
+    // não os ZOMBIE_TARGET_HEIGHT. Assumir a altura-alvo punha o fallback meio
+    // enterrado no chão; ler a textura deixa o spawn correto nos dois casos.
     const variant = Phaser.Math.Between(1, 3) as 1 | 2 | 3
-    const targetH = ZOMBIE_VARIANTS[variant - 1]?.targetHeight ?? ZOMBIE_TARGET_HEIGHT
+    const textureKey = zombieTextureKey(variant, (key) => this.textures.exists(key))
+    // `get` é seguro: zombieTextureKey só devolve uma variante que `exists`
+    // confirmou, ou o 'zombie' que generateZombiePlaceholder sempre cria.
+    const sourceHeight = this.textures.get(textureKey).getSourceImage().height
 
     const zombie = new Zombie(this, {
       x,
-      y: this.groundTop - targetH / 2,
+      y: this.groundTop - (sourceHeight || ZOMBIE_TARGET_HEIGHT) / 2,
       players: this.players,
       moveSpeed: this.level.enemySpeed,
       variant,
@@ -536,8 +542,18 @@ export class MainScene extends Phaser.Scene {
     this.lastPickupAt = this.time.now
   }
 
-  /** Registra um abate: atualiza combo/placar, recorde, som de morte e vitória. */
-  private registerKill(killed?: Zombie): void {
+  /**
+   * Registra um abate: atualiza combo/placar, recorde, som de morte e vitória.
+   *
+   * `allowVictoryCheck` fica `false` só no abate do BOSS. A meta de abates já
+   * foi cumprida antes da luta e o chefe é a final wave em si, então quem
+   * encerra a fase ali é `onBossKilled`, não a condição de vitória. Sem esse
+   * parâmetro, o abate do boss reentraria em `onLevelCleared` e o resultado
+   * dependeria de `bossPhase` ainda estar `true` — coincidência de ordem de
+   * flags, não uma regra do jogo. Mantido o guarda de `bossPhase` como segunda
+   * barreira, para um zumbi perdido no meio da luta não abrir outra final wave.
+   */
+  private registerKill(killed?: Zombie, allowVictoryCheck = true): void {
     this.kills += 1
     if (this.kills > this.bestKills) {
       this.bestKills = this.kills
@@ -562,7 +578,9 @@ export class MainScene extends Phaser.Scene {
     }
 
     // Meta de abates: abre a luta do boss (se houver) ou vence direto
-    if (!this.bossPhase && hasWon(this.kills, this.level.victoryKills)) this.onLevelCleared()
+    if (allowVictoryCheck && !this.bossPhase && hasWon(this.kills, this.level.victoryKills)) {
+      this.onLevelCleared()
+    }
   }
 
   /**
@@ -632,7 +650,8 @@ export class MainScene extends Phaser.Scene {
   /** O boss foi derrotado: conta como abate (pontos de combo) e vence a fase. */
   private onBossKilled(boss: Boss): void {
     if (!this.boss) return
-    this.registerKill(boss)
+    // `false` na checagem de vitória: aqui a fase termina pela queda do boss.
+    this.registerKill(boss, false)
     this.boss = undefined
     this.bossPhase = false
     this.lastHpByPlayer = new Map()

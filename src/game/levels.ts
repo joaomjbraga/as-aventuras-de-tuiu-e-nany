@@ -4,6 +4,12 @@
  * Cada fase declara sua arte de fundo estática, visual do chão e da névoa,
  * meta de vitória e curva de dificuldade.
  *
+ * A campanha é uma escada: `victoryKills`, o teto de zumbis simultâneos, os
+ * intervalos de spawn e a vida do boss crescem fase a fase. A primeira fase
+ * ("Casa") parte das bases de `difficulty.ts` (`VICTORY_KILLS`,
+ * `DEFAULT_DIFFICULTY`); as demais declaram os valores da curva diretamente,
+ * e é isso que o teste de progressão em `tests/unit/levels.test.ts` trava.
+ *
  * Para adicionar uma nova fase: crie um `LevelConfig` e inclua-o em `LEVELS`,
  * na ordem em que deve ser jogada. Os assets são carregados automaticamente
  * pela PreloadScene (chaves derivadas de `id`), e o encaminhamento

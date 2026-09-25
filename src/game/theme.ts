@@ -101,11 +101,3 @@ export const FONT = {
   bold: 'bold',
   normal: '',
 } as const
-
-/**
- * Aplica o contorno padrão do jogo a um objeto de texto.
- * Atalho para `.setStroke(TEXT.stroke, width)`, usado em todas as telas.
- */
-export function strokeText<T extends Phaser.GameObjects.Text>(text: T, width = 4): T {
-  return text.setStroke(TEXT.stroke, width)
-}

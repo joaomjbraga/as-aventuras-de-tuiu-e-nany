@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { VICTORY_KILLS } from '../../src/game/difficulty'
 import {
   HOUSE_LEVEL_ID,
   LEVELS,
@@ -59,6 +60,18 @@ describe('levels', () => {
     expect(LEVELS.map((level) => level.difficulty.spawnStartDelay)).toEqual([2200, 1900, 1600, 1400])
     expect(LEVELS.map((level) => level.difficulty.spawnMinDelay)).toEqual([400, 350, 300, 250])
     expect(LEVELS.map((level) => level.difficulty.difficultyRampMs)).toEqual([100_000, 90_000, 80_000, 70_000])
+  })
+
+  it('a meta de abates cresce fase a fase', () => {
+    const victoryKills = LEVELS.map((level) => level.victoryKills)
+
+    expect(victoryKills).toEqual([20, 25, 30, 35])
+    // A primeira fase parte da base compartilhada com `difficulty.ts`; as
+    // seguintes avançam em degraus de 5.
+    expect(victoryKills[0]).toBe(VICTORY_KILLS)
+    for (let i = 1; i < victoryKills.length; i++) {
+      expect(victoryKills[i]).toBeGreaterThan(victoryKills[i - 1])
+    }
   })
 
   it('bosses têm muita vida e exigem muitos pisões', () => {

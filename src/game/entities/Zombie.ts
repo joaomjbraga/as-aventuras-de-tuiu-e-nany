@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import { DEFAULT_ZOMBIE_SPEED } from '../difficulty'
+import { zombieTextureKey } from '../sprites'
 import { Player } from './Player'
 
 export const ZOMBIE_DEFAULT_SPEED = DEFAULT_ZOMBIE_SPEED
@@ -40,9 +41,10 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
     const variant = (config.variant ?? Phaser.Math.Between(1, 3)) as 1 | 2 | 3
 
     // Textura real normalizada (zombie1/2/3) se tiver sido montada pela
-    // PreloadScene; caso contrário usa o placeholder procedural 'zombie'.
-    const fallback = scene.textures.exists(`zombie${variant}`) ? `zombie${variant}` : 'zombie'
-    const textureKey = config.textureKey ?? fallback
+    // PreloadScene; caso contrário usa o placeholder procedural 'zombie'. A
+    // mesma resolução roda na MainScene, que precisa da altura real para
+    // posicionar o spawn (ver zombieTextureKey).
+    const textureKey = config.textureKey ?? zombieTextureKey(variant, (key) => scene.textures.exists(key))
 
     super(scene, config.x, config.y, textureKey, 0)
 
@@ -59,9 +61,10 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this)
     scene.physics.add.existing(this)
 
-    // O mundo tem gravidade global (y=1000) para o jogador; o zumbi é
-    // terrestre e anda no próprio par zera a gravidade para não despencar
-    // ao entrar em cena (e eleva só o X no preUpdate).
+    // O mundo tem gravidade global (ver `gameConfig.physics.arcade.gravity`)
+    // para o jogador; o zumbi é terrestre e anda no próprio par, então zera a
+    // gravidade para não despencar ao entrar em cena (e eleva só o X no
+    // preUpdate).
     this.setGravityY(0)
 
     // Corpo de colisão menor que o frame: os frames reais têm muito espaço

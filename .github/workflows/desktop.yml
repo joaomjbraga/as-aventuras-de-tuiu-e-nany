@@ -1,8 +1,12 @@
 name: desktop
 
+# Só em pull_request e por acionamento manual.
+#
+# Este workflow valida e gera os artefatos, mas não publica release. Push
+# em main é papel do release.yml, que faz o mesmo trabalho e ainda cria a
+# tag e a release. Deixar o gatilho de push aqui duplicaria os builds de
+# main sem nenhum ganho.
 on:
-  push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -53,9 +57,10 @@ jobs:
       - name: Instalar dependências
         run: npm ci
 
-      # AppImage e NSIS só são gerados em runner nativo da plataforma.
-      # Passos separados com `if:` em vez de `if/else` no shell: o shell padrão
-      # do Windows é PowerShell, que não entende a sintaxe POSIX de `[ ... ]`.
+      # O .exe portátil e o AppImage só são gerados em runner nativo da
+      # plataforma. Passos separados com `if:` em vez de `if/else` no shell: o
+      # shell padrão do Windows é PowerShell, que não entende a sintaxe POSIX
+      # de `[ ... ]`.
       - name: Empacotar (Windows)
         if: runner.os == 'Windows'
         run: npm run dist:win
@@ -64,10 +69,10 @@ jobs:
         if: runner.os != 'Windows'
         run: npm run dist:linux
 
-      # `publish: null` no electron-builder.yml significa que nenhum
+      # `publish: null` no electron-builder.json5 significa que nenhum
       # latest*.yml de atualização é gerado, então cada plataforma publica
       # apenas o seu artefato. `error` garante que o job só passa se o
-      # instalador/AppImage realmente foi produzido.
+      # .exe portátil/AppImage realmente foi produzido.
       - name: Publicar artefatos (Windows)
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4

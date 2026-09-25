@@ -1,0 +1,234 @@
+# Publica uma release quando a versão do package.json muda.
+#
+# A regra é simples e evita publicar sem querer: a tag vX.Y.Z é derivada
+# da versão no package.json, e a release só sai se a última tag for
+# diferente dela. Um push comum em main não publica nada; publicar é
+# editar a versão e fazer push.
+#
+# A tag é criada aqui, e não localmente, para que o commit que a
+# accompany e os artefatos saiam sempre do mesmo lugar.
+
+name: release
+
+on:
+  push:
+    branches: [main]
+
+# Duas execuções nunca publicam ao mesmo tempo. `cancel-in-progress:
+# false` deixa a segunda terminar em vez de matar a primeira no meio da
+# criação da tag, que deixaria o repositório com tag sem release.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # ------------------------------------------------------------------
+  # A versão do package.json é a fonte da verdade da release.
+  # ------------------------------------------------------------------
+  detectar:
+    name: detectar versão
+    runs-on: ubuntu-latest
+    outputs:
+      publicar: ${{ steps.comparar.outputs.publicar }}
+      tag: ${{ steps.comparar.outputs.tag }}
+      anterior: ${{ steps.comparar.outputs.anterior }}
+      prerelease: ${{ steps.comparar.outputs.prerelease }}
+    steps:
+      # fetch-depth 0 traz o histórico inteiro e todas as tags, sem o
+      # que a busca por tag do --notes-start-tag e pela última versão
+      # não encontrarem nada.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Comparar a versão do package.json com a última tag
+        id: comparar
+        run: |
+          versao=$(node -p "require('./package.json').version")
+          tag="v${versao}"
+          anterior=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
+
+          echo "versão no package.json: ${versao}"
+          echo "última tag no repositório: ${anterior:-<nenhuma>}"
+
+          if [ "$anterior" = "$tag" ]; then
+            echo "::notice::A versão não mudou desde a tag ${tag}. Nada a publicar."
+            echo "publicar=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Versão nova: ${tag}"
+            echo "publicar=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Uma versão com sufixo (0.1.0-beta.1) é pré-lançamento, e o
+          # GitHub precisa saber disso para marcar a release.
+          case "$versao" in
+            *-*) prerelease=true ;;
+            *)    prerelease=false ;;
+          esac
+
+          {
+            echo "tag=${tag}"
+            echo "anterior=${anterior}"
+            echo "prerelease=${prerelease}"
+          } >> "$GITHUB_OUTPUT"
+
+  # ------------------------------------------------------------------
+  # Nada é publicado sem passar no gate de qualidade, igual ao
+  # desktop.yml.
+  # ------------------------------------------------------------------
+  verificar:
+    name: verificar (${{ matrix.os }})
+    needs: detectar
+    if: needs.detectar.outputs.publicar == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Verificações (typecheck, lint, format, testes)
+        run: npm run check && npm test
+
+  # ------------------------------------------------------------------
+  # O .exe portátil e o AppImage só saem em runner nativo da plataforma.
+  # ------------------------------------------------------------------
+  empacotar:
+    name: empacotar (${{ matrix.os }})
+    needs: [detectar, verificar]
+    if: needs.detectar.outputs.publicar == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # Passos separados com `if:` em vez de `if/else` no shell: o shell
+      # padrão do Windows é PowerShell, que não entende a sintaxe POSIX
+      # de `[ ... ]`. Mesma razão do desktop.yml.
+      - name: Empacotar (Windows)
+        if: runner.os == 'Windows'
+        run: npm run dist:win
+
+      - name: Empacotar (Linux)
+        if: runner.os != 'Windows'
+        run: npm run dist:linux
+
+      # `if-no-files-found: error` garante que a release não sai com o
+      # artefato de uma plataforma faltando.
+      - name: Publicar artefatos (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pacote-windows
+          path: release/*.exe
+          if-no-files-found: error
+
+      - name: Publicar artefatos (Linux)
+        if: runner.os != 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pacote-linux
+          path: release/*.AppImage
+          if-no-files-found: error
+
+  # ------------------------------------------------------------------
+  # Cria a tag no commit que disparou o push e sobe a release com os
+  # dois artefatos portáteis.
+  # ------------------------------------------------------------------
+  publicar:
+    name: tag e release
+    needs: [detectar, empacotar]
+    runs-on: ubuntu-latest
+    permissions:
+      # Necessário para git push da tag e para a criação da release.
+      contents: write
+    env:
+      TAG: ${{ needs.detectar.outputs.tag }}
+      ANTERIOR: ${{ needs.detectar.outputs.anterior }}
+      PRERELEASE: ${{ needs.detectar.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Baixar os artefatos
+        uses: actions/download-artifact@v4
+        with:
+          pattern: pacote-*
+          merge-multiple: true
+          path: artefatos
+
+      - name: Conferir o que foi baixado
+        run: |
+          echo "Artefatos para a release ${TAG}:"
+          ls -lh artefatos
+
+      # A tag é anotada para aparecer com autor e data na página do
+      # repositório, em vez de ser uma tag leve e sem vínculo com quem
+      # criou. O checkout persiste as credenciais do GITHUB_TOKEN, e é a
+      # permissão `contents: write` deste job que autoriza o push.
+      - name: Criar a tag
+        run: |
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "::notice::A tag ${TAG} já existe; reaproveitando."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "As Aventuras de Tuiu e Nany ${TAG}"
+          git push origin "$TAG"
+          echo "::notice::Tag ${TAG} criada."
+
+      # `gh` já vem instalado no runner, o que evita depender de uma
+      # action de terceiros para algo que o runner entrega nativamente.
+      #
+      # A execução é idempotente: se o job rodar de novo (retry manual,
+      # por exemplo), ele reaproveita a tag e a release em vez de
+      # falhar, e apenas reenvia os artefatos.
+      - name: Criar a release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::notice::A release ${TAG} já existe; reenviando os artefatos."
+            gh release upload "$TAG" artefatos/* --clobber
+            exit 0
+          fi
+
+          args=(--title "As Aventuras de Tuiu e Nany ${TAG}" --generate-notes)
+
+          # Sem tag anterior não há de onde tirar as notas; o
+          # --generate-notes cai para todos os commits do repositório.
+          if [ -n "$ANTERIOR" ]; then
+            args+=(--notes-start-tag "$ANTERIOR")
+          fi
+
+          if [ "$PRERELEASE" = "true" ]; then
+            args+=(--prerelease)
+            echo "::notice::Versão com sufixo: marcada como pré-lançamento."
+          fi
+
+          gh release create "$TAG" artefatos/* "${args[@]}"
+
+          echo "::notice::Release ${TAG} publicada."
