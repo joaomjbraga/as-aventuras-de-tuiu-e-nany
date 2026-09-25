@@ -51,14 +51,17 @@ export class Player {
   private damageBoostUntil = 0
 
   // Física (ajustável para o "jeitão" do jogo)
-  private moveSpeed = 160
-  private jumpForce = 380
-  private doubleJumpForce = 330
+  private moveSpeed = 320
+  private jumpForce = 900
+  private doubleJumpForce = 780
   private readonly speedBoostFactor = 1.5
 
   // Pulo duplo: conta quantos pulos já foram usados até o personagem tocar o chão.
   private jumpsUsed = 0
   private readonly maxJumps = 2
+
+  /** Estado anterior da tecla de pulo (para detectar borda de pressão). */
+  private wasJumpDown = false
 
   constructor(scene: Phaser.Scene, config: PlayerConfig) {
     this.scene = scene
@@ -110,7 +113,6 @@ export class Player {
 
     const moveLeft = this.keys.left.isDown
     const moveRight = this.keys.right.isDown
-    const jumpPressed = this.keys.jump.some((key) => key.isDown)
     const currentSpeed = this.hasSpeedBoost() ? this.moveSpeed * this.speedBoostFactor : this.moveSpeed
 
     if (moveLeft) {
@@ -124,20 +126,30 @@ export class Player {
     }
 
     // ---- Pulo (simples no chão + pulo duplo no ar) ----
+    // Usa jumpJustPressed (apenas no frame da pressão), não jumpPressed
+    // (segurado). Senão, manter a tecla segurada fazia o jogo reaplicar
+    // o pulo a cada frame que o personagem tocava o chão, criando a
+    // sensação de "flutuação" que o jogador relatou.
     const jumpJustPressed = this.jumpJustPressed()
+    const jumpHeld = this.keys.jump.some((key) => key.isDown)
 
     // Caiu ou pousou: libera os pulos de novo.
     if (body.blocked.down) this.jumpsUsed = 0
 
-    if (jumpPressed && body.blocked.down) {
+    if (body.blocked.down && jumpJustPressed) {
       this.jumpsUsed = 1
       this.sprite.setVelocityY(-this.jumpForce)
       this.setState('jump')
-    } else if (jumpJustPressed && !body.blocked.down && this.jumpsUsed < this.maxJumps) {
-      // Pulo duplo: um novo toque no ar dá um impulso extra.
-      this.jumpsUsed += 1
-      this.sprite.setVelocityY(-this.doubleJumpForce)
-      this.setState('jump')
+    } else if (!body.blocked.down && this.jumpsUsed < this.maxJumps) {
+      // Pulo duplo: aciona enquanto a tecla estiver pressionada no ar.
+      // Usa jumpHeld (segurado) em vez de jumpJustPressed para que o
+      // jogador possa ativar o pulo duplo sem precisar soltar e
+      // reapertar a tecla — basta manter segurada desde o chão.
+      if (jumpHeld) {
+        this.jumpsUsed += 1
+        this.sprite.setVelocityY(-this.doubleJumpForce)
+        this.setState('jump')
+      }
     }
 
     // ---- Máquina de estados ----
@@ -191,10 +203,10 @@ export class Player {
     if (this.scene.time.now < this.immuneUntil) return false
 
     this.hp = Math.max(0, this.hp - amount)
-    this.immuneUntil = this.scene.time.now + 1000
+    this.immuneUntil = this.scene.time.now + 2000
 
     this.sprite.setTintFill(0xff8888)
-    this.scene.time.delayedCall(150, () => {
+    this.scene.time.delayedCall(300, () => {
       if (this.sprite.active) this.sprite.clearTint()
     })
 
@@ -216,11 +228,17 @@ export class Player {
   }
 
   /**
-   * Botão de pulo pressionado neste frame (just-pressed: ignorado quando o
-   * botão fica segurado). Usado pelo pulo duplo e pelo revive.
+   * true quando a tecla de pulo acabou de ser pressionada. Usa um rastreador
+   * interno de estado (wasJumpDown) em vez de Phaser.Input.Keyboard.JustDown,
+   * que pode disparar falsos positivos quando a janela perde o foco (ex.:
+   * ao trocar de aba) — justamente o caso em que o bug de "flutuação"
+   * reaparecia após a primeira correção.
    */
   private jumpJustPressed(): boolean {
-    return this.keys.jump.some((key) => Phaser.Input.Keyboard.JustDown(key))
+    const isDown = this.keys.jump.some((key) => key.isDown)
+    const justPressed = isDown && !this.wasJumpDown
+    this.wasJumpDown = isDown
+    return justPressed
   }
 
   /** Ação de revive (tecla de pulo) pressionada neste frame. */
@@ -264,6 +282,7 @@ export class Player {
     this.sprite.body!.reset(x, y)
     this.sprite.setVelocity(0, 0)
     this.jumpsUsed = 0
+    this.wasJumpDown = false
     this.setState('idle')
   }
 

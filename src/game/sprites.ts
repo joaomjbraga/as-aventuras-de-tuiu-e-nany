@@ -41,7 +41,7 @@ export const FRAME_LAYOUT = {
 /**
  * Personagens.
  * Spritesheets tuio.png/nany.png (9 frames: 6 walk + 3 jump: agachar/ar/aterrissagem),
- * reduzidos a 25% para caber na resolução base 384x216.
+ * escalados para caber na resolução base 768x432.
  */
 export const CHARACTERS = {
   tuio: {
@@ -50,9 +50,9 @@ export const CHARACTERS = {
     path: 'sprites/tuio.png',
     frameWidth: 43,
     frameHeight: 74,
-    bodyWidth: 30,
-    bodyHeight: 68,
-    scale: 0.85,
+    bodyWidth: 51,
+    bodyHeight: 116,
+    scale: 1.7,
   },
   nany: {
     key: 'nany',
@@ -60,11 +60,11 @@ export const CHARACTERS = {
     path: 'sprites/nany.png',
     frameWidth: 48,
     frameHeight: 84,
-    bodyWidth: 34,
-    bodyHeight: 80,
-    // Menor que o Tuiu para compensar o frame mais alto (84 vs 74) e ficarem
-    // com a mesma altura em jogo: 84 * 0.75 ≈ 74 * 0.85.
-    scale: 0.75,
+    bodyWidth: 51,
+    bodyHeight: 120,
+    // Maior que o Tuiu para compensar o frame mais alto (84 vs 74) e ficarem
+    // com a mesma altura em jogo: 84 * 1.5 ≈ 74 * 1.7.
+    scale: 1.5,
   },
 } satisfies Record<string, CharacterDef>
 
@@ -84,17 +84,17 @@ export interface ZombieVariantDef {
 }
 
 /**
- * Zumbis 1 e 2 são normalizados um pouco menores (58px) para ficarem no
- * mesmo tamanho dos personagens; o zumbi 3 mantém a altura padrão (64px).
+ * Zumbis 1 e 2 são normalizados um pouco menores (116px) para ficarem no
+ * mesmo tamanho dos personagens; o zumbi 3 mantém a altura padrão (128px).
  */
 export const ZOMBIE_VARIANTS: ZombieVariantDef[] = [
-  { key: 'zombie1', path: 'sprites/zombie1_frames/zombie1_', frames: 15, targetHeight: 58 },
-  { key: 'zombie2', path: 'sprites/zombie2_frames/zombie2_', frames: 17, targetHeight: 58 },
+  { key: 'zombie1', path: 'sprites/zombie1_frames/zombie1_', frames: 15, targetHeight: 116 },
+  { key: 'zombie2', path: 'sprites/zombie2_frames/zombie2_', frames: 17, targetHeight: 116 },
   { key: 'zombie3', path: 'sprites/zombie3_frames/zombie3_', frames: 17 },
 ]
 
-/** Altura alvo (px) do zumbi normalizado, na mesma escala do placeholder antigo (40px). */
-export const ZOMBIE_TARGET_HEIGHT = 64
+/** Altura alvo (px) do zumbi normalizado, na mesma escala do placeholder antigo (80px). */
+export const ZOMBIE_TARGET_HEIGHT = 128
 
 /**
  * Explosão de abate dos zumbis: 6 frames individuais (PNGs de tamanhos
@@ -105,13 +105,13 @@ export const EXPLOSION = {
   key: 'explosion',
   path: 'sprites/explosao/explosao_',
   frames: 6,
-  /** Lado (px) do quadrado alvo da normalização, maior que o zumbi (~64px). */
-  frameSize: 96,
+  /** Lado (px) do quadrado alvo da normalização, maior que o zumbi (~128px). */
+  frameSize: 192,
 } as const
 
-/** Altura-alvo (px) da normalização do boss, maior que a dos zumbis comuns (58–64),
+/** Altura-alvo (px) da normalização do boss, maior que a dos zumbis comuns (116–128),
  * mas baixa o suficiente para o pulo alcançar a cabeça e permitir o pisão (stomp). */
-export const BOSS_TARGET_HEIGHT = 80
+export const BOSS_TARGET_HEIGHT = 160
 
 export interface BossAnimationDef {
   /** Chave da textura do spritesheet (a de walk também é a textura-padrão 'boss'). */

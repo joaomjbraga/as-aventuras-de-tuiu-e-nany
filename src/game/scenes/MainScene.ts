@@ -225,11 +225,11 @@ export class MainScene extends Phaser.Scene {
       this.tryJoinP2()
     }
 
-    // Segurança dos power-ups: se não houver drop há um bom tempo, garante um
-    // pickup na arena para o jogador não ficar sem opções.
-    if (this.kills > 0 && this.time.now - this.lastPickupAt > PICKUP_SAFETY_INTERVAL_MS) {
-      this.spawnPickup(Phaser.Math.Between(48, this.scale.width - 48), this.groundTop - 30)
-    }
+// Segurança dos power-ups: se não houver drop há um bom tempo, garante um
+      // pickup na arena para o jogador não ficar sem opções.
+      if (this.kills > 0 && this.time.now - this.lastPickupAt > PICKUP_SAFETY_INTERVAL_MS) {
+        this.spawnPickup(Phaser.Math.Between(96, this.scale.width - 96), this.groundTop - 60)
+      }
 
     this.players.forEach((player) => {
       player.update()
@@ -319,13 +319,13 @@ export class MainScene extends Phaser.Scene {
       this.joinButton = createButton(
         this,
         this.scale.width / 2,
-        this.scale.height - 22,
+        this.scale.height - 44,
         'J2: ENTRAR  [W]',
         () => this.tryJoinP2(),
         {
-          width: 150,
-          height: 26,
-          fontSize: '9px',
+          width: 300,
+          height: 52,
+          fontSize: '18px',
           color: '#ffe082',
           bgColor: 0x2a2f22,
           bgHover: 0x3a4230,
@@ -474,16 +474,16 @@ export class MainScene extends Phaser.Scene {
 
     // Pequena explosão de partículas na coleta
     const emitter = this.add.particles(pickup.x, pickup.y, 'pixel', {
-      speedX: { min: -50, max: 50 },
-      speedY: { min: -80, max: -20 },
-      gravityY: 340,
-      scale: { start: 1.2, end: 0 },
-      lifespan: 420,
+      speedX: { min: -100, max: 100 },
+      speedY: { min: -160, max: -40 },
+      gravityY: 680,
+      scale: { start: 2.4, end: 0 },
+      lifespan: 840,
       tint: [PICKUP_EFFECTS[kind].tint, 0xe8edf7],
     })
     emitter.setDepth(2)
-    emitter.explode(10)
-    this.time.delayedCall(520, () => emitter.destroy())
+    emitter.explode(20)
+    this.time.delayedCall(1040, () => emitter.destroy())
 
     this.sound.play(AUDIO.ZOMBIE_GROWL, { volume: 0.35 })
   }
@@ -610,23 +610,23 @@ export class MainScene extends Phaser.Scene {
     const { width } = this.scale
 
     this.bossLabel = this.add
-      .text(width / 2, 56, `${name.toUpperCase()}`, {
+      .text(width / 2, 112, `${name.toUpperCase()}`, {
         fontFamily: 'monospace',
-        fontSize: '8px',
+        fontSize: '16px',
         fontStyle: 'bold',
         color: '#ff5d6c',
       })
       .setOrigin(0.5, 0)
-      .setStroke('#0d101b', 2)
+      .setStroke('#0d101b', 4)
       .setDepth(11)
 
     this.bossBarBack = this.add
-      .rectangle(width / 2, 68, 170, 7, 0x181d29)
-      .setStrokeStyle(1, 0xff5d6c, 0.9)
+      .rectangle(width / 2, 136, 340, 14, 0x181d29)
+      .setStrokeStyle(2, 0xff5d6c, 0.9)
       .setDepth(10)
 
     this.bossBarFill = this.add
-      .rectangle(width / 2 - 85, 68, 170, 5, 0xff5d6c)
+      .rectangle(width / 2 - 170, 136, 340, 10, 0xff5d6c)
       .setOrigin(0, 0.5)
       .setDepth(11)
   }
@@ -655,20 +655,20 @@ export class MainScene extends Phaser.Scene {
   /** Popup flutuante no local do abate com os pontos ganhos (× combo). */
   private showFloatingScore(x: number, y: number, value: number): void {
     const label = this.add
-      .text(x, y - 22, `+${value}`, {
+      .text(x, y - 44, `+${value}`, {
         fontFamily: 'monospace',
-        fontSize: '9px',
+        fontSize: '18px',
         fontStyle: 'bold',
         color: '#ffe082',
       })
       .setOrigin(0.5)
       .setDepth(3)
-      .setStroke('#0d101b', 2)
+      .setStroke('#0d101b', 6)
     this.tweens.add({
       targets: label,
-      y: y - 46,
+      y: y - 92,
       alpha: 0,
-      duration: 650,
+      duration: 1300,
       ease: 'Cubic.easeOut',
       onComplete: () => label.destroy(),
     })
@@ -686,16 +686,21 @@ export class MainScene extends Phaser.Scene {
 
     // Regras de pisão × contato lateral ficam na lógica pura (combat.ts),
     // testável sem Phaser; aqui só traduzimos o desfecho em efeitos.
+    // Usamos a altura do SPRITE (displayHeight), não do corpo de colisão,
+    // para alinhar o pisão com a imagem visual — o corpo é menor que o sprite
+    // (margem transparente), e usar o corpo deixava o zumbi "morrer" em
+    // contatos laterais que visualmente eram de lado.
     const outcome = resolvePlayerZombieContact(
       {
         x: playerSpr.x,
-        feetY: playerSpr.y + playerBody.halfHeight,
+        feetY: playerSpr.y + playerSpr.displayHeight / 2,
         velocityY: playerBody.velocity.y,
       },
       {
         isDying: zombie.isDying,
         x: zombieSpr.x,
-        headY: zombieSpr.y - zombieBody.halfHeight,
+        headY: zombieSpr.y - zombieSpr.displayHeight / 2,
+        spriteHeight: zombieSpr.displayHeight,
         damageAmount: stompDamage({
           damageBoost: player.hasDamageBoost(),
           doubleJump: player.hasDoubleJumped(),
@@ -705,11 +710,11 @@ export class MainScene extends Phaser.Scene {
     )
 
     if (outcome === 'stomp-kill') {
-      player.bounce(-160)
-      this.cameras.main.shake(90, 0.012)
+      player.bounce(-240)
+      this.cameras.main.shake(180, 0.012)
       this.hitStop()
     } else if (outcome === 'stomp') {
-      player.bounce(-90) // continua "quicando" mesmo no cooldown de dano
+      player.bounce(-120) // continua "quicando" mesmo no cooldown de dano
     } else if (outcome === 'hit') {
       if (player.damage(1)) {
         // Som de ferido específico por personagem (Tuiu/Nany)
@@ -723,7 +728,7 @@ export class MainScene extends Phaser.Scene {
   /** Micro-congelamento (hit-stop) ao abater um zumbi para dar "peso" ao golpe. */
   private hitStop(): void {
     this.time.timeScale = 0.25
-    this.time.delayedCall(90, () => {
+    this.time.delayedCall(180, () => {
       this.time.timeScale = 1
     })
   }
@@ -736,17 +741,17 @@ export class MainScene extends Phaser.Scene {
   private showRevivePrompt(player: Player): void {
     const label = player.id === 'P2' ? 'W' : '↑ / ESPAÇO'
     const prompt = this.add
-      .text(player.sprite.x, player.sprite.y - 74, `${player.name.toUpperCase()} CAIU!\nAPERTE ${label} PARA REVIVER`, {
+      .text(player.sprite.x, player.sprite.y - 148, `${player.name.toUpperCase()} CAIU!\nAPERTE ${label} PARA REVIVER`, {
         fontFamily: 'monospace',
-        fontSize: '9px',
+        fontSize: '18px',
         fontStyle: 'bold',
         color: '#ffd54f',
         align: 'center',
       })
       .setOrigin(0.5)
       .setDepth(12)
-      .setStroke('#0d101b', 3)
-    this.tweens.add({ targets: prompt, alpha: 0.55, duration: 480, yoyo: true, repeat: -1 })
+      .setStroke('#0d101b', 6)
+    this.tweens.add({ targets: prompt, alpha: 0.55, duration: 960, yoyo: true, repeat: -1 })
     this.revivePrompts.set(player.id, prompt)
   }
 
@@ -858,7 +863,7 @@ export class MainScene extends Phaser.Scene {
     this.tweens.add({
       targets: this.vignette,
       alpha: 0.05,
-      duration: 460,
+      duration: 920,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut',
@@ -866,21 +871,21 @@ export class MainScene extends Phaser.Scene {
 
     // Placar de abates (topo central) com o multiplicador de combo
     this.killsText = this.add
-      .text(width / 2, 4, 'ZOMBIES: 999  x10', {
+      .text(width / 2, 8, 'ZOMBIES: 999  x10', {
         fontFamily: 'monospace',
-        fontSize: '9px',
+        fontSize: '18px',
         fontStyle: 'bold',
         color: '#e8edf7',
-        letterSpacing: 1,
+        letterSpacing: 2,
       })
       .setOrigin(0.5, 0)
       .setDepth(11)
-    this.killsText.setStroke('#0d101b', 3)
+    this.killsText.setStroke('#0d101b', 6)
 
     this.add
-      .rectangle(width / 2, 0, 150, 26, 0x0a0c14, 0.45)
+      .rectangle(width / 2, 0, 300, 52, 0x0a0c14, 0.45)
       .setOrigin(0.5, 0)
-      .setStrokeStyle(1, 0x2c3350, 0.7)
+      .setStrokeStyle(2, 0x2c3350, 0.7)
       .setDepth(9)
 
     this.killsText.setText('ZOMBIES: 0')
@@ -939,7 +944,7 @@ export class MainScene extends Phaser.Scene {
     if (show && this.boss && this.bossBarFill) {
       const hp = this.boss.hp
       if (hp !== this.lastBossHp) {
-        this.bossBarFill.width = Math.max(1, 170 * (hp / this.boss.hpMax))
+        this.bossBarFill.width = Math.max(1, 340 * (hp / this.boss.hpMax))
         this.lastBossHp = hp
       }
     }
@@ -990,15 +995,15 @@ export class MainScene extends Phaser.Scene {
 
     const isP1 = this.players[0]?.id === player.id
     const dir = isP1 ? 1 : -1
-    const originX = isP1 ? 12 : width - 12
-    const x = originX + dir * (8 + slots.length * 17)
+    const originX = isP1 ? 24 : width - 24
+    const x = originX + dir * (16 + slots.length * 34)
 
     const tint = PICKUP_EFFECTS[kind].tint
-    const icon = this.add.image(x, 34, pickupTextureKey(kind)).setDepth(11).setScale(1.4)
+    const icon = this.add.image(x, 68, pickupTextureKey(kind)).setDepth(11).setScale(2.8)
     icon.setTint(tint)
-    const bar = this.add.rectangle(x, 43, 16, 2, tint, 0.9).setOrigin(0.5, 0).setDepth(11)
+    const bar = this.add.rectangle(x, 86, 32, 4, tint, 0.9).setOrigin(0.5, 0).setDepth(11)
 
-    slots.push({ kind, icon, bar, until: this.time.now + duration, duration, barWidth: 16 })
+    slots.push({ kind, icon, bar, until: this.time.now + duration, duration, barWidth: 32 })
     this.effectsByPlayer.set(player.id, slots)
   }
 
@@ -1011,33 +1016,34 @@ export class MainScene extends Phaser.Scene {
     const isP1 = index === 0
     const nameColor = isP1 ? '#8fd8ff' : '#ff9fc2'
     const hearts: Phaser.GameObjects.Image[] = []
-    const originX = isP1 ? 12 : width - 12
+    const originX = isP1 ? 24 : width - 24
     const dir = isP1 ? 1 : -1
 
     const name = this.add
-      .text(originX, 4, player.name.toUpperCase(), {
+      .text(originX, 8, player.name.toUpperCase(), {
         fontFamily: 'monospace',
-        fontSize: '9px',
+        fontSize: '18px',
         fontStyle: 'bold',
         color: nameColor,
       })
       .setOrigin(isP1 ? 0 : 1, 0)
       .setDepth(11)
-    name.setStroke('#0d101b', 3)
+    name.setStroke('#0d101b', 6)
 
-    const panelW = name.width + player.maxHp * 12 + 20
+    const panelW = name.width + player.maxHp * 24 + 40
     this.add
-      .rectangle(isP1 ? 0 : width, 0, panelW, 26, 0x0a0c14, 1)
+      .rectangle(isP1 ? 0 : width, 0, panelW, 52, 0x0a0c14, 1)
       .setOrigin(isP1 ? 0 : 1, 0)
-      .setStrokeStyle(1, isP1 ? 0x2c3350 : 0x4a2c3e, 0.9)
+      .setStrokeStyle(2, isP1 ? 0x2c3350 : 0x4a2c3e, 0.9)
       .setDepth(9)
 
-    const heartStart = originX + dir * (name.width + 9)
+    const heartStart = originX + dir * (name.width + 18)
     for (let h = 0; h < player.maxHp; h++) {
       const heart = this.add
-        .image(heartStart + dir * (h * 12), 14, 'heart')
+        .image(heartStart + dir * (h * 24), 28, 'heart')
         .setOrigin(0.5)
         .setDepth(11)
+        .setScale(2)
       hearts.push(heart)
     }
 

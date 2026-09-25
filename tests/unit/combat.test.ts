@@ -6,6 +6,7 @@ function makeZombie(overrides: Partial<ZombieContactTarget> = {}): ZombieContact
     isDying: false,
     x: 180,
     headY: 130,
+    spriteHeight: 128,
     damageAmount: 2,
     stomp: () => false,
     ...overrides,
@@ -32,9 +33,10 @@ describe('resolvePlayerZombieContact', () => {
     expect(resolvePlayerZombieContact(makePlayer({ feetY: 130 }), zombie)).toBe('stomp')
   })
 
-  it('pés dentro da margem de tolerância (+6) ainda contam como pisão', () => {
+  it('pés dentro da margem de tolerância (20% da altura) ainda contam como pisão', () => {
     const zombie = makeZombie()
-    expect(resolvePlayerZombieContact(makePlayer({ feetY: zombie.headY + 6 }), zombie)).toBe('stomp')
+    // spriteHeight 128 → tolerance = 26
+    expect(resolvePlayerZombieContact(makePlayer({ feetY: zombie.headY + 26 }), zombie)).toBe('stomp')
   })
 
   it('contato lateral (pés abaixo da cabeça) causa dano ao jogador', () => {
@@ -44,17 +46,17 @@ describe('resolvePlayerZombieContact', () => {
 
   it('jogador subindo rápido não se machuca em contato lateral', () => {
     const zombie = makeZombie()
-    expect(resolvePlayerZombieContact(makePlayer({ feetY: 160, velocityY: -40 }), zombie)).toBe('falling')
+    expect(resolvePlayerZombieContact(makePlayer({ feetY: 160, velocityY: -120 }), zombie)).toBe('falling')
   })
 
   it('jogador subindo rápido demais não pisa nem se machuca (passa por cima)', () => {
     const zombie = makeZombie({ stomp: () => true })
-    expect(resolvePlayerZombieContact(makePlayer({ feetY: 100, velocityY: -120 }), zombie)).toBe('falling')
+    expect(resolvePlayerZombieContact(makePlayer({ feetY: 100, velocityY: -240 }), zombie)).toBe('falling')
   })
 
   it('pés recém saídos do chão com subida leve ainda pisa', () => {
     const zombie = makeZombie({ stomp: () => true })
-    expect(resolvePlayerZombieContact(makePlayer({ feetY: 120, velocityY: -10 }), zombie)).toBe('stomp-kill')
+    expect(resolvePlayerZombieContact(makePlayer({ feetY: 120, velocityY: -30 }), zombie)).toBe('stomp-kill')
   })
 
   it('zumbi morrendo não interage', () => {

@@ -16,8 +16,8 @@ export interface PickupEffect {
 }
 
 export const PICKUP_DROP_CHANCE = 0.12
-export const PICKUP_SAFETY_INTERVAL_MS = 30_000
-export const PICKUP_EFFECT_DURATION_MS = 6000
+export const PICKUP_SAFETY_INTERVAL_MS = 60_000
+export const PICKUP_EFFECT_DURATION_MS = 12000
 
 /** Peso de cada power-up no sorteio de drop. */
 export const PICKUP_WEIGHTS: Record<PickupKind, number> = {

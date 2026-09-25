@@ -10,58 +10,58 @@ export class InstructionsScene extends Phaser.Scene {
     const cx = width / 2
 
     this.add.rectangle(cx, height / 2, width, height, 0x11151d)
-    this.add.rectangle(cx, 106, 360, 176, 0x161c26).setStrokeStyle(1, 0x3b5486, 0.9)
+    this.add.rectangle(cx, 212, 720, 352, 0x161c26).setStrokeStyle(2, 0x3b5486, 0.9)
 
     this.add
-      .text(cx, 12, 'COMO JOGAR', {
+      .text(cx, 24, 'COMO JOGAR', {
         fontFamily: 'monospace',
-        fontSize: '16px',
+        fontSize: '32px',
         fontStyle: 'bold',
         color: '#ffd54f',
       })
       .setOrigin(0.5)
-      .setStroke('#0d101b', 3)
+      .setStroke('#0d101b', 6)
 
-    this.addSection(18, 'CONTROLES', [
+    this.addSection(36, 'CONTROLES', [
       'J1  ←/→ mover   ↑ ou ESPAÇO pular',
       'J2  A/D mover   W pular',
       'ESC pausa   M ativa/desativa o som',
       'Pulo duplo: aperte o pulo de novo no ar.',
     ])
 
-    this.addSection(66, 'COMBATE', [
+    this.addSection(132, 'COMBATE', [
       'Pise no zumbi para causar dano e derrotá-lo.',
       'Contato lateral tira um coração.',
       'Atingir a meta libera o boss da fase.',
     ])
 
-    this.addSection(114, 'ITENS E COMBO', [
+    this.addSection(228, 'ITENS E COMBO', [
       'Coração: recupera 1 coração ou dá pontos.',
       'Escudo: bloqueia dano   Veloz: aumenta a velocidade.',
       'Dano x2: dobra o dano dos pisões.',
       'Abates seguidos aumentam o combo até x10.',
     ])
 
-    this.addSection(158, 'SOBREVIVÊNCIA', [
+    this.addSection(316, 'SOBREVIVÊNCIA', [
       'Você tem 3 corações.',
       'Ao cair, aperte o botão de pulo para reviver.',
       'O revive só funciona enquanto o companheiro estiver em pé.',
     ])
 
     const backButton = this.add
-      .rectangle(cx, height - 13, 190, 22, 0x2a3550, 0.9)
-      .setStrokeStyle(1, 0x8ab0ff, 0.9)
+      .rectangle(cx, height - 26, 380, 44, 0x2a3550, 0.9)
+      .setStrokeStyle(2, 0x8ab0ff, 0.9)
       .setInteractive({ useHandCursor: true })
 
     const back = this.add
-      .text(cx, height - 13, '[ ENTER / ESPAÇO / ESC ] voltar', {
+      .text(cx, height - 26, '[ ENTER / ESPAÇO / ESC ] voltar', {
         fontFamily: 'monospace',
-        fontSize: '9px',
+        fontSize: '18px',
         color: '#ffe082',
         fontStyle: 'bold',
       })
       .setOrigin(0.5)
-      .setStroke('#0d101b', 2)
+      .setStroke('#0d101b', 4)
 
     const goBack = () => this.scene.start('TitleScene')
     backButton.on('pointerdown', goBack)
@@ -74,24 +74,24 @@ export class InstructionsScene extends Phaser.Scene {
 
   private addSection(y: number, title: string, lines: string[]): void {
     this.add
-      .text(26, y, title, {
+      .text(52, y, title, {
         fontFamily: 'monospace',
-        fontSize: '8px',
+        fontSize: '16px',
         fontStyle: 'bold',
         color: '#8fd8ff',
       })
       .setOrigin(0, 0)
-      .setStroke('#0d101b', 2)
+      .setStroke('#0d101b', 4)
 
     lines.forEach((line, index) => {
       this.add
-        .text(26, y + 10 + index * 9, line, {
+        .text(52, y + 20 + index * 18, line, {
           fontFamily: 'monospace',
-          fontSize: '7px',
+          fontSize: '14px',
           color: '#c8d6e5',
         })
         .setOrigin(0, 0)
-        .setStroke('#0d101b', 1)
+        .setStroke('#0d101b', 2)
     })
   }
 }

@@ -22,10 +22,10 @@ export class LevelSelectScene extends Phaser.Scene {
   private cardsContainer!: Phaser.GameObjects.Container
   private scrollOffset = 0
   private maxScrollOffset = 0
-  private readonly viewportLeft = 14
-  private readonly viewportWidth = 356
-  private readonly cardWidth = 132
-  private readonly cardGap = 18
+private readonly viewportLeft = 28
+    private readonly viewportWidth = 712
+    private readonly cardWidth = 264
+    private readonly cardGap = 36
   private selectedIndex = 0
   private cursor!: Phaser.GameObjects.Rectangle
   private enterKey!: Phaser.Input.Keyboard.Key
@@ -48,27 +48,27 @@ export class LevelSelectScene extends Phaser.Scene {
     this.add.rectangle(cx, height / 2, width, height, 0x181d29)
 
     this.add
-      .text(cx, 14, 'ESCOLHA O CENÁRIO', {
+      .text(cx, 28, 'ESCOLHA O CENÁRIO', {
         fontFamily: 'monospace',
-        fontSize: '13px',
+        fontSize: '26px',
         color: '#e0e8f0',
         fontStyle: 'bold',
       })
       .setOrigin(0.5)
-      .setStroke('#0d101b', 3)
+      .setStroke('#0d101b', 6)
 
     this.buildCards()
 
-    this.cursor = this.add.rectangle(0, 0, 16, 4, 0x4fc3f7, 1).setOrigin(0.5).setDepth(5)
+    this.cursor = this.add.rectangle(0, 0, 32, 8, 0x4fc3f7, 1).setOrigin(0.5).setDepth(5)
     if (this.cards.length > 0) this.placeCursor()
 
     // A partida começa só com uma ação explícita (botão ou ENTER), para um
     // Um clique no card apenas seleciona a partida só começa com a tecla
     // ou o botão de confirmação, como no rank de escolha.
-    createButton(this, cx, height - 42, 'COMEÇAR [ENTER]', () => this.confirmSelected(), {
-      width: 160,
-      height: 30,
-      fontSize: '10px',
+    createButton(this, cx, height - 84, 'COMEÇAR [ENTER]', () => this.confirmSelected(), {
+      width: 320,
+      height: 60,
+      fontSize: '20px',
       color: '#ffe082',
       bgColor: 0x2a2f22,
       bgHover: 0x3a4230,
@@ -76,9 +76,9 @@ export class LevelSelectScene extends Phaser.Scene {
     }).setDepth(2)
 
     const navigationHint = this.add
-      .text(cx, height - 14, '←/→ ou RODA: rolar · clique: escolher · ENTER: começar    ESC: voltar', {
+      .text(cx, height - 28, '←/→ ou RODA: rolar · clique: escolher · ENTER: começar    ESC: voltar', {
         fontFamily: 'monospace',
-        fontSize: '8px',
+        fontSize: '16px',
         color: '#6b7a8f',
       })
       .setOrigin(0.5)
@@ -99,8 +99,8 @@ export class LevelSelectScene extends Phaser.Scene {
         _deltaX: number,
         deltaY: number,
       ) => {
-        if (pointer.y < 38 || pointer.y > height - 30) return
-        this.setScrollOffset(this.scrollOffset + Math.sign(deltaY) * 54)
+        if (pointer.y < 76 || pointer.y > height - 60) return
+        this.setScrollOffset(this.scrollOffset + Math.sign(deltaY) * 108)
       },
     )
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
@@ -140,8 +140,8 @@ export class LevelSelectScene extends Phaser.Scene {
     this.cards = []
 
     const { height } = this.scale
-    const cardH = 128
-    const cardY = 106
+    const cardH = 256
+    const cardY = 212
     const total = LEVELS.length * this.cardWidth + Math.max(0, LEVELS.length - 1) * this.cardGap
     this.maxScrollOffset = Math.max(0, total - this.viewportWidth)
     this.scrollOffset = 0
@@ -149,7 +149,7 @@ export class LevelSelectScene extends Phaser.Scene {
     this.cardsContainer = this.add.container(this.viewportLeft, 0).setDepth(1)
     const maskGraphics = this.make.graphics({}, false)
     maskGraphics.fillStyle(0xffffff)
-    maskGraphics.fillRect(this.viewportLeft, 38, this.viewportWidth, height - 68)
+    maskGraphics.fillRect(this.viewportLeft, 76, this.viewportWidth, height - 136)
     this.cardsContainer.setMask(maskGraphics.createGeometryMask())
 
     const cardStartX = this.cardWidth / 2
@@ -162,37 +162,37 @@ export class LevelSelectScene extends Phaser.Scene {
 
       // Miniatura da arte de fundo da fase (textura `bg-<id>-img`), com ajuste
       // de escala para caber no card sem distorção (imagens widescreen).
-      const thumb = this.add.image(x, cardY - 26, bgImageKey(level))
+      const thumb = this.add.image(x, cardY - 52, bgImageKey(level))
       const src = this.textures.get(bgImageKey(level)).getSourceImage()
       const tw = src.width || 1
       const th = src.height || 1
-      const fit = Math.min((this.cardWidth - 24) / tw, 60 / th)
+      const fit = Math.min((this.cardWidth - 48) / tw, 120 / th)
       thumb.setScale(fit)
 
-      const namePlate = this.add.rectangle(x, cardY + 43, this.cardWidth - 10, 22, 0x090c14, 0.88)
+      const namePlate = this.add.rectangle(x, cardY + 86, this.cardWidth - 20, 44, 0x090c14, 0.88)
 
       const name = this.add
-        .text(x, cardY + 43, level.name.toUpperCase(), {
+        .text(x, cardY + 86, level.name.toUpperCase(), {
           fontFamily: 'monospace',
-          fontSize: '10px',
+          fontSize: '20px',
           color: '#c8d6e5',
           fontStyle: 'bold',
         })
         .setOrigin(0.5)
-        .setStroke('#0d101b', 3)
+        .setStroke('#0d101b', 6)
 
       // Fase já concluída: '✓' dourado no canto do card
       let done: Phaser.GameObjects.Text | undefined
       if (isLevelCompleted(level.id)) {
         done = this.add
-          .text(x + this.cardWidth / 2 - 6, cardY - cardH / 2 + 5, '✓', {
+          .text(x + this.cardWidth / 2 - 12, cardY - cardH / 2 + 10, '✓', {
             fontFamily: 'monospace',
-            fontSize: '12px',
+            fontSize: '24px',
             color: '#ffd54f',
             fontStyle: 'bold',
           })
           .setOrigin(1, 0)
-          .setStroke('#0d101b', 2)
+          .setStroke('#0d101b', 4)
       }
 
       this.cardsContainer.add([panel, thumb, namePlate, name])
@@ -229,7 +229,7 @@ export class LevelSelectScene extends Phaser.Scene {
 
   private placeCursor(): void {
     const card = this.cards[this.selectedIndex]
-    this.cursor.setPosition(this.cardsContainer.x + card.panel.x, card.panel.y + 62)
+    this.cursor.setPosition(this.cardsContainer.x + card.panel.x, card.panel.y + 124)
   }
 
   private ensureSelectedVisible(): void {

@@ -4,7 +4,7 @@
  */
 
 /** Altura da faixa de chão (terra verde) em px, a partir da base do viewport. */
-export const GROUND_HEIGHT = 48
+export const GROUND_HEIGHT = 96
 
 /** Margem de segurança horizontal dos spawns de jogadores (frações da largura). */
 export const PLAYER_SPAWN_X_FACTORS = { p1: 0.15, p2: 0.85 } as const

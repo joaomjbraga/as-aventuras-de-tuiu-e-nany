@@ -18,24 +18,24 @@ export function buildScene(scene: Phaser.Scene, width: number, height: number, l
   bg.setDisplaySize(width, height)
 
   // ---- Chão invisível (zona de física, sem retângulo visual) ----
-  const ground = scene.add.zone(cx, height - 24, width, 48)
+  const ground = scene.add.zone(cx, height - 48, width, 96)
   scene.physics.add.existing(ground, true)
 
   // ---- Névoa rasteira ----
-  const groundTop = height - 48
+  const groundTop = height - 96
   for (let i = 0; i < 4; i++) {
     const fog = scene.add.ellipse(
-      cx + (i - 1.5) * 88,
-      groundTop - 12 + (i % 2) * 10,
-      170,
-      12,
+      cx + (i - 1.5) * 176,
+      groundTop - 24 + (i % 2) * 20,
+      340,
+      24,
       level.fogColor,
       0.05 + i * 0.02,
     )
     fog.setDepth(2)
     scene.tweens.add({
       targets: fog,
-      x: fog.x + 46,
+      x: fog.x + 92,
       duration: 4200 + i * 900,
       yoyo: true,
       repeat: -1,

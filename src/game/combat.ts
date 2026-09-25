@@ -6,8 +6,13 @@
  *   (retorna true do stomp) ou apenas quica no cooldown de dano.
  * - Contato lateral = dano ao jogador.
  * - Jogador caindo rápido demais não se machuca em contato lateral
- *   (velocityY < -20 só pode pisar).
+ *   (velocityY < -60 só pode pisar).
  * - Zumbi morrendo não interage.
+ *
+ * A margem de tolerância do pisão é proporcional à altura do sprite do zumbi
+ * (20% da altura), para funcionar com zumbis de tamanhos diferentes (116px,
+ * 128px, boss de 160px). Uma margem fixa deixava alguns zumbis sem morrer ao
+ * serem pisados.
  */
 
 export type ContactOutcome = 'stomp-kill' | 'stomp' | 'hit' | 'falling' | 'dead'
@@ -26,9 +31,11 @@ export interface ZombieContactTarget {
   x: number
   /** Posição do topo da cabeça (y do sprite − halfHeight do corpo). */
   headY: number
+  /** Altura do sprite do zumbi (usada para calcular a margem de tolerância). */
+  spriteHeight: number
   /** Dano causado pelo pisão (base 2, ×2 com power-up). */
   damageAmount: number
-  /** Executa o pisão no alvo; true = o zumbi morreu neste golpe. */
+  /** Executa o pisão no alvo; true = o zumbi morreu deste golpe. */
   stomp(fromX: number, amount: number): boolean
 }
 
@@ -40,13 +47,17 @@ export interface ZombieContactTarget {
 export function resolvePlayerZombieContact(player: PlayerContactSource, zombie: ZombieContactTarget): ContactOutcome {
   if (zombie.isDying) return 'dead'
 
+  // Margem proporcional à altura do zumbi: 116px → 23px, 128px → 26px, 160px → 32px.
+  // Isso garante que todos os zumbis (incluindo o boss) aceitem o pisão.
+  const tolerance = Math.round(zombie.spriteHeight * 0.2)
+
   // Pés do jogador acima da cabeça do zumbi = pisão
-  if (player.feetY <= zombie.headY + 6 && player.velocityY >= -20) {
+  if (player.feetY <= zombie.headY + tolerance && player.velocityY >= -60) {
     return zombie.stomp(player.x, zombie.damageAmount) ? 'stomp-kill' : 'stomp'
   }
 
   // Contato lateral só machuca se o jogador não estiver subindo rápido demais
-  if (player.velocityY >= -20) return 'hit'
+  if (player.velocityY >= -60) return 'hit'
   return 'falling'
 }
 

@@ -30,10 +30,10 @@ function openExternalUrl(url: string): void {
 
 function createWindow(): void {
   const window = new BrowserWindow({
-    width: 1280,
-    height: 720,
-    minWidth: 800,
-    minHeight: 450,
+    width: 1920,
+    height: 1080,
+    minWidth: 1280,
+    minHeight: 720,
     show: false,
     autoHideMenuBar: true,
     backgroundColor: '#151a22',

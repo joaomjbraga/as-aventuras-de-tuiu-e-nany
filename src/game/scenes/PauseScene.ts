@@ -45,14 +45,14 @@ export class PauseScene extends Phaser.Scene {
     this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.6).setDepth(10)
 
     this.add
-      .text(width / 2, 30, 'PAUSA', {
+      .text(width / 2, 60, 'PAUSA', {
         fontFamily: 'monospace',
-        fontSize: '20px',
+        fontSize: '40px',
         fontStyle: 'bold',
         color: '#e0e8f0',
       })
       .setOrigin(0.5)
-      .setStroke('#0d101b', 4)
+      .setStroke('#0d101b', 8)
       .setDepth(11)
 
     // Opções navegáveis por teclado (sem depender do mouse)
@@ -64,13 +64,13 @@ export class PauseScene extends Phaser.Scene {
       { label: 'SAIR', action: () => this.quitGame() },
     ]
 
-    const firstY = 56
+    const firstY = 112
 
     this.options.forEach((opt, i) => {
-      const y = firstY + i * 30
+      const y = firstY + i * 60
       const rect = this.add
-        .rectangle(width / 2, y, 190, 28, 0x1c2230)
-        .setStrokeStyle(1, 0x4a5a80)
+        .rectangle(width / 2, y, 380, 56, 0x1c2230)
+        .setStrokeStyle(2, 0x4a5a80)
         .setDepth(11)
         .setInteractive({ useHandCursor: true })
       rect.on('pointerdown', () => opt.action())
@@ -79,20 +79,20 @@ export class PauseScene extends Phaser.Scene {
       const text = this.add
         .text(width / 2, y, opt.label, {
           fontFamily: 'monospace',
-          fontSize: '10px',
+          fontSize: '20px',
           fontStyle: 'bold',
           color: '#e8edf7',
         })
         .setOrigin(0.5)
-        .setStroke('#0d101b', 2)
+        .setStroke('#0d101b', 4)
         .setDepth(11)
       this.optionTexts.push(text)
     })
 
     this.cursor = this.add
-      .text(width / 2 - 106, firstY, '▶', {
+      .text(width / 2 - 212, firstY, '▶', {
         fontFamily: 'monospace',
-        fontSize: '12px',
+        fontSize: '24px',
         fontStyle: 'bold',
         color: '#ffe082',
       })
@@ -101,21 +101,21 @@ export class PauseScene extends Phaser.Scene {
 
     // Atalhos da partida
     this.add
-      .text(width / 2, 196, 'J1: ←/→ mover · ESPAÇO pular\nJ2: A/D mover · W pular', {
+      .text(width / 2, 392, 'J1: ←/→ mover · ESPAÇO pular\nJ2: A/D mover · W pular', {
         fontFamily: 'monospace',
-        fontSize: '8px',
+        fontSize: '16px',
         color: '#9aa9c0',
         align: 'center',
-        lineSpacing: 2,
+        lineSpacing: 4,
       })
       .setOrigin(0.5)
       .setDepth(11)
 
     // Atalhos do menu
     this.add
-      .text(width / 2, 210, '↑/↓: escolher   ENTER: selecionar   ESC: continuar   M: som   Q: sair', {
+      .text(width / 2, 420, '↑/↓: escolher   ENTER: selecionar   ESC: continuar   M: som   Q: sair', {
         fontFamily: 'monospace',
-        fontSize: '8px',
+        fontSize: '16px',
         color: '#7a89a0',
       })
       .setOrigin(0.5)
@@ -185,9 +185,9 @@ export class PauseScene extends Phaser.Scene {
     this.optionRects.forEach((rect, i) => {
       const active = i === this.selectedIndex
       rect.setFillStyle(active ? 0x2a3550 : 0x1c2230)
-      rect.setStrokeStyle(1, active ? 0x8ab0ff : 0x4a5a80, active ? 1 : 0.8)
+      rect.setStrokeStyle(2, active ? 0x8ab0ff : 0x4a5a80, active ? 1 : 0.8)
     })
-    this.cursor.setY(56 + this.selectedIndex * 30)
+    this.cursor.setY(112 + this.selectedIndex * 60)
   }
 
   private resumeGame(): void {

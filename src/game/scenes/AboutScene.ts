@@ -15,17 +15,17 @@ export class AboutScene extends Phaser.Scene {
     const cx = width / 2
 
     this.add.rectangle(cx, height / 2, width, height, 0x11151d)
-    this.add.rectangle(cx, 96, 344, 158, 0x161c26).setStrokeStyle(1, 0x3b5486, 0.9)
+    this.add.rectangle(cx, 192, 688, 316, 0x161c26).setStrokeStyle(2, 0x3b5486, 0.9)
 
     this.add
-      .text(cx, 18, 'SOBRE', {
+      .text(cx, 36, 'SOBRE', {
         fontFamily: 'monospace',
-        fontSize: '16px',
+        fontSize: '32px',
         fontStyle: 'bold',
         color: '#ffd54f',
       })
       .setOrigin(0.5)
-      .setStroke('#0d101b', 3)
+      .setStroke('#0d101b', 6)
 
     const lines: Array<{ text: string; color?: string; bold?: boolean }> = [
       { text: 'FEITO COM CARINHO POR' },
@@ -42,30 +42,30 @@ export class AboutScene extends Phaser.Scene {
 
     lines.forEach((line, i) => {
       this.add
-        .text(cx, 36 + i * 11, line.text, {
+        .text(cx, 72 + i * 22, line.text, {
           fontFamily: 'monospace',
-          fontSize: '9px',
+          fontSize: '18px',
           fontStyle: line.bold ? 'bold' : '',
           color: line.color ?? '#c8d6e5',
         })
         .setOrigin(0.5)
-        .setStroke('#0d101b', 2)
+        .setStroke('#0d101b', 4)
     })
 
     const backButton = this.add
-      .rectangle(cx, height - 13, 190, 22, 0x2a3550, 0.9)
-      .setStrokeStyle(1, 0x8ab0ff, 0.9)
+      .rectangle(cx, height - 26, 380, 44, 0x2a3550, 0.9)
+      .setStrokeStyle(2, 0x8ab0ff, 0.9)
       .setInteractive({ useHandCursor: true })
 
     const back = this.add
-      .text(cx, height - 13, '[ ENTER / ESPAÇO / ESC ] voltar', {
+      .text(cx, height - 26, '[ ENTER / ESPAÇO / ESC ] voltar', {
         fontFamily: 'monospace',
-        fontSize: '9px',
+        fontSize: '18px',
         color: '#ffe082',
         fontStyle: 'bold',
       })
       .setOrigin(0.5)
-      .setStroke('#0d101b', 2)
+      .setStroke('#0d101b', 4)
 
     const goBack = () => this.scene.start('TitleScene')
     backButton.on('pointerdown', goBack)

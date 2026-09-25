@@ -11,10 +11,10 @@ import { InstructionsScene } from './scenes/InstructionsScene'
 
 /**
  * Resolução base do pixel art (16:9).
- * A 5x de zoom inteiro vira 1920x1080.
+ * A 2.5x de zoom inteiro vira 1920x1080.
  */
-export const BASE_WIDTH = 384
-export const BASE_HEIGHT = 216
+export const BASE_WIDTH = 768
+export const BASE_HEIGHT = 432
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO, // WebGL com fallback automático para Canvas
@@ -33,7 +33,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   physics: {
     default: 'arcade',
     arcade: {
-      gravity: { x: 0, y: 1000 },
+      gravity: { x: 0, y: 2000 },
       debug: false,
     },
   },

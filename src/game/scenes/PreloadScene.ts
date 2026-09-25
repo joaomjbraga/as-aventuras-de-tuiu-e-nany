@@ -448,8 +448,8 @@ export class PreloadScene extends Phaser.Scene {
   private generateZombiePlaceholder(): void {
     if (this.textures.exists('zombie')) return
 
-    const frameWidth = 32
-    const frameHeight = 40
+    const frameWidth = 64
+    const frameHeight = 80
     const frameCount = 4
 
     const canvas = document.createElement('canvas')
@@ -465,41 +465,41 @@ export class PreloadScene extends Phaser.Scene {
 
     for (let f = 0; f < frameCount; f++) {
       const o = f * frameWidth
-      const sway = f % 2 === 0 ? 0 : 1 // pequeno balanço p/ caminhada
-      const legShift = f % 2 === 0 ? 0 : 1
+      const sway = f % 2 === 0 ? 0 : 2 // pequeno balanço p/ caminhada
+      const legShift = f % 2 === 0 ? 0 : 2
 
       // Perna de trás e da frente
       ctx.fillStyle = pants
-      ctx.fillRect(o + 10 + legShift, 30, 5, 10)
-      ctx.fillRect(o + 18 - legShift, 30, 5, 10)
+      ctx.fillRect(o + 20 + legShift, 60, 10, 20)
+      ctx.fillRect(o + 36 - legShift, 60, 10, 20)
 
       // Braços esticados para frente (estilo Thriller)
       ctx.fillStyle = arms
-      ctx.fillRect(o + 24, 18 + sway, 8, 4)
-      ctx.fillRect(o + 24, 24 - sway, 8, 4)
+      ctx.fillRect(o + 48, 36 + sway, 16, 8)
+      ctx.fillRect(o + 48, 48 - sway, 16, 8)
 
       // Mãos (pele)
       ctx.fillStyle = skin
-      ctx.fillRect(o + 30, 18 + sway, 2, 4)
-      ctx.fillRect(o + 30, 24 - sway, 2, 4)
+      ctx.fillRect(o + 60, 36 + sway, 4, 8)
+      ctx.fillRect(o + 60, 48 - sway, 4, 8)
 
       // Tronco (terno esfarrapado)
       ctx.fillStyle = torso
-      ctx.fillRect(o + 8 + sway, 15, 16, 15)
+      ctx.fillRect(o + 16 + sway, 30, 32, 30)
 
       // Camisa rasgada
       ctx.fillStyle = '#6b707e'
-      ctx.fillRect(o + 12 + sway, 18, 8, 3)
+      ctx.fillRect(o + 24 + sway, 36, 16, 6)
 
       // Cabeça
       ctx.fillStyle = skin
-      ctx.fillRect(o + 11 + sway, 4, 10, 11)
+      ctx.fillRect(o + 22 + sway, 8, 20, 22)
 
       // Olhos
       ctx.fillStyle = eye
       if (f < 3) {
-        ctx.fillRect(o + 17 + sway, 8, 1, 1)
-        ctx.fillRect(o + 19 + sway, 8, 1, 1)
+        ctx.fillRect(o + 34 + sway, 16, 2, 2)
+        ctx.fillRect(o + 38 + sway, 16, 2, 2)
       }
     }
 
@@ -518,8 +518,8 @@ export class PreloadScene extends Phaser.Scene {
   private generateBossPlaceholder(): void {
     if (this.textures.exists('boss')) return
 
-    const frameWidth = 56
-    const frameHeight = 72
+    const frameWidth = 112
+    const frameHeight = 144
     const walkFrames = 6
     const attackFrames = 6
     const frameCount = walkFrames + attackFrames
@@ -539,45 +539,45 @@ export class PreloadScene extends Phaser.Scene {
       const o = f * frameWidth
       const attack = f >= walkFrames
       const phase = attack ? f - walkFrames : f
-      const sway = phase % 2 === 0 ? 0 : 1
+      const sway = phase % 2 === 0 ? 0 : 2
       const legShift = attack ? 0 : (phase % 3) - 1
-      const reach = attack ? Math.min(10, phase * 2) : 0
+      const reach = attack ? Math.min(20, phase * 4) : 0
 
       // Pernas largas
       ctx.fillStyle = pants
-      ctx.fillRect(o + 14 + sway + legShift, 54, 8, 18)
-      ctx.fillRect(o + 30 - sway - legShift, 54, 8, 18)
+      ctx.fillRect(o + 28 + sway + legShift, 108, 16, 36)
+      ctx.fillRect(o + 60 - sway - legShift, 108, 16, 36)
 
       // Braços longos: avançam durante o golpe de ataque.
       ctx.fillStyle = arms
-      ctx.fillRect(o + 34 + reach, 28 + sway, 18, 6)
-      ctx.fillRect(o + 34 + reach, 40 - sway, 18, 6)
+      ctx.fillRect(o + 68 + reach, 56 + sway, 36, 12)
+      ctx.fillRect(o + 68 + reach, 80 - sway, 36, 12)
 
       // Mãos (pele)
       ctx.fillStyle = skin
-      ctx.fillRect(o + 48 + reach, 26 + sway, 5, 11)
-      ctx.fillRect(o + 48 + reach, 38 - sway, 5, 11)
+      ctx.fillRect(o + 96 + reach, 52 + sway, 10, 22)
+      ctx.fillRect(o + 96 + reach, 76 - sway, 10, 22)
 
       // Tronco volumoso
       ctx.fillStyle = torso
-      ctx.fillRect(o + 8 + sway, 22, 36, 32)
+      ctx.fillRect(o + 16 + sway, 44, 72, 64)
 
       // Remendo / rasgo no peito
       ctx.fillStyle = '#4a5260'
-      ctx.fillRect(o + 18 + sway, 29, 12, 5)
+      ctx.fillRect(o + 36 + sway, 58, 24, 10)
 
       // Cabeça grande
       ctx.fillStyle = skin
-      ctx.fillRect(o + 13 + sway, 4, 27, 18)
+      ctx.fillRect(o + 26 + sway, 8, 54, 36)
 
       // Cicatriz
       ctx.fillStyle = '#3c4234'
-      ctx.fillRect(o + 28 + sway, 8, 9, 2)
+      ctx.fillRect(o + 56 + sway, 16, 18, 4)
 
       // Olhos vermelhos brilhantes
       ctx.fillStyle = eye
-      ctx.fillRect(o + 34 + sway, 12, 2, 2)
-      ctx.fillRect(o + 38 + sway, 12, 2, 2)
+      ctx.fillRect(o + 68 + sway, 24, 4, 4)
+      ctx.fillRect(o + 76 + sway, 24, 4, 4)
     }
 
     this.textures.addSpriteSheet('boss', canvas as unknown as HTMLImageElement, {

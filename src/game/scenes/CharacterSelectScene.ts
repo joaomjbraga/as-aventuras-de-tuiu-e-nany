@@ -51,24 +51,24 @@ export class CharacterSelectScene extends Phaser.Scene {
     this.add.rectangle(cx, height / 2, width, height, 0x181d29)
 
     this.add
-      .text(cx, 16, 'ESCOLHA SEU PERSONAGEM', {
+      .text(cx, 32, 'ESCOLHA SEU PERSONAGEM', {
         fontFamily: 'monospace',
-        fontSize: '13px',
+        fontSize: '26px',
         color: '#e0e8f0',
         fontStyle: 'bold',
       })
       .setOrigin(0.5)
-      .setStroke('#0d101b', 3)
+      .setStroke('#0d101b', 6)
 
     // Cartões com personagem (sprites normalizados, alinhados pelos pés)
-    const targetHeight = 104
-    const feetY = 140
+    const targetHeight = 208
+    const feetY = 280
 
     OPTIONS.forEach((key, i) => {
       const def = CHARACTERS[key]
-      const x = cx - 64 + i * 128
+      const x = cx - 128 + i * 256
 
-      const panel = this.add.rectangle(x, 92, 118, 124, 0x131720)
+      const panel = this.add.rectangle(x, 184, 236, 248, 0x131720)
       panel.setStrokeStyle(1, 0x2c3350)
 
       // Seleção com o mouse: clicar em um cartão seleciona o personagem (J1)
@@ -86,19 +86,19 @@ export class CharacterSelectScene extends Phaser.Scene {
         .setDepth(2)
 
       this.add
-        .text(x, 166, def.name.toUpperCase(), {
+        .text(x, 332, def.name.toUpperCase(), {
           fontFamily: 'monospace',
-          fontSize: '10px',
+          fontSize: '20px',
           color: '#c8d6e5',
           fontStyle: 'bold',
         })
         .setOrigin(0.5)
-        .setStroke('#0d101b', 3)
+        .setStroke('#0d101b', 6)
 
       const confirmedLabel = this.add
-        .text(x, 180, '', {
+        .text(x, 360, '', {
           fontFamily: 'monospace',
-          fontSize: '8px',
+          fontSize: '16px',
           color: '#7bed9f',
           fontStyle: 'bold',
         })
@@ -108,21 +108,21 @@ export class CharacterSelectScene extends Phaser.Scene {
     })
 
     this.prompt = this.add
-      .text(cx, 190, '', {
+      .text(cx, 380, '', {
         fontFamily: 'monospace',
-        fontSize: '9px',
+        fontSize: '18px',
         color: '#ffe082',
         align: 'center',
         fontStyle: 'bold',
-        lineSpacing: 2,
+        lineSpacing: 4,
       })
       .setOrigin(0.5)
-      .setStroke('#0d101b', 2)
+      .setStroke('#0d101b', 4)
 
     this.add
-      .text(cx, 206, 'J1: ←/→ + ENTER    J2: A/D + W    [ESC] voltar', {
+      .text(cx, 412, 'J1: ←/→ + ENTER    J2: A/D + W    [ESC] voltar', {
         fontFamily: 'monospace',
-        fontSize: '8px',
+        fontSize: '16px',
         color: '#6b7a8f',
         align: 'center',
       })
@@ -180,7 +180,7 @@ export class CharacterSelectScene extends Phaser.Scene {
   }
 
   private makeCursor(playerId: PlayerId, scheme: ControlSchemeId, color: number): PlayerCursor {
-    const marker = this.add.rectangle(0, 0, 14, 4, color, 1).setOrigin(0.5).setDepth(5)
+    const marker = this.add.rectangle(0, 0, 28, 8, color, 1).setOrigin(0.5).setDepth(5)
     return {
       playerId,
       scheme,
@@ -197,8 +197,8 @@ export class CharacterSelectScene extends Phaser.Scene {
 
   private placeMarker(cursor: PlayerCursor): void {
     const panelX = this.options[cursor.index].panel.x
-    const offset = cursor.playerId === 'P1' ? -9 : 9
-    cursor.marker.setPosition(panelX + offset, 157)
+    const offset = cursor.playerId === 'P1' ? -18 : 18
+    cursor.marker.setPosition(panelX + offset, 314)
     this.refreshSelectionVisuals()
   }
 

@@ -48,7 +48,7 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
 
     this.hpMax = config.hp ?? 3
     this.hp = this.hpMax
-    this.moveSpeed = config.moveSpeed ?? 46
+    this.moveSpeed = config.moveSpeed ?? 92
     this.players = config.players
     this.onKilled = config.onKilled
     this.isDying = false
@@ -99,7 +99,10 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
   stompDamage(fromX: number, amount = 2): boolean {
     if (this.isDying) return false
     if (this.scene.time.now < this.hurtCooldownUntil) return false
-    this.hurtCooldownUntil = this.scene.time.now + 350
+    // Cooldown curto (200ms): impede drenar HP a cada frame de colisão, mas
+    // permite que o jogador pise novamente em um zumbi que sobreviveu ao
+    // primeiro pisão (ex.: zumbi com 3 HP e pulo simples de 2 dano).
+    this.hurtCooldownUntil = this.scene.time.now + 200
     return this.takeDamage(amount, fromX)
   }
 
@@ -110,11 +113,11 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
 
     // Recuo para longe de quem bateu
     const dir = Math.sign(this.x - fromX) || 1
-    this.setVelocityX(dir * 120)
+    this.setVelocityX(dir * 240)
 
     // Flash branco ao levar dano
     this.setTintFill(0xffffff)
-    this.scene.time.delayedCall(90, () => {
+    this.scene.time.delayedCall(180, () => {
       if (this.active) this.clearTint()
     })
 
@@ -151,9 +154,9 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
     this.scene.tweens.add({
       targets: this,
       alpha: 0,
-      y: this.y - 10,
-      scale: 0.7,
-      duration: 320,
+      y: this.y - 20,
+      scale: 1.4,
+      duration: 640,
       ease: 'Linear',
       onComplete: () => {
         if (this.active) this.destroy()
@@ -176,16 +179,16 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
     }
 
     const emitter = this.scene.add.particles(this.x, this.y, 'pixel', {
-      speedX: { min: -70, max: 70 },
-      speedY: { min: -70, max: -10 },
-      gravityY: 520,
-      scale: { start: 1.4, end: 0 },
-      lifespan: 520,
+      speedX: { min: -140, max: 140 },
+      speedY: { min: -140, max: -20 },
+      gravityY: 1040,
+      scale: { start: 2.8, end: 0 },
+      lifespan: 1040,
       tint: [0xff5d6c, 0x9aa980, 0x6b707e, 0xe8edf7],
     })
     emitter.setDepth(1)
-    emitter.explode(14)
-    this.scene.time.delayedCall(650, () => emitter.destroy())
+    emitter.explode(28)
+    this.scene.time.delayedCall(1300, () => emitter.destroy())
   }
 
   protected createAnimations(): void {
