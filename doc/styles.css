@@ -1,46 +1,50 @@
 /* =========================================================
-   Tokens
-   Extraídos da folha de estilo real de warthunder.com/en/registration
+   As Aventuras de Tuiu e Nany — página única
+
+   Duas decisões sustentam a identidade daqui:
+
+   1. As cores vêm de src/game/theme.ts (dourado do título, azul do
+      jogador 1, rosa do jogador 2, vermelho do coração, contorno
+      #0d101b). Nada de turquesa e coral de página de loja: quem vê
+      o site reconhece a paleta do jogo antes de ler o texto.
+   2. Nada de raio arredondado nem sombra difusa. Borda reta de
+      1-2px e sombra sólida de deslocamento fixo, como os
+      retângulos que o Phaser desenha na tela do jogo.
    ========================================================= */
 
 :root {
-  --fundo: #0b0f1a;
-  --fundo-2: #020d16;
-  --fundo-3: #0f1d2d;
-  --painel: #27323f;
-  --painel-2: #2d3947;
-  --painel-alto: #33404f;
-  --borda: rgb(192 197 201 / 14%);
-  --borda-forte: rgb(192 197 201 / 28%);
+  --noite: #151a22;
+  --noite-funda: #11151d;
+  --painel: #0d101b;
 
-  --texto: #c0c5c9;
-  --texto-claro: #f2f5f7;
-  --texto-fraco: #7f8b98;
+  --ouro: #ffd54f;
+  --estrela: #ffe082;
+  --tuiu: #8fd8ff;
+  --nany: #ff9fc2;
+  --coracao: #ff4d5d;
 
-  --acento: #31eeda;
-  --acento-forte: #6ff8e9;
-  --acento-fraco: rgb(49 238 218 / 16%);
-  --cta: #f45059;
-  --cta-forte: #ff6b73;
-  --alerta: #ecc010;
-  --erro: #ff6e6e;
-  --positivo: #2ea32e;
+  --corpo: #c8d6e5;
+  --fraco: #7a89a0;
+  --mudo: #8fa8c8;
 
-  --fonte: 'Fira Sans', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --mono: 'JetBrains Mono', Consolas, 'Courier New', monospace;
+  --fonte: 'JetBrains Mono', ui-monospace, Consolas, 'Courier New', monospace;
 
-  --largura: 1180px;
-  --raio: 4px;
-  --raio-g: 16px;
-  --sombra: 0 8px 24px rgb(2 15 22 / 77%);
-  --sombra-forte: 0 12px 30px #000;
-  --trilho: linear-gradient(0deg, var(--texto) 2px, rgb(3 12 21 / 20%) 0%);
-  --trilho-foco: linear-gradient(0deg, var(--acento) 2px, rgb(3 12 21 / 20%) 0%);
+  /* Ajuste fino do fundo. Este é o único botão da página que regula
+     o quanto o vídeo aparece, então é o primeiro lugar a mexer quando
+     o trailer estiver claro demais ou escuro demais.
+
+     brightness acima de 1 clareia; saturate devolve a cor que o
+     filtro come; contrast um pouco acima de 1 só evita que a imagem
+     fique lavada. Se o texto dourado perder leitura, o próximo
+     recurso é reduzir a vinheta em .cena__vinheta, não este valor. */
+  --video-filtro: saturate(0.88) contrast(1.03) brightness(0.92);
+  --scanline: 18%;
+
+  /* Deslocamento da sombra sólida. Um valor só, para o "peso" de
+     pixel se manter igual em todo o site. */
+  --peso: 4px;
+  --margem: 18px;
 }
-
-/* =========================================================
-   Base
-   ========================================================= */
 
 *,
 *::before,
@@ -49,1725 +53,382 @@
 }
 
 html {
-  scroll-behavior: smooth;
-  scroll-padding-top: 78px;
   -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--fundo);
-  background-image:
-    radial-gradient(circle at 82% -8%, rgb(49 238 218 / 7%) 0%, transparent 42%),
-    linear-gradient(180deg, #0b0f1a 0%, #0f1d2d 55%, #0b0f1a 100%);
-  background-attachment: fixed;
-  color: var(--texto);
+  background: var(--noite-funda);
+  color: var(--corpo);
   font-family: var(--fonte);
   font-size: 15px;
-  line-height: 1.65;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
 img {
   max-width: 100%;
-  height: auto;
   display: block;
   border: 0;
 }
 
 a {
-  color: var(--acento);
+  color: var(--estrela);
   text-decoration: none;
-  transition: color 0.14s ease;
-}
-
-a:hover {
-  color: var(--acento-forte);
-  text-decoration: underline;
-}
-
-h1,
-h2,
-h3 {
-  font-family: var(--fonte);
-  color: var(--texto-claro);
-  font-weight: 600;
-  line-height: 1.15;
-  margin: 0 0 0.5em;
-  letter-spacing: 0.01em;
-}
-
-h2 {
-  font-size: clamp(1.55rem, 1.1rem + 1.9vw, 2.3rem);
-}
-
-h3 {
-  font-size: 1.05rem;
-}
-
-p {
-  margin: 0 0 1em;
-}
-
-ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-b,
-strong {
-  color: var(--texto-claro);
-  font-weight: 600;
-}
-
-code,
-kbd {
-  font-family: var(--mono);
-  font-size: 0.9em;
-}
-
-code {
-  color: var(--acento);
-}
-
-kbd {
-  display: inline-block;
-  background: rgb(3 12 21 / 60%);
-  border: 1px solid var(--borda-forte);
-  border-radius: 2px;
-  color: var(--texto-claro);
-  font-size: 11px;
-  line-height: 1.7;
-  padding: 0 5px;
 }
 
 :focus-visible {
-  outline: 2px solid var(--acento);
-  outline-offset: 2px;
-  border-radius: 2px;
+  outline: 2px solid var(--ouro);
+  outline-offset: 3px;
 }
 
 [hidden] {
   display: none !important;
 }
 
-.sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.pular {
-  position: absolute;
-  left: -9999px;
-  top: 0;
-  z-index: 400;
-  background: var(--acento);
-  color: var(--fundo-2);
-  padding: 10px 16px;
-  font-weight: 600;
-}
-
-.pular:focus {
-  left: 8px;
-  top: 8px;
-  text-decoration: none;
-}
-
-/* linha luminosa de 2px, assinatura visual da Gaijin */
-.linha-luz {
-  height: 2px;
-  background: linear-gradient(90deg, var(--acento) 0%, rgb(49 238 218 / 0%) 70%);
-  opacity: 0.55;
-}
-
 /* =========================================================
-   Aviso de file://
+   Cena: o trailer ocupa a tela inteira
    ========================================================= */
 
-.aviso-local {
-  margin: 0;
-  padding: 11px 16px;
-  background: rgb(236 192 16 / 12%);
-  border-bottom: 1px solid rgb(236 192 16 / 35%);
-  color: #f4e3a4;
-  font-size: 13.5px;
-  line-height: 1.55;
-  text-align: center;
-}
-
-.aviso-local code {
-  background: rgb(3 12 21 / 55%);
-  border: 1px solid rgb(236 192 16 / 30%);
-  border-radius: 2px;
-  padding: 1px 5px;
-  color: #ffeeb8;
-}
-
-/* =========================================================
-   Topo
-   ========================================================= */
-
-.topo {
-  position: sticky;
-  top: 0;
-  z-index: 120;
-  background: rgb(2 13 22 / 92%);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--borda);
-}
-
-.topo__interna {
-  max-width: var(--largura);
-  margin: 0 auto;
-  padding: 0 20px;
-  min-height: 62px;
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  flex-wrap: wrap;
-}
-
-.emblema {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 0 0 auto;
-}
-
-.emblema:hover {
-  text-decoration: none;
-}
-
-.emblema__marca {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  background: var(--painel);
-  border: 1px solid var(--acento);
-  border-radius: var(--raio);
-  color: var(--acento);
-  font-weight: 700;
-  font-size: 15px;
-  letter-spacing: 0.02em;
-  box-shadow:
-    0 0 0 1px rgb(49 238 218 / 12%),
-    0 4px 14px rgb(2 15 22 / 70%);
-}
-
-.emblema__nome {
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--texto-claro);
-}
-
-.emblema__nome em {
-  color: var(--acento);
-  font-style: normal;
-  margin: 0 1px;
-}
-
-.topo__nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px;
-}
-
-.topo__nav a {
+.cena {
   position: relative;
-  display: block;
-  padding: 8px 12px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--texto);
-  border-radius: var(--raio);
-  transition:
-    color 0.14s ease,
-    background 0.14s ease;
-}
-
-.topo__nav a::after {
-  content: '';
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 3px;
-  height: 2px;
-  background: var(--acento);
-  border-radius: 2px;
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.16s ease;
-}
-
-.topo__nav a:hover {
-  color: var(--texto-claro);
-  text-decoration: none;
-  background: rgb(192 197 201 / 8%);
-}
-
-.topo__nav a:hover::after,
-.topo__nav a.ativo::after {
-  transform: scaleX(1);
-}
-
-.topo__nav a.ativo {
-  color: var(--acento);
-}
-
-.topo__estado {
-  margin-left: auto;
-  text-align: right;
-  line-height: 1.3;
-}
-
-.estado__versao {
-  margin: 0;
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--acento);
-}
-
-.estado__texto {
-  margin: 0;
-  font-size: 11px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--texto-fraco);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  justify-content: flex-end;
-}
-
-.estado__ponto {
-  width: 7px;
-  height: 7px;
-  background: var(--positivo);
-  border-radius: 50%;
-  box-shadow: 0 0 8px var(--positivo);
-  animation: pisca 2.6s steps(1, end) infinite;
-}
-
-@keyframes pisca {
-  0%,
-  60% {
-    opacity: 1;
-  }
-  61%,
-  100% {
-    opacity: 0.3;
-  }
-}
-
-.topo__busca {
-  position: relative;
-  flex: 0 1 160px;
-  min-width: 110px;
-}
-
-.topo__busca input {
-  width: 100%;
-  height: 32px;
-  padding: 0 11px;
-  background: rgb(3 12 21 / 40%);
-  background-image: var(--trilho);
-  background-repeat: no-repeat;
-  background-position: bottom left;
-  background-size: 100% 100%;
-  border: 0;
-  border-radius: var(--raio) var(--raio) 0 0;
-  color: var(--texto-claro);
-  font-family: var(--fonte);
-  font-size: 13px;
-  transition: background-image 0.16s ease;
-}
-
-.topo__busca input::placeholder {
-  color: var(--texto-fraco);
-}
-
-.topo__busca input:focus {
-  outline: none;
-  background-image: var(--trilho-foco);
-}
-
-.topo__busca-aviso {
-  position: absolute;
-  top: 36px;
-  right: 0;
-  z-index: 60;
-  margin: 0;
-  padding: 6px 10px;
-  background: var(--painel);
-  border: 1px solid var(--borda-forte);
-  border-radius: var(--raio);
-  color: var(--texto);
-  font-size: 12px;
-  white-space: nowrap;
-  box-shadow: var(--sombra);
-}
-
-/* =========================================================
-   Conteúdo e seções
-   ========================================================= */
-
-.conteudo {
-  max-width: var(--largura);
-  margin: 0 auto;
-  padding: 24px 20px 60px;
-}
-
-.secao {
-  margin-top: 56px;
-}
-
-.secao__cabeca {
-  margin-bottom: 22px;
-}
-
-.secao__indice {
-  margin: 0 0 6px;
-  font-family: var(--mono);
-  font-size: 11.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--acento);
-  opacity: 0.85;
-}
-
-.secao__titulo {
-  margin: 0 0 4px;
-}
-
-.secao__legenda {
-  margin: 12px 0 0;
-  max-width: 74ch;
-  color: var(--texto);
-}
-
-.secao__nota {
-  margin: 18px 0 0;
-  max-width: 74ch;
-  font-size: 13.5px;
-  color: var(--texto-fraco);
-}
-
-.subtitulo {
-  margin: 32px 0 8px;
-  font-size: 1.2rem;
-  color: var(--texto-claro);
-}
-
-/* =========================================================
-   Herói
-   ========================================================= */
-
-.heroi {
-  margin-bottom: 12px;
-}
-
-.heroi__moldura {
-  position: relative;
-  overflow: hidden;
-  min-height: 430px;
-  display: flex;
-  align-items: flex-end;
-  background: var(--painel);
-  border-radius: var(--raio-g);
-  box-shadow: var(--sombra-forte);
-}
-
-.heroi__video {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  filter: saturate(0.55) contrast(1.1) brightness(0.62);
-}
-
-.heroi__veu {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(90deg, rgb(2 13 22 / 96%) 0%, rgb(2 13 22 / 74%) 44%, rgb(2 13 22 / 12%) 82%),
-    linear-gradient(0deg, var(--painel-2) 2%, transparent 42%);
-}
-
-.heroi__texto {
-  position: relative;
-  z-index: 2;
-  padding: 36px clamp(20px, 4vw, 46px);
-  max-width: 640px;
-}
-
-.heroi__etiqueta {
-  margin: 0 0 12px;
-  display: inline-block;
-  padding: 3px 10px;
-  background: var(--acento-fraco);
-  border: 1px solid rgb(49 238 218 / 40%);
-  border-radius: 2px;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--acento);
-}
-
-.heroi__titulo {
-  margin: 0 0 14px;
-  font-size: clamp(2rem, 1.1rem + 3.8vw, 3.7rem);
-  font-weight: 700;
-  line-height: 1.02;
-  letter-spacing: -0.01em;
-}
-
-.heroi__titulo strong {
-  color: var(--acento);
-  font-weight: 700;
-}
-
-.heroi__resumo {
-  max-width: 56ch;
-  font-size: 15.5px;
-  color: #d6dcdf;
-}
-
-.heroi__acoes {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 22px;
-}
-
-.heroi__controles {
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.heroi__parar {
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  background: rgb(3 12 21 / 78%);
-  border: 1px solid var(--borda-forte);
-  border-radius: var(--raio);
-  color: var(--texto-claro);
-  font-family: var(--mono);
-  font-size: 11px;
-  cursor: pointer;
-  transition:
-    border-color 0.14s ease,
-    color 0.14s ease;
-}
-
-.heroi__parar:hover {
-  border-color: var(--acento);
-  color: var(--acento);
-}
-
-.heroi__parar[aria-pressed='true'] {
-  border-color: var(--acento);
-  color: var(--acento);
-  background: rgb(49 238 218 / 12%);
-}
-
-.heroi__youtube {
-  font-size: 11.5px;
-  letter-spacing: 0.04em;
-  color: var(--texto-fraco);
-}
-
-.heroi__youtube:hover {
-  color: var(--acento);
-}
-
-.heroi__indicadores {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  margin: 14px 0 0;
-  padding: 0;
-  border: 1px solid var(--borda);
-  border-radius: var(--raio);
-  background: rgb(3 12 21 / 32%);
-  overflow: hidden;
-}
-
-.heroi__indicadores li {
-  padding: 14px 18px;
-  border-left: 1px solid var(--borda);
-  line-height: 1.2;
-}
-
-.heroi__indicadores li:first-child {
-  border-left: 0;
-}
-
-.heroi__indicadores strong {
-  display: block;
-  font-size: 1.65rem;
-  font-weight: 700;
-  color: var(--texto-claro);
-}
-
-.heroi__indicadores span {
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--texto-fraco);
-}
-
-/* =========================================================
-   Botões
-   ========================================================= */
-
-.botao {
-  display: inline-block;
-  padding: 12px 26px;
-  font-family: var(--fonte);
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-align: center;
-  border: 1px solid transparent;
-  border-radius: var(--raio);
-  cursor: pointer;
-  transition:
-    background 0.14s ease,
-    color 0.14s ease,
-    box-shadow 0.14s ease,
-    transform 0.1s ease;
-}
-
-.botao:active {
-  transform: translateY(1px);
-}
-
-/* coral: ação principal */
-.botao--ouro {
-  background: var(--cta);
-  border-color: var(--cta);
-  color: #fff;
-  box-shadow: 0 4px 14px rgb(244 80 89 / 28%);
-}
-
-.botao--ouro:hover {
-  background: var(--cta-forte);
-  border-color: var(--cta-forte);
-  color: #fff;
-  text-decoration: none;
-}
-
-/* contorno: ação secundária */
-.botao--contorno {
-  background: transparent;
-  border-color: var(--acento);
-  color: var(--acento);
-}
-
-.botao--contorno:hover {
-  background: var(--acento);
-  border-color: var(--acento);
-  color: var(--fundo-2);
-  text-decoration: none;
-}
-
-.botao--contorno[aria-pressed='true'] {
-  background: var(--acento);
-  border-color: var(--acento);
-  color: var(--fundo-2);
-}
-
-/* =========================================================
-   Missão
-   ========================================================= */
-
-.missao {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 28px;
-  align-items: start;
-}
-
-.missao__texto {
-  max-width: 70ch;
-}
-
-.missao__texto p {
-  font-size: 15.5px;
-  line-height: 1.7;
-}
-
-.missao__texto em {
-  color: var(--acento);
-  font-style: normal;
-}
-
-.placa {
-  background: var(--painel);
-  background-image: linear-gradient(160deg, var(--painel-alto) 0%, var(--painel) 46%);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio);
-  padding: 18px 20px;
-  box-shadow: var(--sombra);
-}
-
-.placa__titulo {
-  margin: 0 0 10px;
-  font-size: 0.92rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--acento);
-}
-
-.placa dl {
-  margin: 0;
-}
-
-.placa dl > div {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 8px 0;
-  border-top: 1px solid var(--borda);
-  font-size: 12.5px;
-}
-
-.placa dt {
-  color: var(--texto-fraco);
-}
-
-.placa dd {
-  margin: 0;
-  color: var(--texto-claro);
-  text-align: right;
-  font-weight: 500;
-}
-
-/* =========================================================
-   Seletor de cenário
-   ========================================================= */
-
-.seletor {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.alvo {
-  display: block;
-  padding: 0 0 12px;
-  background: var(--painel);
-  background-image: linear-gradient(180deg, var(--painel-2) 0%, var(--painel) 55%);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio);
-  color: var(--texto);
-  text-align: left;
-  font-family: inherit;
-  cursor: pointer;
-  overflow: hidden;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.12s ease;
-}
-
-.alvo:hover {
-  border-color: var(--borda-forte);
-  box-shadow: 0 6px 18px rgb(2 15 22 / 60%);
-  transform: translateY(-2px);
-}
-
-.alvo__foto {
-  position: relative;
-  display: block;
-  line-height: 0;
-  border-bottom: 1px solid var(--borda);
-}
-
-.alvo__foto img {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  filter: saturate(0.5) brightness(0.72);
-  transition: filter 0.15s ease;
-}
-
-.alvo:hover .alvo__foto img {
-  filter: saturate(0.8) brightness(0.92);
-}
-
-.alvo__num {
-  position: absolute;
-  top: 7px;
-  left: 8px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--acento);
-  background: rgb(3 12 21 / 82%);
-  border: 1px solid rgb(49 238 218 / 30%);
-  border-radius: 2px;
-  padding: 1px 6px;
-  line-height: 1.6;
-}
-
-.alvo__nome {
-  display: block;
-  padding: 10px 13px 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--texto-claro);
-}
-
-.alvo__meta {
-  display: block;
-  padding: 2px 13px 0;
-  font-family: var(--mono);
-  font-size: 11.5px;
-  color: var(--texto-fraco);
-}
-
-.alvo[aria-selected='true'] {
-  border-color: var(--acento);
-  box-shadow:
-    0 0 0 1px rgb(49 238 218 / 40%),
-    0 8px 22px rgb(2 15 22 / 70%);
-}
-
-.alvo[aria-selected='true'] .alvo__foto img {
-  filter: saturate(0.95) brightness(1);
-}
-
-.alvo[aria-selected='true'] .alvo__nome {
-  color: var(--acento);
-}
-
-.alvo[aria-selected='true'] .alvo__meta {
-  color: var(--texto);
-}
-
-/* painel do cenário */
-.hangar {
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-  gap: 26px;
-  align-items: start;
-  background: var(--painel);
-  background-image: linear-gradient(180deg, var(--painel-2) 0%, var(--painel) 60%);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-g);
-  padding: 20px;
-  box-shadow: var(--sombra);
-}
-
-.hangar__foto {
-  position: relative;
-  line-height: 0;
-  border: 1px solid var(--borda);
-  border-radius: var(--raio);
-  overflow: hidden;
-}
-
-.hangar__foto img {
-  width: 100%;
-  aspect-ratio: 1488 / 688;
-  object-fit: cover;
-  filter: saturate(0.85) contrast(1.04);
-}
-
-.hangar__selo {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  margin: 0;
-  padding: 5px 13px;
-  background: var(--acento);
-  color: var(--fundo-2);
-  font-family: var(--mono);
-  font-size: 11.5px;
-  font-weight: 600;
-  line-height: 1.7;
-  border-radius: 0 var(--raio) 0 0;
-}
-
-.hangar__dados {
-  min-width: 0;
-}
-
-.hangar__nome {
-  margin: 0 0 4px;
-  font-size: clamp(1.4rem, 1.05rem + 1.4vw, 1.95rem);
-  color: var(--texto-claro);
-}
-
-.hangar__frase {
-  margin: 0 0 18px;
-  font-size: 14.5px;
-  color: var(--texto);
-}
-
-.hangar__chefe-rotulo {
-  margin: 0 0 2px;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--texto-fraco);
-}
-
-.hangar__chefe {
-  margin: 0 0 20px;
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--cta);
-}
-
-.hangar__nota {
-  margin: 20px 0 0;
-  font-size: 12.5px;
-  color: var(--texto-fraco);
-}
-
-/* medidores */
-.medidores {
-  display: grid;
-  gap: 14px;
-}
-
-.medidor {
-  min-width: 0;
-}
-
-.medidor__rotulo {
-  display: flex;
-  justify-content: space-between;
-  margin: 0 0 5px;
-  font-size: 11.5px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--texto-fraco);
-}
-
-.medidor__rotulo span {
-  font-family: var(--mono);
-  font-size: 12.5px;
-  color: var(--texto-claro);
-  text-transform: none;
-  letter-spacing: 0;
-}
-
-.medidor__trilho {
-  position: relative;
-  height: 8px;
-  background: rgb(3 12 21 / 55%);
-  border-radius: 2px;
-  padding: 1px;
-  overflow: hidden;
-}
-
-.medidor__cheio {
-  display: block;
-  height: 100%;
-  background: var(--acento);
-  border-radius: 1px;
-  box-shadow: 0 0 10px rgb(49 238 218 / 45%);
-  transition: width 0.3s ease;
-}
-
-.medidor__cheio--aco {
-  background: #5aa9e6;
-  box-shadow: 0 0 10px rgb(90 169 230 / 45%);
-}
-
-.medidor__cheio--oliva {
-  background: var(--alerta);
-  box-shadow: 0 0 10px rgb(236 192 16 / 40%);
-}
-
-.medidor__cheio--perigo {
-  background: var(--cta);
-  box-shadow: 0 0 10px rgb(244 80 89 / 45%);
-}
-
-/* =========================================================
-   Capturas
-   ========================================================= */
-
-.capturas {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr) 1fr;
-  gap: 10px;
-  margin-top: 16px;
-}
-
-.capturas__item {
-  padding: 0;
-  border: 1px solid var(--borda);
-  border-radius: var(--raio);
-  background: var(--painel);
-  cursor: pointer;
-  overflow: hidden;
-  line-height: 0;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.12s ease;
-}
-
-.capturas__item img {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  filter: saturate(0.55) brightness(0.8);
-  transition:
-    filter 0.15s ease,
-    transform 0.22s ease;
-}
-
-.capturas__item:hover {
-  border-color: var(--acento);
-  box-shadow: 0 6px 18px rgb(2 15 22 / 60%);
-  transform: translateY(-2px);
-}
-
-.capturas__item:hover img {
-  filter: saturate(0.95) brightness(1.02);
-  transform: scale(1.04);
-}
-
-.capturas__ver {
+  min-height: 100vh;
+  min-height: 100svh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  background: var(--painel);
-  background-image: linear-gradient(160deg, var(--painel-alto) 0%, var(--painel) 60%);
-  border: 1px solid var(--borda-forte);
-  border-radius: var(--raio);
-  color: var(--texto);
-  font-family: var(--fonte);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    color 0.15s ease;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--noite);
+  /* Respiro só para o conteúdo não encostar nas bordas: o vídeo é
+     sangrado de propósito e não leva moldura. */
+  padding: 64px 22px;
+  text-align: center;
 }
 
-.capturas__ver span:last-child {
-  font-family: var(--mono);
-  font-size: 16px;
-  color: var(--acento);
+/* O vídeo local substitui o pôster: enquanto ele carrega, quem aparece
+   é o azul-escuro do próprio .cena, e as scanlines já dão textura à
+   espera. */
+.cena__video {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  /* object-fit é o que impede a caixa de alongar a imagem quando a
+     proporção do vídeo não bate com a da janela. */
+  object-fit: cover;
+  filter: var(--video-filtro);
 }
 
-.capturas__ver:hover {
-  border-color: var(--acento);
-  color: var(--acento-forte);
+/* Dither + scanlines. O padrão de 2px é a mesma técnica que dá
+   profundidade ao céu do jogo sem pedir nenhum asset. */
+.cena__pixels {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(0deg, rgb(0 0 0 / var(--scanline)) 0 1px, transparent 1px 3px),
+    linear-gradient(45deg, rgb(232 237 247 / 2.4%) 25%, transparent 25% 75%, rgb(232 237 247 / 2.4%) 75%),
+    linear-gradient(45deg, rgb(232 237 247 / 2.4%) 25%, transparent 25% 75%, rgb(232 237 247 / 2.4%) 75%);
+  background-size:
+    100% 3px,
+    4px 4px,
+    4px 4px;
+  background-position:
+    0 0,
+    0 0,
+    2px 2px;
+}
+
+/* Vinheta: escurece as bordas para o olho ir ao centro, onde estão
+   o título e o botão. Ela existe para o texto do canto (crédito, link
+   do trailer) ganhar contraste, não para apagar o vídeo — por isso
+   o miolo fica quase transparente e só a ponta da elipse fecha. */
+.cena__vinheta {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 78% 66% at 50% 50%,
+      rgb(17 21 29 / 8%) 0%,
+      rgb(17 21 29 / 45%) 68%,
+      rgb(13 16 27 / 72%) 100%
+    ),
+    linear-gradient(0deg, rgb(17 21 29 / 70%) 0%, transparent 30%),
+    linear-gradient(180deg, rgb(17 21 29 / 40%) 0%, transparent 22%);
 }
 
 /* =========================================================
-   Dificuldade
+   Conteúdo
    ========================================================= */
 
-.dificuldades {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+.cena__painel {
+  position: relative;
+  z-index: 4;
+  max-width: 660px;
+  margin: 0 auto;
 }
 
-.dificuldade {
-  background: var(--painel);
-  background-image: linear-gradient(180deg, var(--painel-2) 0%, var(--painel) 50%);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio);
-  padding: 18px 20px;
-  box-shadow: var(--sombra);
+/* O título é tipografia de display, não texto de conteúdo: é uma arte
+   feita de elementos separados por flexbox, então copiar produzia
+   "TuiuNany" sem espaço. Travar a seleção devolve algo mais honesto.
+   O -webkit- é para o Safari, que ainda não Prefixou a propriedade. */
+.cena__pre,
+.cena__titulo {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.dificuldade--padrao {
-  border-color: var(--acento);
-  box-shadow:
-    0 0 0 1px rgb(49 238 218 / 22%),
-    var(--sombra);
-}
-
-.dificuldade__nome {
-  margin: 0 0 2px;
-  font-size: 1.3rem;
-  font-weight: 700;
-}
-
-.dificuldade__nome--facil {
-  color: var(--positivo);
-}
-
-.dificuldade__nome--medio {
-  color: var(--alerta);
-}
-
-.dificuldade__nome--dificil {
-  color: var(--cta);
-}
-
-.dificuldade__resumo {
+.cena__pre {
   margin: 0 0 14px;
-  font-size: 12.5px;
-  color: var(--texto-fraco);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.42em;
+  /* O recuo compensa a barra final do espaçamento para o texto
+     ficar realmente centralizado, e não deslocado à esquerda. */
+  text-indent: 0.42em;
+  text-transform: uppercase;
+  color: var(--mudo);
+  text-shadow: 0 2px 8px rgb(13 16 27 / 90%);
 }
 
-.dificuldade__lista li {
+.cena__titulo {
+  margin: 0;
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 7px 0;
-  border-top: 1px solid var(--borda);
-  font-size: 13px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0 0.34em;
+  font-size: clamp(2.6rem, 1.1rem + 8.4vw, 6.2rem);
+  font-weight: 700;
+  line-height: 0.98;
+  letter-spacing: -0.02em;
 }
 
-.dificuldade__lista span {
-  color: var(--texto-fraco);
+.cena__nome {
+  /* Sombra sólida de deslocamento fixo: o "pixel" do título. */
+  text-shadow:
+    var(--peso) var(--peso) 0 var(--painel),
+    calc(var(--peso) * 1.5) calc(var(--peso) * 1.5) 0 rgb(13 16 27 / 55%);
 }
 
-.dificuldade__lista b {
-  font-family: var(--mono);
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--texto-claro);
+.cena__nome--tuiu {
+  color: var(--tuiu);
+}
+
+.cena__nome--nany {
+  color: var(--nany);
+}
+
+.cena__coracoes {
+  margin: 22px auto 0;
+  color: var(--coracao);
+  /* O SVG é de 33x8 e entra 3x maior, então a grade do coração
+     continua com bordas inteiras em vez de virar blur. */
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 6px rgb(255 77 93 / 45%));
+}
+
+/* A linha separa o título do botão, então a margem de baixo é
+   maior que a de cima: o vão para o botão precisa respirar mais
+   que o vão para os corações. */
+.cena__linha {
+  width: 132px;
+  height: 1px;
+  margin: 26px auto 34px;
+  border: 0;
+  background: linear-gradient(90deg, transparent, var(--ouro) 50%, transparent);
+  opacity: 0.6;
+}
+
+/* Rótulo acima dos botões: diz o que os dois fazem, já que cada
+   botão só nomeia a plataforma. */
+.cena__rotulo {
+  margin: 0 0 18px;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  text-transform: uppercase;
+  color: var(--fraco);
+  text-shadow: 0 2px 8px rgb(13 16 27 / 90%);
 }
 
 /* =========================================================
-   Tripulação
+   Botões de download
+
+   Dourado chapado, com a marca e o texto na mesma tinta escura.
+   A borda usa a cor de contorno em vez de dourado: uma borda
+   dourada sobre fundo dourado é invisível, e o contorno escuro é
+   o que dá ao retângulo a mesma borda de 2px que o jogo usa nos
+   menus.
+
+   Os dois apontam para a mesma página de releases, que é onde o
+   GitHub lista o instalador do Windows e o AppImage.
    ========================================================= */
 
-.tripulacao {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+.cena__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 16px;
 }
 
-.membro {
-  background: var(--painel);
-  background-image: linear-gradient(180deg, var(--painel-2) 0%, var(--painel) 55%);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio);
-  padding: 22px 24px;
-  box-shadow: var(--sombra);
-}
-
-.membro--dois {
-  border-top: 2px solid #5aa9e6;
-}
-
-.membro:not(.membro--dois) {
-  border-top: 2px solid var(--acento);
-}
-
-.membro__slot {
-  margin: 0 0 6px;
-  font-family: var(--mono);
-  font-size: 11.5px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--acento);
-}
-
-.membro--dois .membro__slot {
-  color: #5aa9e6;
-}
-
-.membro__nome {
-  margin: 0;
-  font-size: 1.7rem;
-}
-
-.membro__papel {
-  margin: 2px 0 12px;
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--texto-fraco);
-}
-
-.membro__teclas {
-  margin: 14px 0 0;
-  padding-top: 12px;
-  border-top: 1px solid var(--borda);
-  font-size: 12.5px;
-  color: var(--texto-fraco);
-}
-
-/* =========================================================
-   Armamento + simulador
-   ========================================================= */
-
-.armamento {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 28px;
-  align-items: start;
-}
-
-.armas li {
-  position: relative;
-  padding: 13px 0 13px 24px;
-  border-top: 1px solid var(--borda);
-}
-
-.armas li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 21px;
-  width: 8px;
-  height: 8px;
-  background: var(--acento);
-  border-radius: 50%;
-  box-shadow: 0 0 8px rgb(49 238 218 / 55%);
-}
-
-.armas li p {
-  margin: 0;
-  font-size: 14px;
-}
-
-.armas__nome {
-  margin: 0 0 2px !important;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--texto-claro);
-}
-
-.simulador {
-  background: var(--painel);
-  background-image: linear-gradient(180deg, var(--painel-2) 0%, var(--painel) 55%);
-  border: 1px solid var(--borda);
-  border-top: 2px solid var(--acento);
-  border-radius: var(--raio);
-  padding: 16px;
-  box-shadow: var(--sombra);
-  position: sticky;
-  top: 82px;
-}
-
-.simulador__cabeca {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 10px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-}
-
-.simulador__titulo {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--acento);
-}
-
-.simulador__hud {
-  display: flex;
-  gap: 12px;
-  margin: 0;
-  font-family: var(--mono);
-  font-size: 11.5px;
-  color: var(--texto-fraco);
-}
-
-.simulador__vidas {
-  color: var(--cta);
-  font-weight: 700;
-}
-
-.simulador__moldura {
-  background: rgb(3 12 21 / 60%);
-  border: 1px solid var(--borda-forte);
-  border-radius: var(--raio);
-  padding: 4px;
-}
-
-.simulador__tela {
-  display: block;
-  width: 100%;
-  height: auto;
-  aspect-ratio: 224 / 126;
-  image-rendering: pixelated;
-  background: #000;
-  border-radius: 2px;
-  cursor: pointer;
-}
-
-.simulador__tela:focus-visible {
-  outline: 2px solid var(--acento);
-  outline-offset: 2px;
-}
-
-.simulador__teclas {
-  margin: 10px 0 0;
-  font-size: 12px;
-  color: var(--texto-fraco);
-}
-
-.simulador__aviso {
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: var(--alerta);
-}
-
-/* =========================================================
-   Suporte / requisitos
-   ========================================================= */
-
-.plataformas {
-  display: flex;
-  gap: 4px;
-}
-
-.plataforma {
-  padding: 10px 26px;
-  background: var(--painel);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio);
-  color: var(--texto);
-  font-family: var(--fonte);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background 0.14s ease,
-    color 0.14s ease,
-    border-color 0.14s ease;
-}
-
-.plataforma:hover {
-  background: var(--painel-alto);
-  color: var(--texto-claro);
-  border-color: var(--borda-forte);
-}
-
-.plataforma.ativa {
-  background: var(--acento);
-  border-color: var(--acento);
-  color: var(--fundo-2);
-}
-
-.req-painel {
-  background: var(--painel);
-  background-image: linear-gradient(180deg, var(--painel-2) 0%, var(--painel) 60%);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio);
-  padding: 6px 22px 18px;
-  box-shadow: var(--sombra);
-  margin-top: 10px;
-}
-
-.spec {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13.5px;
-}
-
-.spec caption {
-  caption-side: top;
-  text-align: left;
-  padding: 14px 0 8px;
-  font-size: 12.5px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--acento);
-}
-
-.spec th {
-  text-align: left;
-  vertical-align: top;
-  width: 32%;
-  padding: 9px 16px 9px 0;
-  color: var(--texto-fraco);
-  font-weight: 400;
-  border-top: 1px solid var(--borda);
-}
-
-.spec td {
-  padding: 9px 0;
-  color: var(--texto-claro);
-  border-top: 1px solid var(--borda);
-}
-
-.spec--comandos {
-  max-width: 620px;
-}
-
-.req-nota {
-  margin: 14px 0 0;
-  font-size: 12.5px;
-  color: var(--texto-fraco);
-}
-
-/* medalhas */
-.medalhas {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(252px, 1fr));
-  gap: 10px;
-}
-
-.medalha {
-  display: grid;
-  grid-template-columns: 40px 1fr auto;
-  gap: 12px;
+.botao {
+  display: inline-flex;
   align-items: center;
-  padding: 12px 14px;
-  background: rgb(3 12 21 / 28%);
-  border: 1px solid var(--borda);
-  border-radius: var(--raio);
-  transition: border-color 0.15s ease;
-}
-
-.medalha:hover {
-  border-color: var(--borda-forte);
-}
-
-.medalha__disco {
-  width: 32px;
-  height: 32px;
-  background: radial-gradient(circle at 34% 28%, #8d99a4 0%, #3b444f 55%, #14181d 100%);
-  border: 1px solid var(--borda-forte);
-  border-radius: 50%;
-  box-shadow: inset 0 0 8px rgb(0 0 0 / 60%);
-}
-
-.medalha__nome {
-  margin: 0;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--texto-claro);
-}
-
-.medalha__desc {
-  margin: 0;
-  font-size: 12px;
-  color: var(--texto-fraco);
-  line-height: 1.4;
-}
-
-.medalha__pct {
-  margin: 0;
-  font-family: var(--mono);
-  font-size: 13px;
-  color: var(--texto-fraco);
-}
-
-/* terminal */
-.terminal {
-  position: relative;
-  margin-bottom: 22px;
-  padding: 14px 112px 14px 18px;
-  background: rgb(3 12 21 / 55%);
-  background-image: var(--trilho);
-  background-repeat: no-repeat;
-  background-position: bottom left;
-  border: 1px solid var(--borda);
-  border-radius: var(--raio);
-}
-
-.terminal code {
-  color: var(--acento);
-  font-size: 12.5px;
-  overflow-wrap: anywhere;
-}
-
-.terminal__copiar {
-  position: absolute;
-  top: 50%;
-  right: 10px;
-  transform: translateY(-50%);
-  padding: 6px 15px;
-  background: var(--painel-alto);
-  border: 1px solid var(--borda-forte);
-  border-radius: var(--raio);
-  color: var(--texto-claro);
-  font-family: var(--fonte);
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
+  justify-content: center;
+  gap: 14px;
+  /* "windows" e "linux" têm comprimentos diferentes; a largura
+     mínima deixa os dois retângulos com o mesmo tamanho. */
+  min-width: 190px;
+  padding: 18px 28px;
+  background: var(--ouro);
+  border: 2px solid var(--painel);
+  color: #201a05;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  /* Sombra sólida: o clique "afunda" o botão em vez de suavizar. */
+  box-shadow: var(--peso) var(--peso) 0 var(--painel);
   transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease,
     background 0.14s ease,
     color 0.14s ease;
 }
 
-.terminal__copiar:hover {
-  background: var(--acento);
-  border-color: var(--acento);
-  color: var(--fundo-2);
-}
-
-.acoes-finais {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 28px;
-}
-
-/* =========================================================
-   Visor
-   ========================================================= */
-
-.visor {
-  position: fixed;
-  inset: 0;
-  z-index: 300;
-  display: grid;
-  place-items: center;
-  padding: 46px 20px;
-  background: rgb(2 13 22 / 94%);
-  backdrop-filter: blur(4px);
-}
-
-.visor__caixa {
-  position: relative;
-  width: 100%;
-  max-width: min(1100px, 100%);
-  background: var(--painel);
-  border: 1px solid var(--borda-forte);
-  border-radius: var(--raio-g);
-  padding: 10px 10px 50px;
-  box-shadow: var(--sombra-forte);
-}
-
-.visor__img {
-  width: 100%;
-  max-height: 70vh;
-  object-fit: contain;
-  background: #05080d;
-  border-radius: var(--raio);
-}
-
-.visor__fechar {
-  position: absolute;
-  top: -38px;
-  right: 0;
-  width: 32px;
-  height: 32px;
-  background: var(--cta);
-  border: 0;
-  border-radius: var(--raio);
-  color: #fff;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.14s ease;
-}
-
-.visor__fechar:hover {
-  background: var(--cta-forte);
-}
-
-.visor__barra {
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.visor__seta {
-  width: 32px;
-  height: 28px;
-  background: var(--painel-alto);
-  border: 1px solid var(--borda-forte);
-  border-radius: var(--raio);
-  color: var(--texto-claro);
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-  transition:
-    background 0.14s ease,
-    color 0.14s ease;
-}
-
-.visor__seta:hover {
-  background: var(--acento);
-  color: var(--fundo-2);
-}
-
-.visor__cont {
-  margin: 0;
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--texto-fraco);
-}
-
-.visor__legenda {
-  position: absolute;
-  left: 54px;
-  bottom: 10px;
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--texto-claro);
-}
-
-/* =========================================================
-   Pista
-   ========================================================= */
-
-.pista {
-  position: fixed;
-  left: 20px;
-  bottom: 20px;
-  z-index: 350;
-  max-width: 340px;
-  margin: 0;
-  padding: 12px 18px;
-  background: var(--painel);
-  border: 1px solid var(--acento);
-  border-radius: var(--raio);
-  color: var(--texto);
-  font-size: 13px;
-  box-shadow: var(--sombra-forte);
-}
-
-/* =========================================================
-   Rodapé
-   ========================================================= */
-
-.rodape {
-  background: rgb(2 13 22 / 70%);
-  border-top: 1px solid var(--borda);
-}
-
-.rodape__interna {
-  max-width: var(--largura);
-  margin: 0 auto;
-  padding: 28px 20px 46px;
-}
-
-.rodape__nav {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-}
-
-.rodape__nav a {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--texto);
-}
-
-.rodape__nav a:hover {
-  color: var(--acento);
+.botao:hover {
+  background: var(--estrela);
+  color: #201a05;
   text-decoration: none;
 }
 
-.rodape__legal {
+.botao:active {
+  transform: translate(var(--peso), var(--peso));
+  box-shadow: 0 0 0 var(--painel);
+}
+
+/* As marcas entram como máscara, não como <img>.
+
+   Os dois arquivos são PNG branco com fundo transparente, que sozinhos
+   não sobreviveriam ao dourado do botão. Em vez de pedir uma segunda
+   versão de cada imagem, a máscara usa o alfa do PNG como recorte e
+   pinta o resultado na cor do próprio texto — por isso
+   `background-color: currentColor` e a marca acompanhar sozinha
+   qualquer mudança de cor no botão, inclusive no hover.
+
+   Aqui o `mask` abre só com posição e tamanho; a URL vem depois, nos
+   modificadores. A ordem importa: o atalho `mask` zera `mask-image`
+   para `none`, então quem define a imagem precisa vir depois.
+
+   O prefixo -webkit- é para Safari anterior a 15.4. */
+.botao__logo {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  background-color: currentColor;
+  -webkit-mask: center / contain no-repeat;
+  mask: center / contain no-repeat;
+}
+
+.botao__logo--windows {
+  -webkit-mask-image: url(assets/logo-windows.png);
+  mask-image: url(assets/logo-windows.png);
+}
+
+.botao__logo--linux {
+  -webkit-mask-image: url(assets/linux-512.png);
+  mask-image: url(assets/linux-512.png);
+}
+
+/* =========================================================
+   Canto da cena
+   ========================================================= */
+
+.cena__credito {
+  position: absolute;
+  left: var(--margem);
+  bottom: var(--margem);
+  z-index: 4;
   margin: 0;
-  max-width: 90ch;
-  font-size: 12px;
-  color: var(--texto-fraco);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  color: var(--fraco);
+  text-shadow: 0 1px 6px rgb(13 16 27 / 90%);
 }
 
 /* =========================================================
    Responsivo
    ========================================================= */
 
-@media (max-width: 1000px) {
-  .missao,
-  .armamento {
-    grid-template-columns: 1fr;
+@media (max-width: 640px) {
+  :root {
+    --margem: 12px;
+    --peso: 3px;
   }
 
-  .simulador {
-    position: static;
-    max-width: 420px;
+  .cena {
+    /* O respiro de baixo existe para o crédito, que fica ancorado
+       no canto, não colidir com o botão. */
+    padding: 48px 18px 72px;
   }
 
-  .hangar {
-    grid-template-columns: 1fr;
+  .cena__pre {
+    font-size: 10.5px;
+    letter-spacing: 0.3em;
+    text-indent: 0.3em;
   }
 
-  .dificuldades {
-    grid-template-columns: 1fr;
+  .cena__coracoes {
+    margin-top: 18px;
   }
 
-  .seletor {
-    grid-template-columns: repeat(2, 1fr);
+  .cena__linha {
+    margin: 20px auto 18px;
   }
 
-  .capturas {
-    grid-template-columns: repeat(2, 1fr);
+  /* Em tela estreita os dois botões empilham em largura cheia:
+     largura 100% em um item flex com wrap já é o bastante para
+     quebrar a linha, então basta deixar a largura fluir. */
+  .botao {
+    width: 100%;
+  }
+
+  /* Em tela estreita o crédito deixa de ser uma ponta de linha e
+     passa a ser uma frase centralizada acima do canto. */
+  .cena__credito {
+    right: var(--margem);
+    text-align: center;
   }
 }
 
-@media (max-width: 700px) {
-  .topo__nav,
-  .topo__estado {
+@media (max-height: 560px) {
+  .cena {
+    justify-content: flex-start;
+    padding-top: 44px;
+    overflow-y: auto;
+  }
+
+  .cena__coracoes,
+  .cena__linha {
     display: none;
-  }
-
-  .topo__busca {
-    margin-left: auto;
-  }
-
-  .heroi__moldura {
-    min-height: 350px;
-  }
-
-  .heroi__indicadores {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .heroi__indicadores li:nth-child(3) {
-    border-left: 0;
-  }
-
-  .heroi__indicadores li:nth-child(n + 3) {
-    border-top: 1px solid var(--borda);
-  }
-
-  .tripulacao {
-    grid-template-columns: 1fr;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-  }
-
-  .estado__ponto {
-    animation: none;
+    animation-duration: 0.01ms !important;
   }
 }

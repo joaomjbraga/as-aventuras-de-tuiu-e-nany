@@ -1,87 +1,166 @@
 # Site — As Aventuras de Tuiu e Nany
 
-Site estático de apresentação, no formato de uma página de loja. Não faz
-parte do bundle do jogo e não é construído pelo `electron-vite`: é HTML, CSS
-e JavaScript puros, sem framework e sem dependências.
+Site estático de **uma tela só**: o trailer do jogo rodando em loop e sem som
+como fundo, com o título e o botão de download por cima. Não há texto de
+apresentação nem lista de plataformas — quem vê a página vê o jogo rodando, e
+o único texto visível são os dois nomes e o botão. A descrição do jogo vive nas
+meta tags, onde serve para quem chega por busca ou por link compartilhado, e
+não na tela. Não faz parte do bundle do jogo e não é construído pelo
+`electron-vite`: é HTML, CSS e JavaScript puros, sem framework e sem
+dependências.
 
 O jogo em si é um app Electron de desktop. Este site é a vitrine dele.
 
-## Conceito
+## Por que só uma tela
 
-A página imita a anatomia de uma ficha de loja: capa em destaque com abas,
-galeria de capturas com visor em tela cheia, "sobre este jogo", tags,
-requisitos de sistema por plataforma, conquistas, avaliações e uma caixa
-lateral com as informações e o botão de download. A identidade é a do
-jogo, não a da loja: as cores e o nome saem do próprio projeto, e nenhum
-elemento usa marca de terceiro.
+A versão anterior era uma ficha de loja completa — campanha, dificuldade,
+elenco, simulador, requisitos, conquistas. Tudo isso continua verdadeiro, mas
+o objetivo de uma vitrine é fazer a pessoa querer jogar, e a ficha comprida
+fazia o contrário: obrigava a rolar oito blocos antes de chegar perto de um
+botão. A versão de hoje responde a uma pergunta só, "tem o que jogar aqui?",
+e responde em menos de dois segundos, sem rolagem.
 
 ## Arquivos
 
-| Arquivo      | Função                                                                 |
-| ------------ | ---------------------------------------------------------------------- |
-| `index.html` | Estrutura da ficha: capa, grade em duas colunas e todos os blocos.     |
-| `styles.css` | Sistema visual: barra, capa, caixas, tabelas, visor e rodapé.          |
-| `script.js`  | Capa com abas, visor, requisitos, lista de desejos, busca e avisos.    |
-| `demo.js`    | Simulador jogável da mecânica de pisão, em canvas 224×126.             |
-| `assets/`    | Fotos dos quatro cenários e miniatura usada como favicon e `og:image`. |
+| Arquivo      | Função                                                                           |
+| ------------ | -------------------------------------------------------------------------------- |
+| `index.html` | A tela única: vídeo, filtros de pixel art, título e botões.                      |
+| `styles.css` | Paleta do jogo, tipografia monoespaçada e os filtros de pixel art sobre o vídeo. |
+| `script.js`  | Garante a reprodução do vídeo, ano do crédito.                                   |
+| `assets/`    | `as-Aventuras-de-Tuiu-e-Nany.webm` — o trailer (WebM/VP9, 18,7 MB).              |
+|              | `logo-windows.png` e `linux-512.png` — as marcas dos botões.                     |
 
-## Comportamento
+## Identidade
 
-- **Capa.** Abas de destaque, setas, pontos e rotação automática a cada 7 s.
-  A rotação para no hover e é desligada em `prefers-reduced-motion`.
-- **Visor.** Abre a partir das miniaturas, navega com as setas do teclado,
-  fecha com `Esc` ou no clique fora, e devolve o foco ao miniatura de origem.
-- **Lista de desejos.** O estado fica em `localStorage`, então sobrevive ao
-  recarregar. A chave é `tuiue-nany:desejo`.
-- **Busca.** Procura entre termos das seções e rola até a seção. O que não
-  bate com nada devolve "nada encontrado" em vez de um resultado vazio.
-- **Simulador.** Roda a mesma regra implementada no jogo: pisão normal tira 2
-  de dano, pulo duplo tira 3, o zumbi comum tem 3 de vida, o combo vai até
-  x10 e o contato lateral custa um coração com 1,5 s de invulnerabilidade.
-  Só recebe o teclado quando está em foco, para não disputar as setas com a
-  navegação da página.
+O site não usa paleta de loja. As cores saem de `src/game/theme.ts`:
 
-## Vídeo
+| Uso                    | Cor       | De onde vem                  |
+| ---------------------- | --------- | ---------------------------- |
+| Título e botão         | `#ffd54f` | `TEXT.gold`                  |
+| Tuiu                   | `#8fd8ff` | `TEXT.p1` (jogador 1 no HUD) |
+| Nany                   | `#ff9fc2` | `TEXT.p2` (jogador 2 no HUD) |
+| Coração de pixel art   | `#ff4d5d` | `COLOR.heart`                |
+| Contorno de todo texto | `#0d101b` | `COLOR.stroke`               |
 
-O trailer é um `iframe` de `youtube-nocookie.com` em loop, silencioso e sem
-controles. O botão no canto pausa e retoma, e há um botão grande que aparece
-sozinho se o navegador bloquear o autoplay. Sair da capa pausa o vídeo;
-voltar retoma, a menos que a pausa tenha sido manual ou que o sistema peça
-movimento reduzido.
+Os nomes aparecem nas mesmas cores que o jogo dá a cada jogador no HUD, então
+quem já jogou reconhece a tela antes de ler o texto.
 
-O player é controlado por `postMessage`, o que exige `enablejsapi=1` na URL.
-Se o canal não responder, o código cai na troca do `src` por `about:blank`.
-Trocar o `src` funciona para parar, mas destrói a posição do vídeo e deixa o
-retorno frágil, então é só reserva.
+O traço é de pixel art: **nenhum raio arredondado e nenhuma sombra difusa**.
+Borda reta de 1 ou 2px e sombra sólida de deslocamento fixo (`--peso`), que
+comprime quando o botão é clicado. Sobre o vídeo vão duas camadas: um dither
+de 2px com o padrão xadrez e scanlines de 3px, mais uma vinheta radial que
+escurece as bordas e joga o olho para o centro.
 
-**A página precisa ser servida por HTTP.** O YouTube recusa o player com o
-Erro 153 (`PLAYABILITY_ERROR_CODE_EMBEDDER_IDENTITY_MISSING_REFERRER`) quando
-o embed é pedido sem cabeçalho `Referer`, e é exatamente o que acontece ao
-abrir `index.html` por `file://`. Não há como adicionar esse cabeçalho via
-JavaScript. Por isso a página detecta `file:` e mostra o aviso de cima com o
-comando para servir a pasta. Verificado contra a página de embed do YouTube:
-origem isolada e URL completa são aceitas, ausência de `Referer` não.
+### As marcas dos botões
 
-## O que é real e o que não é
+`logo-windows.png` e `linux-512.png` são PNGs **brancos com fundo transparente**,
+que sozinhos não sobreviveriam ao dourado do botão. Em vez de pedir uma segunda
+versão de cada imagem, o CSS usa a máscara:
 
-Real, copiado do código: especificações técnicas, requisitos, as quatro
-fases com meta de abates, chefe e vida, a mecânica de pisão, os controles,
-os ícones de instalador por plataforma e os comandos de build.
+```css
+.botao__logo {
+  background-color: currentColor;
+  mask: center / contain no-repeat;
+}
+.botao__logo--windows {
+  mask-image: url(assets/logo-windows.png);
+}
+.botao__logo--linux {
+  mask-image: url(assets/linux-512.png);
+}
+```
 
-Inventado na medida, e marcado como tal na página: o texto do subtítulo, a
-lista de conquistas (o jogo não tem sistema de conquistas — a seção diz
-isso) e as porcentagens globais, que aparecem como `—`. A seção de avaliações
-mostra zero em todas as barras, com a observação de que o jogo nunca foi
-distribuído. Preferimos mostrar zero a inventar números.
+A máscara usa o **alfa** do PNG como recorte, então o que aparece é a cor de
+fundo do elemento — e como ela é `currentColor`, a marca pinta sozinha na mesma
+tinta do texto e acompanha qualquer mudança de cor no botão, inclusive no
+hover. O prefixo `-webkit-` cobre o Safari anterior a 15.4.
+
+A ordem das regras importa: o atalho `mask` zera `mask-image` para `none`, então
+quem define a URL precisa vir depois no arquivo. Por isso a URL não está no
+atalho, e sim nos modificadores por plataforma.
+
+Isso também removeu a requisição de imagem do HTML: não existe mais `<img>`,
+os arquivos são buscados só pela folha de estilo.
+
+Os dois botões apontam para a mesma página de releases, que é onde o GitHub
+lista o instalador do Windows e o AppImage.
+
+## Ajustar o quanto o vídeo aparece
+
+Duas variáveis em `:root` regulam isso, e são o primeiro lugar a mexer quando
+o trailer estiver claro demais ou escuro demais:
+
+| Variável         | Efeito                                                                  |
+| ---------------- | ----------------------------------------------------------------------- |
+| `--video-filtro` | Filtro do vídeo. `brightness` abaixo de 1 escurece, acima de 1 clareia. |
+| `--scanline`     | Opacidade da linha de scanline. Mais alto escurece a imagem toda.       |
+
+A vinheta (`.cena__vinheta`) tem um terceiro controle, em opacidade dentro do
+gradiente, mas ela é a rede de segurança do texto do canto — o crédito depende
+dela. Se o título dourado perder leitura, mexa no `--video-filtro`; deixe a
+vinheta para o último recurso.
+
+O coração abaixo do título é o mesmo desenho de 9x8 que o `PreloadScene`
+gera no jogo, redesenhado em SVG (`viewBox="0 0 33 8"`, três instâncias).
+
+## O vídeo
+
+O trailer é um arquivo local em **WebM (VP9)**, em
+`assets/as-Aventuras-de-Tuiu-e-Nany.webm`, e não um embed do YouTube. Isso
+trocou um player externo e toda a fragilidade de player por um elemento
+`<video>`. O arquivo tem track de áudio Opus, que o atributo `muted` silencia
+na página.
+
+### Atributos que não são decoração
+
+```html
+<video autoplay muted loop playsinline preload="auto" disablepictureinpicture></video>
+```
+
+- **`muted`** é obrigatório. O Chrome e o Safari **bloqueiam** o autoplay de
+  qualquer vídeo com som; sem ele a página abre com o vídeo parado.
+- **`playsinline`** evita que o iOS assuma a tela cheia no primeiro play.
+- **`disablepictureinpicture`** esconde o botão de picture-in-picture.
+- **`aria-hidden` + `tabindex="-1"`**: o vídeo é cenário, não conteúdo. Sem
+  `controls` e sem tabindex ele não entra na ordem de tabulação e não é
+  anunciado por leitor de tela.
+
+Não há atributo `controls` de propósito: a página não oferece pausa. É uma
+decisão de design, com o custo de que quem usa `prefers-reduced-motion` não tem
+como parar o movimento pela interface.
+
+### O que o JavaScript ainda faz
+
+O atributo `autoplay` cobre o caso comum, mas o navegador o ignora quando a aba
+estava em segundo plano ao abrir a página, e quando a política de economy de
+dados está ligada. Nesses dois casos o vídeo chega pausado e o cenário fica
+parado sem nada indicando o contrário. `script.js` pede a reprodução de novo no
+evento `canplay` e usa um `pointerdown` em qualquer lugar da cena como plano B.
+Se o arquivo não carregar, o `<video>` é removido e o fundo continua sendo o
+azul-escuro da cena.
+
+### Abrir sem servidor
+
+O vídeo é local e a única requisição externa é a fonte do Google, então a
+página funciona aberta direto do disco por `file://`:
+
+```sh
+doc/index.html
+```
+
+Para conferir com o servidor (o que o GitHub Pages faz, e o que evita
+diferenças de `file://` entre navegadores):
+
+```sh
+npx serve doc
+```
 
 ## Verificar
 
-`npm run verify` roda Prettier e ESLint também sobre `doc/`, então
-formatação e lint do site entram no mesmo gate do jogo. Para conferir
-localmente com as âncoras e os assets resolvendo:
+`npm run verify` roda Prettier e ESLint também sobre `doc/`, então formatação
+e lint do site entram no mesmo gate do jogo. Para conferir localmente:
 
 ```sh
 npx prettier --check doc
 npx eslint doc
-python3 -m http.server 8000 --directory doc
 ```
