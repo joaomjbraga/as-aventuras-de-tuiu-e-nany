@@ -1,0 +1,80 @@
+# Publica a vitrine de doc/ no GitHub Pages.
+#
+# O site é HTML, CSS e JavaScript puros: não existe passo de compilação,
+# e por isso também não existe Jekyll. Passar o site pelo Jekyll só
+# acrescentaria risco — Liquid interpretando o HTML, o trailer de 19 MB
+# atravessando um gerador de site estático, a saída `_site` criada dentro
+# da própria pasta de entrada — para produzir exatamente os mesmos
+# arquivos que já estão versionados no repositório.
+#
+# Este arquivo substitui o `pages-build-deployment` que o GitHub cria
+# sozinho ao habilitar Pages. Ele vive em `dynamic/pages/`, fora do
+# repositório: não versionado, sem review, impossível de corrigir. A
+# primeira execução dele quebrou por apontar para `./docs`, pasta que não
+# existe neste repositório — a vitrine está em `doc/`. Um workflow no
+# repositório aponta para o caminho por conta própria e passa por review
+# como o resto.
+#
+# Publicar é merger em main. O mesmo gatilho do desktop.yml, pelo mesmo
+# motivo: a versão do site é o conteúdo de main, não um evento separado.
+
+name: pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # Exigidas pelo deploy-pages: `pages: write` autoriza a publicação e
+  # `id-token: write` entrega o OIDC token que o GitHub Pages valida para
+  # aceitar o deploy. Faltando qualquer uma das duas, o passo de deploy é
+  # recusado.
+  pages: write
+  id-token: write
+
+# Duas execuções nunca publicam ao mesmo tempo. `cancel-in-progress:
+# false` deixa a segunda terminar em vez de matar a primeira no meio da
+# publicação, que é o estado em que o Pages pode ficar sem site. Faz o
+# mesmo que o release.yml faz pela tag.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    name: publicar doc/
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Habilita o Pages e resolve a URL final do site. Vai antes da
+      # montagem porque é ele quem define o `base_path` quando o site é
+      # publicado sob um prefixo de repositório, em vez da raiz do domínio.
+      - uses: actions/configure-pages@v5
+
+      # Só o que a página precisa. O `doc/README.md` documenta o site para
+      # quem mexe nele e não é conteúdo servido; deixá-lo no ar não quebra
+      # nada, mas coloca um arquivo de desenvolvimento na vitrine pública.
+      - name: Montar o site
+        run: |
+          mkdir -p _site
+          cp -R doc/. _site/
+          rm -f _site/README.md
+          ls -lh _site _site/assets
+
+      # O deploy-pages só publica o que este passo empacotar, e é ele quem
+      # faz o upload das fontes do Google e do trailer de 19 MB: o Pages não
+      # tem como buildar o site sozinho.
+      - name: Enviar o artefato
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Publicar
+        id: deploy
+        uses: actions/deploy-pages@v4
