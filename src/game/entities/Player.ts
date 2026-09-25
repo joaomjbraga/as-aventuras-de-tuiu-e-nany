@@ -211,9 +211,20 @@ export class Player {
     return true
   }
 
-  /** Quique usado ao pisar em um zumbi. */
-  bounce(forceY: number): void {
-    if (this.isAlive) this.sprite.setVelocityY(forceY)
+  /** Quique vertical com um pequeno impulso lateral de um único frame. */
+  bounce(forceY: number, forceX = 0): void {
+    if (!this.isAlive) return
+
+    this.sprite.setVelocityY(forceY)
+    // Não mantemos o movimento horizontal: no próximo update o controle
+    // normal assume, evitando que o quique vire um deslize.
+    if (forceX !== 0) this.sprite.setVelocityX(forceX)
+  }
+
+  /** Empurra o jogador para longe do alvo que recebeu o pisão. */
+  bounceAwayFrom(sourceX: number, forceY: number, forceX: number): void {
+    const direction = Math.sign(this.sprite.x - sourceX) || (this.sprite.flipX ? -1 : 1)
+    this.bounce(forceY, direction * Math.abs(forceX))
   }
 
   private performDoubleJump(): void {

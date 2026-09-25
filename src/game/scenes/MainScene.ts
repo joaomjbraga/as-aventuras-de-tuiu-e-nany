@@ -726,16 +726,17 @@ export class MainScene extends Phaser.Scene {
       damageAmount: stompDamage({
         doubleJump: player.hasDoubleJumped(),
         targetHp: zombie.hp,
+        isBoss: zombie instanceof Boss,
       }),
       stomp: (fromX, amount) => zombie.stompDamage(fromX, amount),
     })
 
     if (outcome === 'stomp-kill') {
-      player.bounce(-240)
+      player.bounceAwayFrom(zombie.x, -240, 180)
       this.cameras.main.shake(180, 0.012)
       this.hitStop()
     } else if (outcome === 'stomp') {
-      player.bounce(-120)
+      player.bounceAwayFrom(zombie.x, -120, 140)
     } else if (outcome === 'hit') {
       if (player.damage(1)) {
         this.sound.play(player.spriteKey === 'nany' ? AUDIO.FEMALE_DEATH : AUDIO.MAN_DEATH, { volume: 0.7 })

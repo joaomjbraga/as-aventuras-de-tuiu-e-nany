@@ -70,18 +70,19 @@ export interface StompDamageSource {
   doubleJump: boolean
   /** Vida atual do alvo, usada para impedir que um pisão normal mate de primeira. */
   targetHp: number
+  /** O alvo é um boss e recebe dano reduzido. */
+  isBoss: boolean
 }
 
 /**
- * Dano causado por um pisão: base 2 e +50% quando o jogador cai sobre o zumbi
- * depois de usar o pulo duplo.
+ * Dano causado por um pisão. Zumbis comuns recebem 2 (3 após pulo duplo);
+ * bosses recebem apenas 1 por pisão, exigindo muitos golpes.
  *
  * Um pisão normal nunca zera a vida de um alvo que ainda tem 2 ou mais HP.
- * Ele pode, porém, retirar o último HP de um zumbi já ferido.
+ * Ele pode, porém, retirar o último HP de um alvo já ferido.
  */
-export function stompDamage({ doubleJump, targetHp }: StompDamageSource): number {
-  const base = 2
-  const damage = doubleJump ? Math.round(base * 1.5) : base
+export function stompDamage({ doubleJump, targetHp, isBoss }: StompDamageSource): number {
+  const damage = isBoss ? 1 : doubleJump ? 3 : 2
   if (doubleJump) return damage
 
   const protectedDamage = Math.max(1, targetHp - 1)

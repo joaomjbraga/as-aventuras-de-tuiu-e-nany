@@ -86,24 +86,29 @@ describe('resolvePlayerZombieContact', () => {
 })
 
 describe('stompDamage', () => {
-  it('pisão normal causa 2 de dano em um zumbi com 3 de vida', () => {
-    expect(stompDamage({ doubleJump: false, targetHp: 3 })).toBe(2)
+  it('pisão normal causa 2 de dano em um zumbi comum com 3 de vida', () => {
+    expect(stompDamage({ doubleJump: false, targetHp: 3, isBoss: false })).toBe(2)
   })
 
   it('zumbi comum sobrevive ao pisão normal e é derrotado de primeira pelo pisão duplo', () => {
     const zombieHp = 3
-    const afterNormalStomp = zombieHp - stompDamage({ doubleJump: false, targetHp: zombieHp })
-    const afterDoubleStomp = zombieHp - stompDamage({ doubleJump: true, targetHp: zombieHp })
+    const afterNormalStomp = zombieHp - stompDamage({ doubleJump: false, targetHp: zombieHp, isBoss: false })
+    const afterDoubleStomp = zombieHp - stompDamage({ doubleJump: true, targetHp: zombieHp, isBoss: false })
 
     expect(afterNormalStomp).toBe(1)
     expect(afterDoubleStomp).toBe(0)
   })
 
-  it('pisão normal retira o último HP de um zumbi já ferido', () => {
-    expect(stompDamage({ doubleJump: false, targetHp: 1 })).toBe(1)
+  it('boss recebe apenas 1 de dano por pisão', () => {
+    expect(stompDamage({ doubleJump: false, targetHp: 28, isBoss: true })).toBe(1)
+    expect(stompDamage({ doubleJump: true, targetHp: 28, isBoss: true })).toBe(1)
   })
 
-  it('queda após o pulo duplo causa 3 de dano', () => {
-    expect(stompDamage({ doubleJump: true, targetHp: 3 })).toBe(3)
+  it('pisão normal retira o último HP de um alvo já ferido', () => {
+    expect(stompDamage({ doubleJump: false, targetHp: 1, isBoss: false })).toBe(1)
+  })
+
+  it('queda após o pulo duplo causa 3 de dano em zumbi comum', () => {
+    expect(stompDamage({ doubleJump: true, targetHp: 3, isBoss: false })).toBe(3)
   })
 })
