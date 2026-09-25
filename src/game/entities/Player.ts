@@ -3,6 +3,8 @@ import { CHARACTER_FOOT_INSET, FRAME_LAYOUT, getAnimConfigs } from '../sprites'
 import { CONTROL_SCHEMES, type ControlSchemeId } from '../controls'
 import { canTriggerDoubleJump, doubleJumpVelocityY, isNewJumpPress, resolveJumpAction } from '../jump'
 
+export const PLAYER_DAMAGE_INVULNERABILITY_MS = 1500
+
 export type PlayerState = 'idle' | 'walk' | 'jump'
 
 export interface PlayerConfig {
@@ -198,7 +200,7 @@ export class Player {
     if (this.scene.time.now < this.immuneUntil) return false
 
     this.hp = Math.max(0, this.hp - amount)
-    this.immuneUntil = this.scene.time.now + 2000
+    this.immuneUntil = this.scene.time.now + PLAYER_DAMAGE_INVULNERABILITY_MS
 
     this.sprite.setTintFill(0xff8888)
     this.scene.time.delayedCall(300, () => {

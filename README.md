@@ -116,6 +116,7 @@ O workflow `.github/workflows/desktop.yml` valida o projeto e gera os artefatos 
 - **F11**: alterna tela cheia.
 - Na tela inicial: **S** ou clique em `[ S ] sair` encerra o jogo.
 - No menu de pausa: **Q** ou selecione **SAIR** encerra o jogo.
+- Na seleção de dificuldade: **↑/↓** ou **←/→** escolhem, **ENTER** confirma e **ESC** volta ao cenário.
 - Na seleção: J1 confirma com ENTER e inicia; J2 confirma com W.
 - Em uma partida já iniciada, J2 pode entrar pela tecla **W** ou pelo botão na tela.
 
@@ -136,6 +137,8 @@ O workflow `.github/workflows/desktop.yml` valida o projeto e gera os artefatos 
 O jogo é dirigido por um registro de fases (`src/game/levels.ts`), cada uma com arte de fundo, névoa, meta de abates, curva de dificuldade e boss.
 
 - Na seleção de personagem, após confirmar, o jogo abre a seleção de cenário.
+- Após escolher o cenário, aparece a seleção de dificuldade: **Fácil**, **Médio** ou **Difícil**.
+- A seleção altera quantidade e velocidade dos inimigos, intervalo de spawn, meta de abates e resistência dos chefes.
 - Na vitória, o jogo oferece **PRÓXIMA FASE**: a próxima fase é sorteada entre os cenários disponíveis, sem repetir a atual.
 - O progresso de fases concluídas é salvo no `localStorage` do aplicativo.
 
@@ -150,6 +153,8 @@ Para adicionar uma nova fase:
 - `src/main/index.ts`: processo principal, janela, ciclo de vida, instância única e navegação segura.
 - `src/preload/index.ts`: ponte mínima via `contextBridge`.
 - `src/game/`: renderer Phaser, entidades, regras, telas e UI.
+- `src/game/difficultyPresets.ts`: presets Fácil, Médio e Difícil.
+- `src/game/scenes/DifficultySelectScene.ts`: seleção de dificuldade antes da partida.
 - `src/assets/`: cenários, sprites, áudio e demais assets do jogo.
 - `public/`: ícones usados pelo `electron-builder` (`Icon.png`, `icon.ico`).
 - `electron.vite.config.ts`: builds separados de main, preload e renderer.

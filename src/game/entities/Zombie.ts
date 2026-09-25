@@ -1,5 +1,8 @@
 import Phaser from 'phaser'
+import { DEFAULT_ZOMBIE_SPEED } from '../difficulty'
 import { Player } from './Player'
+
+export const ZOMBIE_DEFAULT_SPEED = DEFAULT_ZOMBIE_SPEED
 
 export interface ZombieConfig {
   x: number
@@ -48,7 +51,7 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
 
     this.hpMax = config.hp ?? 3
     this.hp = this.hpMax
-    this.moveSpeed = config.moveSpeed ?? 92
+    this.moveSpeed = config.moveSpeed ?? ZOMBIE_DEFAULT_SPEED
     this.players = config.players
     this.onKilled = config.onKilled
     this.isDying = false

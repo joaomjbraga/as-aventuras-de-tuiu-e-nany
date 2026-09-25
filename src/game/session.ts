@@ -1,6 +1,12 @@
 import type { ControlSchemeId } from './controls'
 import type { CharacterKey } from './sprites'
 import { HOUSE_LEVEL_ID, getLevel, randomNextLevel, type LevelConfig } from './levels'
+import {
+  DEFAULT_MATCH_DIFFICULTY,
+  resolveLevelForDifficulty,
+  type MatchDifficultyId,
+  type ResolvedMatchLevel,
+} from './difficultyPresets'
 
 export type PlayerId = 'P1' | 'P2'
 
@@ -18,16 +24,19 @@ export interface GameSession {
   players: SessionPlayer[]
   /** Fase atual da campanha (id em `LEVELS`). */
   levelId: string
+  /** Dificuldade escolhida para a partida atual. */
+  difficultyId: MatchDifficultyId
 }
 
 const session: GameSession = {
   players: [],
   levelId: HOUSE_LEVEL_ID,
+  difficultyId: DEFAULT_MATCH_DIFFICULTY,
 }
 
 /** Devolve uma cópia da sessão (evita mutação acidental pelos chamadores). */
 export function getSession(): GameSession {
-  return { players: [...session.players], levelId: session.levelId }
+  return { players: [...session.players], levelId: session.levelId, difficultyId: session.difficultyId }
 }
 
 export function setSessionPlayers(players: SessionPlayer[]): void {
@@ -35,12 +44,20 @@ export function setSessionPlayers(players: SessionPlayer[]): void {
 }
 
 /** Config da fase atual da sessão. */
-export function getSessionLevel(): LevelConfig {
-  return getLevel(session.levelId)
+export function getSessionLevel(): ResolvedMatchLevel {
+  return resolveLevelForDifficulty(getLevel(session.levelId), session.difficultyId)
 }
 
 export function setSessionLevel(levelId: string): void {
   session.levelId = levelId
+}
+
+export function getSessionDifficulty(): MatchDifficultyId {
+  return session.difficultyId
+}
+
+export function setSessionDifficulty(difficultyId: MatchDifficultyId): void {
+  session.difficultyId = difficultyId
 }
 
 /**
@@ -57,4 +74,5 @@ export function advanceSessionLevel(): LevelConfig | null {
 export function resetSession(): void {
   session.players = []
   session.levelId = HOUSE_LEVEL_ID
+  session.difficultyId = DEFAULT_MATCH_DIFFICULTY
 }

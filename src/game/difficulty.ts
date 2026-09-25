@@ -20,11 +20,14 @@ export interface DifficultyParams {
 
 /** Dificuldade padrão (fase "Casa"). */
 export const DEFAULT_DIFFICULTY: DifficultyParams = {
-  maxSimultaneousZombies: 12,
-  spawnStartDelay: 2600,
-  spawnMinDelay: 500,
-  difficultyRampMs: 120_000,
+  maxSimultaneousZombies: 14,
+  spawnStartDelay: 2200,
+  spawnMinDelay: 400,
+  difficultyRampMs: 100_000,
 }
+
+/** Velocidade base dos zumbis antes do preset de dificuldade. */
+export const DEFAULT_ZOMBIE_SPEED = 110
 
 /** Número de zumbis que encerra a fase com vitória (padrão da "Casa"). */
 export const VICTORY_KILLS = 20

@@ -9,7 +9,8 @@ import { AUDIO, applyMute, playBgm, toggleMute } from '../audio'
 import { createButton } from '../ui'
 import { groundTopFor, spawnXFor, spriteCenterYForGround } from '../layout'
 import { canSpawnZombie, hasWon, spawnIntervalMs } from '../difficulty'
-import { allLevelsCompleted, randomNextLevel, type LevelConfig } from '../levels'
+import { allLevelsCompleted, randomNextLevel } from '../levels'
+import type { ResolvedMatchLevel } from '../difficultyPresets'
 import {
   loadBestKills,
   loadCompletedLevels,
@@ -41,7 +42,7 @@ interface PlayerZombieContactSnapshot {
 }
 
 export class MainScene extends Phaser.Scene {
-  private level!: LevelConfig
+  private level!: ResolvedMatchLevel
   private players: Player[] = []
   private ground!: Phaser.GameObjects.Zone
   private playerGroup!: Phaser.Physics.Arcade.Group
@@ -446,6 +447,7 @@ export class MainScene extends Phaser.Scene {
       x,
       y: this.groundTop - targetH / 2,
       players: this.players,
+      moveSpeed: this.level.enemySpeed,
       variant,
       onKilled: () => this.registerKill(zombie),
     })

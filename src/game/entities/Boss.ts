@@ -14,13 +14,13 @@ export interface BossConfig {
 type BossAttack = 'golpe' | 'investida'
 
 /** Alcance do golpe (balanço parado no lugar). */
-  const GOLPE_RANGE = 112
-  /** Cooldown entre golpes (abre janela para o jogador se aproximar e pisar). */
-  const GOLPE_COOLDOWN_MS = 3600
-  /** Alcance e velocidade da investida (dash em linha reta) e cooldown entre investidas. */
-  const INVESTIDA_RANGE = 300
-  const INVESTIDA_SPEED = 260
-  const INVESTIDA_COOLDOWN_MS = 9000
+const GOLPE_RANGE = 112
+/** Cooldown entre golpes (abre janela para o jogador se aproximar e pisar). */
+const GOLPE_COOLDOWN_MS = 3200
+/** Alcance e velocidade da investida (dash em linha reta) e cooldown entre investidas. */
+const INVESTIDA_RANGE = 300
+const INVESTIDA_SPEED = 300
+const INVESTIDA_COOLDOWN_MS = 7500
 
 /**
  * Boss de fase (final wave): o zumbi-chefe. Maior que os zumbis comuns (o
@@ -39,7 +39,7 @@ export class Boss extends Zombie {
       x: config.x,
       y: config.y,
       hp: config.hp,
-      moveSpeed: config.moveSpeed ?? 24,
+      moveSpeed: config.moveSpeed ?? 60,
       variant: 1,
       textureKey: 'boss',
       players: config.players,

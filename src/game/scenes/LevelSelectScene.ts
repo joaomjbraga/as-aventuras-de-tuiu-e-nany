@@ -22,10 +22,10 @@ export class LevelSelectScene extends Phaser.Scene {
   private cardsContainer!: Phaser.GameObjects.Container
   private scrollOffset = 0
   private maxScrollOffset = 0
-private readonly viewportLeft = 28
-    private readonly viewportWidth = 712
-    private readonly cardWidth = 264
-    private readonly cardGap = 36
+  private readonly viewportLeft = 28
+  private readonly viewportWidth = 712
+  private readonly cardWidth = 264
+  private readonly cardGap = 36
   private selectedIndex = 0
   private cursor!: Phaser.GameObjects.Rectangle
   private enterKey!: Phaser.Input.Keyboard.Key
@@ -263,6 +263,6 @@ private readonly viewportLeft = 28
     const card = this.cards[this.selectedIndex]
     if (!card) return
     setSessionLevel(card.level.id)
-    this.scene.start('MainScene')
+    this.scene.start('DifficultySelectScene')
   }
 }

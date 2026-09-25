@@ -54,6 +54,22 @@ describe('levels', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
+  it('a pressão dos inimigos aumenta progressivamente entre as fases', () => {
+    expect(LEVELS.map((level) => level.difficulty.maxSimultaneousZombies)).toEqual([14, 16, 18, 20])
+    expect(LEVELS.map((level) => level.difficulty.spawnStartDelay)).toEqual([2200, 1900, 1600, 1400])
+    expect(LEVELS.map((level) => level.difficulty.spawnMinDelay)).toEqual([400, 350, 300, 250])
+    expect(LEVELS.map((level) => level.difficulty.difficultyRampMs)).toEqual([100_000, 90_000, 80_000, 70_000])
+  })
+
+  it('bosses têm vida crescente e exigem múltiplos pisões duplos', () => {
+    const bossHp = LEVELS.map((level) => level.boss?.hp ?? 0)
+    const doubleStompsRequired = bossHp.map((hp) => Math.ceil(hp / 3))
+
+    expect(bossHp).toEqual([28, 36, 48, 60])
+    expect(doubleStompsRequired).toEqual([10, 12, 16, 20])
+    expect(LEVELS.map((level) => level.boss?.moveSpeed ?? 0)).toEqual([60, 68, 76, 84])
+  })
+
   it('resolve id conhecido e cai na primeira fase para id desconhecido', () => {
     expect(getLevel(HOUSE_LEVEL_ID).id).toBe(HOUSE_LEVEL_ID)
     expect(getLevel('nao-existe').id).toBe(LEVELS[0].id)
