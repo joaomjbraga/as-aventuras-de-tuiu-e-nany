@@ -16,8 +16,9 @@
 # repositório aponta para o caminho por conta própria e passa por review
 # como o resto.
 #
-# Publicar é merger em main. O mesmo gatilho do desktop.yml, pelo mesmo
-# motivo: a versão do site é o conteúdo de main, não um evento separado.
+# Publicar é merge em main. O release.yml usa o mesmo gatilho, mas cuida
+# só dos pacotes desktop: a versão do site é o conteúdo de main, não um
+# evento separado.
 
 name: pages
 

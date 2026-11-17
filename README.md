@@ -4,7 +4,7 @@ Jogo 2D em pixel art (co-op local) no qual Tuiu e Nany enfrentam zumbis, dispon�
 
 ## Plataformas suportadas
 
-- **Navegador:** build web estático, publicado no GitHub Pages em `https://joaomjbraga.github.io/as-aventuras-de-tuiu-e-nany/jogo/`
+- **Navegador:** build web estático, publicado no GitHub Pages em `https://joaomjbraga.github.io/as-aventuras-de-tuiu-e-nany/jogo/` e no Netlify em `https://tuienany.netlify.app` (é esse endereço que o botão “jogar online” da vitrine abre)
 - **Windows:** executável portátil `.exe` (roda direto da pasta, sem instalar)
 - **Linux:** AppImage
 
@@ -61,7 +61,7 @@ npm run build:web
 npm run preview:web
 ```
 
-O resultado vai em `dist-web/`. O build usa `base: './'` e caminhos relativos para os assets, então funciona tanto na raiz de um domínio quanto sob um prefixo — é assim que o workflow `.github/workflows/pages.yml` publica a vitrine em `doc/` na raiz e o jogo em `jogo/`. Não é preciso configurar secret: o Pages usa o `GITHUB_TOKEN` do repositório.
+O resultado vai em `dist-web/`. O build usa `base: './'` e caminhos relativos para os assets, então funciona tanto na raiz de um domínio quanto sob um prefixo — é assim que o workflow `.github/workflows/pages.yml` publica a vitrine em `doc/` na raiz e o jogo em `jogo/`. Não é preciso configurar secret: o Pages usa o `GITHUB_TOKEN` do repositório. No Netlify, o `netlify.toml` define `npm run build:web` como comando de build e `dist-web` como diretório de publicação; essas opções substituem as configuradas na UI.
 
 ## Build
 
@@ -137,19 +137,25 @@ npm run verify:web
 ### Publicar uma release
 
 A versão em `package.json` é a fonte da verdade. O workflow
-`.github/workflows/release.yml` roda a cada push em `main` e compara essa versão
-com a última tag do repositório: se forem diferentes, ele cria a tag, roda o gate
-de qualidade, gera os dois instaladores em runners nativos e publica a release
-com as notas tiradas dos commits.
+`.github/workflows/release.yml` roda a cada push em `main`, compara essa versão
+com a última tag e publica a release quando ela ainda não existe — ou quando a
+publicação anterior ficou incompleta. A tag é criada no commit do push, o gate
+de qualidade roda, os dois pacotes são gerados em runners nativos e a release
+sai com as notas tiradas dos commits.
 
 Ou seja, para publicar não é preciso criar tag na mão. Bastam dois passos:
 
 1. editar a versão em `package.json`
 2. `git push origin main`
 
-Um push que não mexe na versão não publica nada. Uma versão com sufixo
-(`0.1.0-beta.1`) sai marcada como pré-lançamento. O job de publicação é
-idempotente: se rodar de novo, reaproveita a tag e a release e apenas reenvia os
+Um push que não mexe na versão não publica nada. A versão precisa ser maior que
+a da última tag; a transição de `0.0.3-beta.1` para `0.0.3` é aceita. Uma versão
+com sufixo (`0.1.0-beta.1`) sai marcada como pré-lançamento.
+
+Se a tag tiver sido criada mas a release falhar no meio do caminho, o próximo
+push em `main` refaz a publicação sem precisar de uma versão nova: o workflow
+verifica a release e seus dois artefatos, e não apenas a tag. O job de
+publicação é idempotente: se rodar de novo, reaproveita a tag e reenvia os
 artefatos.
 
 O workflow `.github/workflows/desktop.yml` cobre os pull requests: valida o

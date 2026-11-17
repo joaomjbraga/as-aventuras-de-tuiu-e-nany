@@ -1,12 +1,14 @@
 # Publica uma release quando a versão do package.json muda.
 #
 # A regra é simples e evita publicar sem querer: a tag vX.Y.Z é derivada
-# da versão no package.json, e a release só sai se a última tag for
-# diferente dela. Um push comum em main não publica nada; publicar é
-# editar a versão e fazer push.
+# da versão no package.json, e a release só sai se ainda não existir ou
+# se estiver incompleta. Um push comum em main não publica nada; publicar
+# é editar a versão e fazer push. Se a tag foi criada mas a release falhou
+# no meio do caminho, o próximo push em main tenta de novo sem exigir uma
+# versão nova.
 #
 # A tag é criada aqui, e não localmente, para que o commit que a
-# accompany e os artefatos saiam sempre do mesmo lugar.
+# acompanha e os artefatos saiam sempre do mesmo lugar.
 
 name: release
 
@@ -36,6 +38,8 @@ jobs:
       tag: ${{ steps.comparar.outputs.tag }}
       anterior: ${{ steps.comparar.outputs.anterior }}
       prerelease: ${{ steps.comparar.outputs.prerelease }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       # fetch-depth 0 traz o histórico inteiro e todas as tags, sem o
       # que a busca por tag do --notes-start-tag e pela última versão
@@ -44,21 +48,44 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Comparar a versão do package.json com a última tag
+      - name: Comparar a versão do package.json com a última release
         id: comparar
         run: |
-          versao=$(node -p "require('./package.json').version")
+          # `node -p` avalia a expressão como CommonJS mesmo em um pacote
+          # "type": "module"; ler o arquivo deixa isso explícito.
+          versao=$(node -p "JSON.parse(require('node:fs').readFileSync('package.json', 'utf8')).version")
           tag="v${versao}"
           anterior=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
 
           echo "versão no package.json: ${versao}"
           echo "última tag no repositório: ${anterior:-<nenhuma>}"
 
-          if [ "$anterior" = "$tag" ]; then
-            echo "::notice::A versão não mudou desde a tag ${tag}. Nada a publicar."
+          # Um engano de versão (ex.: 0.0.1 depois de v0.0.2) não pode
+          # reaproveitar uma release antiga e sobrescrever seus
+          # artefatos. A comparação usa apenas o núcleo da versão para
+          # que v0.0.3-beta.1 → v0.0.3 continue sendo permitido.
+          if [ -n "$anterior" ] && [ "$anterior" != "$tag" ]; then
+            anterior_base=${anterior%%-*}
+            tag_base=${tag%%-*}
+            mais_recente=$(printf '%s\n%s\n' "$anterior_base" "$tag_base" | sort -V | tail -n 1)
+            if [ "$mais_recente" != "$tag_base" ]; then
+              echo "::error::A versão ${versao} é menor que a última tag ${anterior}."
+              exit 1
+            fi
+          fi
+
+          # A release é o estado que importa, não a tag: se a tag existe,
+          # mas a publicação falhou (falha de API, por exemplo), ainda há
+          # trabalho a fazer. Exigir os dois artefatos evita considerar
+          # completa uma release interrompida no meio do upload.
+          artefatos=$(gh release view "$tag" --json assets --jq '.assets | length' 2>/dev/null || true)
+          artefatos=$(printf '%s\n' "$artefatos" | grep -m1 -E '^[0-9]+$' || echo 0)
+
+          if [ "$artefatos" -ge 2 ]; then
+            echo "::notice::A release ${tag} já está completa. Nada a publicar."
             echo "publicar=false" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::Versão nova: ${tag}"
+            echo "::notice::Release ${tag} ausente ou incompleta; publicando."
             echo "publicar=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -197,7 +224,17 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -a "$TAG" -m "As Aventuras de Tuiu e Nany ${TAG}"
-          git push origin "$TAG"
+          if ! git push origin "$TAG"; then
+            # Outra execução pode ter criado a tag entre o checkout e o
+            # push. Nesse caso o retry é seguro: a release usa os
+            # artefatos do commit que disparou esta execução.
+            git fetch --tags --force
+            if git rev-parse "$TAG" >/dev/null 2>&1; then
+              echo "::notice::A tag ${TAG} já existe no remoto; reaproveitando."
+              exit 0
+            fi
+            exit 1
+          fi
           echo "::notice::Tag ${TAG} criada."
 
       # `gh` já vem instalado no runner, o que evita depender de uma
@@ -229,6 +266,27 @@ jobs:
             echo "::notice::Versão com sufixo: marcada como pré-lançamento."
           fi
 
-          gh release create "$TAG" artefatos/* "${args[@]}"
+          if ! gh release create "$TAG" artefatos/* "${args[@]}"; then
+            # Uma execução concorrente pode ter criado a release enquanto
+            # esta rodava; completar os artefatos é melhor que falhar.
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              gh release upload "$TAG" artefatos/* --clobber
+              exit 0
+            fi
+            exit 1
+          fi
 
           echo "::notice::Release ${TAG} publicada."
+
+      # Se o upload cair no meio, a execução falha aqui e a próxima
+      # detecção (que olha a release, não a tag) refaz o trabalho.
+      - name: Conferir a release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          quantidade=$(gh release view "$TAG" --json assets --jq '.assets | length')
+          echo "Release ${TAG} com ${quantidade} artefato(s)."
+          if [ "$quantidade" -lt 2 ]; then
+            echo "::error::A release ${TAG} não tem os dois artefatos esperados."
+            exit 1
+          fi

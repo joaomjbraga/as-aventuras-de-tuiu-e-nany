@@ -1,0 +1,8 @@
+"$schema" = "https://open-api.netlify.com/netlify.schema.json"
+
+# O botão "jogar online" em doc/index.html aponta para o Netlify. Por isso
+# este site publica o build web (dist-web/), e não o pacote desktop (out/).
+# As configurações aqui têm precedência sobre as definidas na UI do Netlify.
+[build]
+  command = "npm run build:web"
+  publish = "dist-web"
