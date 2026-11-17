@@ -33,6 +33,8 @@ export class Boss extends Zombie {
   private attacking: BossAttack | null = null
   private attackCooldownUntil = 0
   private nextDashAt = 0
+  /** Direção travada no início da investida (o alvo pode mudar de lado). */
+  private dashDir: 1 | -1 = 1
 
   constructor(scene: Phaser.Scene, config: BossConfig) {
     super(scene, {
@@ -122,8 +124,14 @@ export class Boss extends Zombie {
     if (this.isDying) return
 
     if (this.attacking) {
-      // Golpe fixa o boss no lugar; a investida mantém o dash em linha reta.
-      if (this.attacking === 'golpe') this.setVelocityX(0)
+      // Golpe fixa o boss no lugar; a investida reaplica o dash a cada frame,
+      // porque o preUpdate da classe base acabou de pôr a velocidade de
+      // caminhada. O recuo de um pisão tem prioridade sobre o dash.
+      if (this.attacking === 'golpe') {
+        this.setVelocityX(0)
+      } else if (!this.isKnockbackActive()) {
+        this.setVelocityX(this.dashDir * INVESTIDA_SPEED)
+      }
 
       // A animação one-shot terminou → volta ao comportamento normal.
       if (!this.anims.isPlaying) {
@@ -151,8 +159,9 @@ export class Boss extends Zombie {
         this.attacking = 'investida'
         this.attackCooldownUntil = time + 1400
         this.nextDashAt = time + INVESTIDA_COOLDOWN_MS
-        this.flipX = target.sprite.x < this.x
-        this.setVelocityX((target.sprite.x > this.x ? 1 : -1) * INVESTIDA_SPEED)
+        this.dashDir = target.sprite.x > this.x ? 1 : -1
+        this.flipX = this.dashDir < 0
+        this.setVelocityX(this.dashDir * INVESTIDA_SPEED)
         this.play('boss-investida', true)
         return
       }

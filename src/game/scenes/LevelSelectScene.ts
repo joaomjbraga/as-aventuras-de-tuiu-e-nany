@@ -47,6 +47,10 @@ export class LevelSelectScene extends Phaser.Scene {
 
     this.selectedIndex = 0
 
+    // O Phaser apenas emite SHUTDOWN; ele não chama um método `shutdown()` da
+    // cena automaticamente. Sem isto a máscara Graphics vaza a cada visita.
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this)
+
     this.add.rectangle(cx, height / 2, width, height, COLOR.bg)
 
     this.add

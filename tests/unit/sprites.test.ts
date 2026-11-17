@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CHARACTER_FOOT_INSET, CHARACTERS, zombieTextureKey } from '../../src/game/sprites'
+import { CHARACTER_FOOT_INSET, CHARACTERS, hasExpectedSpritesheet, zombieTextureKey } from '../../src/game/sprites'
 
 const only =
   (...keys: string[]) =>
@@ -50,5 +50,26 @@ describe('zombieTextureKey', () => {
     // O placeholder existe sempre, então uma checagem que o aceitasse
     // devolveria 'zombie' como se fosse a variante 0 de um zumbi.
     expect(zombieTextureKey(1, () => true)).toBe('zombie1')
+  })
+})
+
+describe('hasExpectedSpritesheet', () => {
+  const def = CHARACTERS.tuio
+  const texture = (frameTotal: number, realWidth: number, realHeight: number) => ({
+    frameTotal,
+    get: () => ({ realWidth, realHeight }),
+  })
+
+  it('aceita o spritesheet com os 9 frames e o tamanho de frame esperados', () => {
+    // frameTotal inclui o __BASE do Phaser.
+    expect(hasExpectedSpritesheet(texture(10, def.frameWidth, def.frameHeight), def, 9)).toBe(true)
+  })
+
+  it('rejeita dimensões de frame diferentes mesmo com a chave existente', () => {
+    expect(hasExpectedSpritesheet(texture(10, def.frameWidth, def.frameHeight + 1), def, 9)).toBe(false)
+  })
+
+  it('rejeita quantidade de frames diferente', () => {
+    expect(hasExpectedSpritesheet(texture(11, def.frameWidth, def.frameHeight), def, 9)).toBe(false)
   })
 })

@@ -5,6 +5,7 @@ import {
   SPAWN_START_DELAY,
   VICTORY_KILLS,
   canSpawnZombie,
+  countLivingZombies,
   hasWon,
   spawnIntervalMs,
 } from '../../src/game/difficulty'
@@ -49,5 +50,14 @@ describe('difficulty', () => {
     expect(hasWon(19, 20)).toBe(false)
     expect(hasWon(20, 20)).toBe(true)
     expect(hasWon(10, 10)).toBe(true)
+  })
+
+  it('não conta zumbis mortos na animação de morte como vagas ocupadas', () => {
+    const zombies = [
+      { active: true, isDying: false },
+      { active: true, isDying: true },
+      { active: false, isDying: true },
+    ]
+    expect(countLivingZombies(zombies)).toBe(1)
   })
 })

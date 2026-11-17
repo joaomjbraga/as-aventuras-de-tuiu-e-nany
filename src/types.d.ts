@@ -6,6 +6,7 @@ declare global {
       isElectron: true
       platform: NodeJS.Platform
       quit: () => void
+      toggleFullscreen: () => void
     }
   }
 }

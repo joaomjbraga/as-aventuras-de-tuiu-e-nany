@@ -90,9 +90,14 @@ export function markLevelCompleted(id: string): void {
 /** Preferência de som (mudo) do jogador. */
 export function isMuted(): boolean {
   if (typeof localStorage === 'undefined') return false
-  return localStorage.getItem(STORAGE_KEYS.MUTED) === '1'
+  const raw = localStorage.getItem(STORAGE_KEYS.MUTED)
+  // 'true'/'false' eram gravados pela versão antiga; aceitar os dois formatos
+  // preserva a preferência de quem já tinha mute salvo antes da correção.
+  return raw === '1' || raw === 'true'
 }
 
 export function setMuted(muted: boolean): void {
-  write(STORAGE_KEYS.MUTED, muted)
+  // `isMuted()` lê '1'/'0': gravar `true`/`false` fazia o mute nunca
+  // sobreviver ao reload e era desfeito ao abrir a pausa.
+  write(STORAGE_KEYS.MUTED, muted ? 1 : 0)
 }

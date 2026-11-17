@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import { CHARACTERS } from '../sprites'
 import { playIntro } from '../audio'
 import { resetSession } from '../session'
+import { isDesktop, quitApp } from '../runtime'
 import { COLOR, FONT, TEXT } from '../theme'
 
 export class TitleScene extends Phaser.Scene {
@@ -110,12 +111,13 @@ export class TitleScene extends Phaser.Scene {
       ease: 'Sine.easeInOut',
     })
 
-    // Links Inferiores (horizontal) — "sair" fica logo depois de "como jogar"
-    const links = [
+    // Links inferiores (horizontal). "SAIR" só existe no desktop: na web o
+    // navegador não deixa uma página fechar a própria aba/janela.
+    const links: Array<{ label: string; x: number; action: 'about' | 'instructions' | 'quit' }> = [
       { label: '[ A ] sobre', x: cx - 240, action: 'about' },
       { label: '[ I ] como jogar', x: cx, action: 'instructions' },
-      { label: 'SAIR [S]', x: cx + 240, action: 'quit' },
-    ] as const
+    ]
+    if (isDesktop()) links.push({ label: 'SAIR [S]', x: cx + 240, action: 'quit' })
 
     links.forEach(({ label, x, action }) => {
       const t = this.add
@@ -147,10 +149,10 @@ export class TitleScene extends Phaser.Scene {
     this.input.keyboard!.once('keydown-I', () => {
       this.scene.start('InstructionsScene')
     })
-    this.input.keyboard!.once('keydown-S', () => this.quitGame())
+    if (isDesktop()) this.input.keyboard!.once('keydown-S', () => this.quitGame())
   }
 
   private quitGame(): void {
-    window.desktop?.quit()
+    quitApp()
   }
 }

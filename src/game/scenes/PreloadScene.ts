@@ -10,6 +10,7 @@ import {
 import { AUDIO } from '../audio'
 import { LEVELS, bgImageKey } from '../levels'
 import { boundsFromRowFlags, type VerticalBounds } from '../spriteBounds'
+import { hasExpectedSpritesheet } from '../sprites'
 
 /**
  * Limites verticais dos pixels não-transparentes de um frame. Normalizar o
@@ -28,6 +29,9 @@ import { boundsFromRowFlags, type VerticalBounds } from '../spriteBounds'
  * aqui fica só a leitura do DOM.
  */
 const visibleBoundsCache = new WeakMap<HTMLImageElement, VerticalBounds>()
+
+/** 6 frames de caminhada + 3 de pulo (ver FRAME_LAYOUT em sprites.ts). */
+const CHARACTER_FRAME_COUNT = 9
 
 function visibleVerticalBounds(img: HTMLImageElement): VerticalBounds {
   const cached = visibleBoundsCache.get(img)
@@ -154,7 +158,9 @@ export class PreloadScene extends Phaser.Scene {
 
     const bar = this.add.rectangle(x - 80, y, 1, 6, 0x00bcd4).setOrigin(0, 0.5)
     this.load.on('progress', (value: number) => {
-      bar.width = 160 * value
+      // Rectangle só recalcula o pathData (usado pelo renderer) via setSize;
+      // atribuir `width` diretamente deixava a barra presa em 1px.
+      bar.setSize(Math.max(1, 160 * value), 6)
     })
   }
 
@@ -164,9 +170,15 @@ export class PreloadScene extends Phaser.Scene {
    */
   private createPlaceholderSpritesheets(sprites: (typeof CHARACTERS)[keyof typeof CHARACTERS][]): void {
     sprites.forEach((def) => {
-      if (this.textures.exists(def.key)) return
+      if (this.textures.exists(def.key)) {
+        // A chave pode existir com um PNG de dimensões diferentes: remover e
+        // recriar o placeholder garante que as animações tenham frames válidos.
+        const texture = this.textures.get(def.key)
+        if (hasExpectedSpritesheet(texture, def, CHARACTER_FRAME_COUNT)) return
+        this.textures.remove(def.key)
+      }
 
-      const frameCount = 9
+      const frameCount = CHARACTER_FRAME_COUNT
       const canvas = document.createElement('canvas')
       canvas.width = def.frameWidth * frameCount
       canvas.height = def.frameHeight

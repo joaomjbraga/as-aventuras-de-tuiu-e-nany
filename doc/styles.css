@@ -1,48 +1,16 @@
-/* =========================================================
-   As Aventuras de Tuiu e Nany — página única
-
-   Duas decisões sustentam a identidade daqui:
-
-   1. As cores vêm de src/game/theme.ts (dourado do título, azul do
-      jogador 1, rosa do jogador 2, vermelho do coração, contorno
-      #0d101b). Nada de turquesa e coral de página de loja: quem vê
-      o site reconhece a paleta do jogo antes de ler o texto.
-   2. Nada de raio arredondado nem sombra difusa. Borda reta de
-      1-2px e sombra sólida de deslocamento fixo, como os
-      retângulos que o Phaser desenha na tela do jogo.
-   ========================================================= */
-
 :root {
-  --noite: #151a22;
-  --noite-funda: #11151d;
-  --painel: #0d101b;
-
-  --ouro: #ffd54f;
-  --estrela: #ffe082;
-  --tuiu: #8fd8ff;
-  --nany: #ff9fc2;
-  --coracao: #ff4d5d;
-
-  --corpo: #c8d6e5;
-  --fraco: #7a89a0;
-  --mudo: #8fa8c8;
-
-  --fonte: 'JetBrains Mono', ui-monospace, Consolas, 'Courier New', monospace;
-
-  /* Ajuste fino do fundo. Este é o único botão da página que regula
-     o quanto o vídeo aparece, então é o primeiro lugar a mexer quando
-     o trailer estiver claro demais ou escuro demais.
-
-     brightness acima de 1 clareia; saturate devolve a cor que o
-     filtro come; contrast um pouco acima de 1 só evita que a imagem
-     fique lavada. Se o texto dourado perder leitura, o próximo
-     recurso é reduzir a vinheta em .cena__vinheta, não este valor. */
-  --video-filtro: saturate(0.88) contrast(1.03) brightness(0.92);
-  --scanline: 18%;
-
-  /* Deslocamento da sombra sólida. Um valor só, para o "peso" de
-     pixel se manter igual em todo o site. */
-  --peso: 4px;
+  color-scheme: dark;
+  --background: #11151d;
+  --surface: #171d29;
+  --surface-hover: #202a3a;
+  --text: #e8edf7;
+  --muted: #9aa9c0;
+  --line: rgb(200 214 229 / 24%);
+  --gold: #ffd54f;
+  --blue: #8fd8ff;
+  --pink: #ff9fc2;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Manrope', 'Segoe UI', sans-serif;
+  --font-pixel: 'Silkscreen', 'Courier New', monospace;
 }
 
 *,
@@ -52,348 +20,380 @@
 }
 
 html {
+  min-height: 100%;
   -webkit-text-size-adjust: 100%;
 }
 
 body {
-  margin: 0;
   min-height: 100vh;
-  background: var(--noite-funda);
-  color: var(--corpo);
-  font-family: var(--fonte);
-  font-size: 15px;
-  line-height: 1.6;
+  min-height: 100svh;
+  margin: 0;
+  background: var(--background);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
 
-img {
-  max-width: 100%;
+img,
+svg {
   display: block;
-  border: 0;
 }
 
 a {
-  color: var(--estrela);
+  color: inherit;
   text-decoration: none;
 }
 
-:focus-visible {
-  outline: 2px solid var(--ouro);
-  outline-offset: 3px;
+a:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
 }
 
-[hidden] {
-  display: none !important;
+.background {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  background: var(--background);
+  pointer-events: none;
 }
 
-/* =========================================================
-   Cena: o trailer ocupa a tela inteira
-   ========================================================= */
+.background::after {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      90deg,
+      rgb(17 21 29 / 84%) 0%,
+      rgb(17 21 29 / 73%) 35%,
+      rgb(17 21 29 / 51%) 68%,
+      rgb(17 21 29 / 34%) 100%
+    ),
+    linear-gradient(0deg, rgb(17 21 29 / 28%), transparent 58%);
+  content: '';
+}
 
-.cena {
+.background__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: brightness(0.9) saturate(0.86) contrast(1.04);
+}
+
+.hero {
   position: relative;
+  z-index: 1;
+  display: flex;
+  width: min(100%, 2080px);
   min-height: 100vh;
   min-height: 100svh;
-  display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-  isolation: isolate;
-  background: var(--noite);
-  /* Respiro só para o conteúdo não encostar nas bordas: o vídeo é
-     sangrado de propósito e não leva moldura. */
-  padding: 64px 22px;
+  margin: 0 auto;
+  padding: clamp(32px, 5vh, 68px) clamp(24px, 5.2vw, 112px);
+}
+
+.hero__texto {
+  display: flex;
+  width: min(100%, 780px);
+  flex-direction: column;
+  align-items: center;
+  margin: 0 auto;
   text-align: center;
 }
 
-/* O vídeo local substitui o pôster: enquanto ele carrega, quem aparece
-   é o azul-escuro do próprio .cena, e as scanlines já dão textura à
-   espera. */
-.cena__video {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  /* object-fit é o que impede a caixa de alongar a imagem quando a
-     proporção do vídeo não bate com a da janela. */
-  object-fit: cover;
-  filter: var(--video-filtro);
-}
-
-/* Dither + scanlines. O padrão de 2px é a mesma técnica que dá
-   profundidade ao céu do jogo sem pedir nenhum asset. */
-.cena__pixels {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background-image:
-    repeating-linear-gradient(0deg, rgb(0 0 0 / var(--scanline)) 0 1px, transparent 1px 3px),
-    linear-gradient(45deg, rgb(232 237 247 / 2.4%) 25%, transparent 25% 75%, rgb(232 237 247 / 2.4%) 75%),
-    linear-gradient(45deg, rgb(232 237 247 / 2.4%) 25%, transparent 25% 75%, rgb(232 237 247 / 2.4%) 75%);
-  background-size:
-    100% 3px,
-    4px 4px,
-    4px 4px;
-  background-position:
-    0 0,
-    0 0,
-    2px 2px;
-}
-
-/* Vinheta: escurece as bordas para o olho ir ao centro, onde estão
-   o título e o botão. Ela existe para o texto do canto (crédito, link
-   do trailer) ganhar contraste, não para apagar o vídeo — por isso
-   o miolo fica quase transparente e só a ponta da elipse fecha. */
-.cena__vinheta {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background:
-    radial-gradient(
-      ellipse 78% 66% at 50% 50%,
-      rgb(17 21 29 / 8%) 0%,
-      rgb(17 21 29 / 45%) 68%,
-      rgb(13 16 27 / 72%) 100%
-    ),
-    linear-gradient(0deg, rgb(17 21 29 / 70%) 0%, transparent 30%),
-    linear-gradient(180deg, rgb(17 21 29 / 40%) 0%, transparent 22%);
-}
-
-/* =========================================================
-   Conteúdo
-   ========================================================= */
-
-.cena__painel {
-  position: relative;
-  z-index: 4;
-  max-width: 660px;
-  margin: 0 auto;
-}
-
-/* O título é tipografia de display, não texto de conteúdo: é uma arte
-   feita de elementos separados por flexbox, então copiar produzia
-   "TuiuNany" sem espaço. Travar a seleção devolve algo mais honesto.
-   O -webkit- é para o Safari, que ainda não Prefixou a propriedade. */
-.cena__pre,
-.cena__titulo {
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.cena__pre {
-  margin: 0 0 14px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.42em;
-  /* O recuo compensa a barra final do espaçamento para o texto
-     ficar realmente centralizado, e não deslocado à esquerda. */
-  text-indent: 0.42em;
-  text-transform: uppercase;
-  color: var(--mudo);
-  text-shadow: 0 2px 8px rgb(13 16 27 / 90%);
-}
-
-.cena__titulo {
-  margin: 0;
+.hero__titulo {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  justify-content: center;
-  gap: 0 0.34em;
-  font-size: clamp(2.6rem, 1.1rem + 8.4vw, 6.2rem);
+  gap: 0 0.2em;
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-size: clamp(2.6rem, 5.2vw, 4.75rem);
   font-weight: 700;
-  line-height: 0.98;
-  letter-spacing: -0.02em;
-}
-
-.cena__nome {
-  /* Sombra sólida de deslocamento fixo: o "pixel" do título. */
+  letter-spacing: -0.04em;
+  line-height: 1.3;
   text-shadow:
-    var(--peso) var(--peso) 0 var(--painel),
-    calc(var(--peso) * 1.5) calc(var(--peso) * 1.5) 0 rgb(13 16 27 / 55%);
+    2px 2px 0 #11151d,
+    4px 4px 0 rgb(7 10 16 / 55%);
 }
 
-.cena__nome--tuiu {
-  color: var(--tuiu);
+.hero__nome {
+  white-space: nowrap;
 }
 
-.cena__nome--nany {
-  color: var(--nany);
+.hero__nome--tuiu {
+  color: var(--blue);
 }
 
-.cena__coracoes {
-  margin: 22px auto 0;
-  color: var(--coracao);
-  /* O SVG é de 33x8 e entra 3x maior, então a grade do coração
-     continua com bordas inteiras em vez de virar blur. */
-  image-rendering: pixelated;
-  filter: drop-shadow(0 0 6px rgb(255 77 93 / 45%));
+.hero__nome--nany {
+  color: var(--pink);
 }
 
-/* A linha separa o título do botão, então a margem de baixo é
-   maior que a de cima: o vão para o botão precisa respirar mais
-   que o vão para os corações. */
-.cena__linha {
-  width: 132px;
-  height: 1px;
-  margin: 26px auto 34px;
-  border: 0;
-  background: linear-gradient(90deg, transparent, var(--ouro) 50%, transparent);
-  opacity: 0.6;
+.hero__elo {
+  color: var(--gold);
+  font-size: 0.6em;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
-/* Rótulo acima dos botões: diz o que os dois fazem, já que cada
-   botão só nomeia a plataforma. */
-.cena__rotulo {
-  margin: 0 0 18px;
-  font-size: 11px;
-  letter-spacing: 0.28em;
-  text-indent: 0.28em;
-  text-transform: uppercase;
-  color: var(--fraco);
-  text-shadow: 0 2px 8px rgb(13 16 27 / 90%);
+.hero__frase {
+  max-width: 760px;
+  margin: 22px 0 0;
+  color: var(--text);
+  font-size: clamp(2rem, 3.2vw, 3rem);
+  font-weight: 650;
+  letter-spacing: -0.05em;
+  line-height: 1.15;
 }
 
-/* =========================================================
-   Botões de download
-
-   Dourado chapado, com a marca e o texto na mesma tinta escura.
-   A borda usa a cor de contorno em vez de dourado: uma borda
-   dourada sobre fundo dourado é invisível, e o contorno escuro é
-   o que dá ao retângulo a mesma borda de 2px que o jogo usa nos
-   menus.
-
-   Os dois apontam para a mesma página de releases, que é onde o
-   GitHub lista o instalador do Windows e o AppImage.
-   ========================================================= */
-
-.cena__acoes {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 16px;
+.hero__descricao {
+  max-width: 54ch;
+  margin: 18px auto 0;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.65;
 }
 
-.botao {
-  display: inline-flex;
+.hero__nota {
+  margin: 14px 0 0;
+  color: rgb(232 237 247 / 76%);
+  font-size: 13px;
+}
+
+.cta {
+  display: grid;
+  width: min(100%, 340px);
+  min-height: 64px;
+  grid-template-columns: 1fr auto;
+  align-content: center;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
-  /* "windows" e "linux" têm comprimentos diferentes; a largura
-     mínima deixa os dois retângulos com o mesmo tamanho. */
-  min-width: 190px;
-  padding: 18px 28px;
-  background: var(--ouro);
-  border: 2px solid var(--painel);
-  color: #201a05;
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--gold);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 24%);
+  color: #11151d;
+  transition:
+    transform 120ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease;
+  text-align: left;
+}
+
+.cta:hover {
+  transform: translateY(-2px);
+  background: #ffe082;
+  box-shadow: 0 14px 32px rgb(0 0 0 / 28%);
+}
+
+.cta:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 22%);
+}
+
+.cta > span {
+  grid-column: 1;
+  grid-row: 1;
   font-size: 15px;
   font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  /* Sombra sólida: o clique "afunda" o botão em vez de suavizar. */
-  box-shadow: var(--peso) var(--peso) 0 var(--painel);
+}
+
+.cta small {
+  grid-column: 1;
+  grid-row: 2;
+  color: rgb(17 21 29 / 74%);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.cta svg {
+  width: 16px;
+  height: 16px;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: square;
+  stroke-width: 1.5;
+}
+
+.downloads {
+  width: 100%;
+  margin-top: 38px;
+}
+
+.downloads__titulo {
+  margin: 0 0 14px;
+  color: rgb(232 237 247 / 78%);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.downloads__lista {
+  display: grid;
+  max-width: 520px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 auto;
+}
+
+.download {
+  display: flex;
+  min-width: 0;
+  min-height: 72px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid rgb(232 237 247 / 18%);
+  border-radius: 8px;
+  background: rgb(232 237 247 / 7%);
+  backdrop-filter: blur(18px) saturate(1.2);
   transition:
-    transform 0.08s ease,
-    box-shadow 0.08s ease,
-    background 0.14s ease,
-    color 0.14s ease;
+    transform 160ms ease,
+    border-color 120ms ease,
+    background 120ms ease;
 }
 
-.botao:hover {
-  background: var(--estrela);
-  color: #201a05;
-  text-decoration: none;
+.download:hover {
+  transform: translateY(-2px);
+  border-color: rgb(232 237 247 / 32%);
+  background: rgb(232 237 247 / 12%);
 }
 
-.botao:active {
-  transform: translate(var(--peso), var(--peso));
-  box-shadow: 0 0 0 var(--painel);
-}
-
-/* As marcas entram como máscara, não como <img>.
-
-   Os dois arquivos são PNG branco com fundo transparente, que sozinhos
-   não sobreviveriam ao dourado do botão. Em vez de pedir uma segunda
-   versão de cada imagem, a máscara usa o alfa do PNG como recorte e
-   pinta o resultado na cor do próprio texto — por isso
-   `background-color: currentColor` e a marca acompanhar sozinha
-   qualquer mudança de cor no botão, inclusive no hover.
-
-   Aqui o `mask` abre só com posição e tamanho; a URL vem depois, nos
-   modificadores. A ordem importa: o atalho `mask` zera `mask-image`
-   para `none`, então quem define a imagem precisa vir depois.
-
-   O prefixo -webkit- é para Safari anterior a 15.4. */
-.botao__logo {
-  width: 32px;
-  height: 32px;
+.download img {
+  width: 23px;
+  height: 23px;
   flex: 0 0 auto;
-  background-color: currentColor;
-  -webkit-mask: center / contain no-repeat;
-  mask: center / contain no-repeat;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
 }
 
-.botao__logo--windows {
-  -webkit-mask-image: url(assets/logo-windows.png);
-  mask-image: url(assets/logo-windows.png);
+.download > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  line-height: 1.35;
 }
 
-.botao__logo--linux {
-  -webkit-mask-image: url(assets/linux-512.png);
-  mask-image: url(assets/linux-512.png);
+.download strong {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 650;
 }
 
-/* =========================================================
-   Responsivo
-   ========================================================= */
+.download small {
+  color: rgb(232 237 247 / 72%);
+  font-size: 12px;
+}
 
-@media (max-width: 640px) {
-  :root {
-    --peso: 3px;
+@media (min-width: 1700px) {
+  .hero__frase {
+    font-size: clamp(2.6rem, 3vw, 3.5rem);
   }
 
-  .cena {
-    padding: 48px 18px;
+  .hero__descricao {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 900px) {
+  .hero {
+    min-height: 100svh;
+    padding: clamp(40px, 7vh, 72px) clamp(24px, 6vw, 64px);
   }
 
-  .cena__pre {
-    font-size: 10.5px;
-    letter-spacing: 0.3em;
-    text-indent: 0.3em;
+  .hero__texto {
+    width: min(100%, 680px);
   }
 
-  .cena__coracoes {
-    margin-top: 18px;
+  .hero__titulo {
+    font-size: clamp(2.3rem, 5vw, 3.2rem);
+  }
+}
+
+@media (max-width: 560px) {
+  .background::after {
+    background:
+      linear-gradient(90deg, rgb(17 21 29 / 78%), rgb(17 21 29 / 62%)),
+      linear-gradient(0deg, rgb(17 21 29 / 24%), transparent);
   }
 
-  .cena__linha {
-    margin: 20px auto 18px;
+  .hero {
+    padding: 36px 20px 42px;
   }
 
-  /* Em tela estreita os dois botões empilham em largura cheia:
-     largura 100% em um item flex com wrap já é o bastante para
-     quebrar a linha, então basta deixar a largura fluir. */
-  .botao {
+  .hero__titulo {
+    gap: 0 0.2em;
+    font-size: clamp(1.8rem, 8vw, 2.5rem);
+    letter-spacing: -0.04em;
+  }
+
+  .hero__frase {
+    margin-top: 21px;
+    font-size: clamp(1.45rem, 6.5vw, 1.8rem);
+  }
+
+  .hero__descricao {
+    margin-top: 12px;
+    font-size: 14px;
+  }
+
+  .cta {
     width: 100%;
+    min-height: 60px;
+  }
+
+  .downloads {
+    margin-top: 30px;
+  }
+
+  .download {
+    min-height: 64px;
+    gap: 9px;
+    padding: 10px 12px;
+  }
+
+  .download img {
+    width: 20px;
+    height: 20px;
   }
 }
 
-@media (max-height: 560px) {
-  .cena {
-    justify-content: flex-start;
-    padding-top: 44px;
-    overflow-y: auto;
+@media (max-width: 390px) {
+  .hero {
+    padding-right: 17px;
+    padding-left: 17px;
   }
 
-  .cena__coracoes,
-  .cena__linha {
-    display: none;
+  .hero__titulo {
+    font-size: clamp(1.75rem, 8vw, 2.1rem);
+  }
+
+  .downloads__lista {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 700px) {
+  .hero {
+    padding-top: 24px;
+    padding-bottom: 24px;
+  }
+
+  .hero__frase {
+    margin-top: 19px;
+  }
+
+  .hero__descricao {
+    margin-top: 10px;
+  }
+
+  .downloads {
+    margin-top: 20px;
   }
 }
 
@@ -401,7 +401,14 @@ a {
   *,
   *::before,
   *::after {
+    scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --muted: #c8d6e5;
+    --line: rgb(232 237 247 / 40%);
   }
 }

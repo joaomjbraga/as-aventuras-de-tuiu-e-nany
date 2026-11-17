@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import { MUSIC_VOLUME_STEP, adjustMusicVolume, applyMute, applyMusicVolume, toggleMute } from '../audio'
 import { isMuted } from '../storage'
+import { isDesktop, quitApp } from '../runtime'
 import { FONT, TEXT } from '../theme'
 import { MENU_STYLE, VerticalMenu } from '../ui/verticalMenu'
 
@@ -31,7 +32,7 @@ export class PauseScene extends Phaser.Scene {
   private restartKey!: Phaser.Input.Keyboard.Key
   private titleKey!: Phaser.Input.Keyboard.Key
   private muteKey!: Phaser.Input.Keyboard.Key
-  private quitKey!: Phaser.Input.Keyboard.Key
+  private quitKey?: Phaser.Input.Keyboard.Key
 
   constructor() {
     super({ key: 'PauseScene' })
@@ -63,8 +64,10 @@ export class PauseScene extends Phaser.Scene {
       { id: 'title', label: 'VOLTAR AO TÍTULO', action: () => this.goToTitle() },
       { id: 'volume', label: this.volumeLabel(), action: () => this.adjustMusicVolume(MUSIC_VOLUME_STEP) },
       { id: 'mute', label: `SOM: ${isMuted() ? 'OFF' : 'ON'}`, action: () => this.toggleSound() },
-      { id: 'quit', label: 'SAIR', action: () => this.quitGame() },
     ]
+    // Um site não pode encerrar o navegador; esconder a opção evita um
+    // botão que não faz nada na versão web.
+    if (isDesktop()) this.options.push({ id: 'quit', label: 'SAIR', action: () => this.quitGame() })
 
     // A cena é reutilizada a cada pausa: o VerticalMenu é reconstruído do zero
     // a partir das opções atuais, então nenhum highlight/rótulo da abertura
@@ -97,11 +100,12 @@ export class PauseScene extends Phaser.Scene {
       this.options,
     )
 
+    const exitHint = isDesktop() ? '   T: título   Q: sair' : '   T: título'
     this.add
       .text(
         width / 2,
         height - 30,
-        '↑/↓: escolher   ←/→ ou A/D: volume   ENTER/SPACE: selecionar\nESC: continuar   M: mudo   R: reiniciar   T: título   Q: sair',
+        `↑/↓: escolher   ←/→ ou A/D: volume   ENTER/SPACE: selecionar\nESC: continuar   M: mudo   R: reiniciar${exitHint}`,
         {
           fontFamily: FONT.family,
           fontSize: '14px',
@@ -123,7 +127,7 @@ export class PauseScene extends Phaser.Scene {
     this.restartKey = kb.addKey('R')
     this.titleKey = kb.addKey('T')
     this.muteKey = kb.addKey('M')
-    this.quitKey = kb.addKey('Q')
+    if (isDesktop()) this.quitKey = kb.addKey('Q')
   }
 
   update(): void {
@@ -166,7 +170,7 @@ export class PauseScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.muteKey)) {
       this.toggleSound()
     }
-    if (Phaser.Input.Keyboard.JustDown(this.quitKey)) {
+    if (this.quitKey && Phaser.Input.Keyboard.JustDown(this.quitKey)) {
       this.quitGame()
     }
   }
@@ -216,6 +220,6 @@ export class PauseScene extends Phaser.Scene {
   private quitGame(): void {
     this.scene.stop()
     this.scene.stop('MainScene')
-    window.desktop?.quit()
+    quitApp()
   }
 }

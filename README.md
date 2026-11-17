@@ -1,13 +1,14 @@
 # As Aventuras de Tuiu & Nany
 
-Jogo desktop 2D em pixel art (co-op local) no qual Tuiu e Nany enfrentam zumbis. O projeto usa **Electron**, Phaser 3, TypeScript e electron-vite. Não há versão web, PWA nem modo mobile.
+Jogo 2D em pixel art (co-op local) no qual Tuiu e Nany enfrentam zumbis, disponível para **desktop (Electron)** e **navegador web**. O projeto usa Phaser 3 e TypeScript; o pacote desktop é gerado pelo electron-vite e o site estático pelo Vite. Não há PWA nem modo mobile (o jogo é controlado por teclado).
 
 ## Plataformas suportadas
 
+- **Navegador:** build web estático, publicado no GitHub Pages em `https://joaomjbraga.github.io/as-aventuras-de-tuiu-e-nany/jogo/`
 - **Windows:** executável portátil `.exe` (roda direto da pasta, sem instalar)
 - **Linux:** AppImage
 
-Os dois artefatos são portáteis: não há instalador, e nada é gravado no sistema. O AppImage deve ser gerado em um ambiente Linux nativo ou pelo workflow de CI.
+Os dois artefatos desktop são portáteis: não há instalador, e nada é gravado no sistema. O AppImage deve ser gerado em um ambiente Linux nativo ou pelo workflow de CI. A versão web é o mesmo renderer Phaser; a única diferença é a ausência da ponte `desktop` (ver `src/game/runtime.ts`), então os comandos de sair não aparecem nela.
 
 ## Por que este jogo existe
 
@@ -29,7 +30,7 @@ No jogo, Tuiu e Nany precisam atravessar esses lugares em meio a um apocalipse z
 
 Não foi tão fácil assim como eu já imaginava. Tive muita dor de cabeça durante o desenvolvimento, vários problemas, pensei que não conseguiria finalizar esse projeto. Mas, no final, valeu cada hora e cada minuto investido. Ver a ideia que começou com um simples "e se a gente vivesse um apocalipse zumbi?" se transformar em um jogo que conta um pouco da nossa história fez tudo valer a pena.
 
-O jogo é uma aplicação desktop (Electron) com suporte a multiplayer local cada jogador controla um personagem (Tuiu ou Nany) com seu próprio teclado. Disponível para Windows e Linux.
+O jogo roda no navegador e como aplicação desktop (Electron), com multiplayer local: cada jogador controla um personagem (Tuiu ou Nany) no mesmo teclado. Disponível na web, para Windows e para Linux.
 
 ## Pré-requisitos
 
@@ -46,19 +47,46 @@ npm run dev
 
 O comando inicia o Electron com hot reload do renderer. O processo principal, o preload e o renderer são compilados pelo `electron-vite`.
 
+## Desenvolvimento web
+
+```sh
+npm install
+npm run dev:web
+```
+
+O Vite sobe o mesmo `index.html` e o mesmo `src/game/` em um servidor local, sem Electron. Para gerar e conferir o site estático:
+
+```sh
+npm run build:web
+npm run preview:web
+```
+
+O resultado vai em `dist-web/`. O build usa `base: './'` e caminhos relativos para os assets, então funciona tanto na raiz de um domínio quanto sob um prefixo — é assim que o workflow `.github/workflows/pages.yml` publica a vitrine em `doc/` na raiz e o jogo em `jogo/`. Não é preciso configurar secret: o Pages usa o `GITHUB_TOKEN` do repositório.
+
 ## Build
 
 ```sh
 npm run build
 ```
 
-O build é colocado em `out/`:
+O build desktop é colocado em `out/`:
 
 ```text
 out/
 ├── main/
 ├── preload/
 └── renderer/
+```
+
+O build web (comando `npm run build:web`) vai para `dist-web/`:
+
+```text
+dist-web/
+├── index.html
+├── assets/    ← bundle JS do Phaser
+├── audio/
+├── scenes/
+└── sprites/
 ```
 
 Para executar o build localmente:
@@ -91,12 +119,19 @@ Gera o AppImage em `release/`.
 npm run check
 npm test
 npm run build
+npm run build:web
 ```
 
-Ou:
+Ou, para o gate completo incluindo os dois builds:
 
 ```sh
-npm run verify
+npm run verify && npm run build:web
+```
+
+Para validar só a versão web:
+
+```sh
+npm run verify:web
 ```
 
 ### Publicar uma release
@@ -135,9 +170,9 @@ nenhum.
 
 - **ESC**: pausa o jogo. No menu, use **←/→** (J1) ou **A/D** (J2) para ajustar o volume da música em passos de 10%; a preferência é salva.
 - **M**: ativa/desativa o som.
-- **F11**: alterna tela cheia.
-- Na tela inicial: **S** ou clique em `[ S ] sair` encerra o jogo.
-- No menu de pausa: **Q** ou selecione **SAIR** encerra o jogo.
+- **F11**: alterna tela cheia (no navegador, o atalho do próprio navegador tem prioridade).
+- Na tela inicial: **S** ou clique em `[ S ] sair` encerra o jogo (somente desktop; na web a opção não aparece).
+- No menu de pausa: **Q** ou selecione **SAIR** encerra o jogo (somente desktop).
 - Na seleção de dificuldade: **↑/↓** ou **←/→** escolhem, **ENTER** confirma e **ESC** volta ao cenário.
 - Na seleção: J1 confirma com ENTER e inicia; J2 confirma com W.
 - Em uma partida já iniciada, J2 pode entrar pela tecla **W** ou pelo botão na tela.
@@ -181,13 +216,16 @@ Para adicionar uma nova fase:
 - `src/game/scenes/DifficultySelectScene.ts`: seleção de dificuldade antes da partida.
 - `src/game/ui/verticalMenu.ts`: menu vertical reutilizável (dificuldade e pausa).
 - `src/game/spriteBounds.ts`: limites verticais do conteúdo de um frame (usado ao normalizar spritesheets).
+- `src/game/runtime.ts`: detecta Electron vs. navegador e centraliza a ação de sair.
 - `src/assets/`: cenários, sprites, áudio e demais assets do jogo.
 - `public/`: ícones usados pelo `electron-builder` (`Icon.png`, `icon.ico`).
-- `electron.vite.config.ts`: builds separados de main, preload e renderer.
+- `electron.vite.config.ts`: builds separados de main, preload e renderer (desktop).
+- `vite.web.config.ts`: build estático do mesmo renderer para o navegador.
+- `dist-web/`: saída do build web (gerado; não versionado).
 - `electron-builder.json5`: alvos Windows (portátil) e Linux (AppImage).
 - `scripts/ensure-electron.cjs`: garante o download do binário do Electron após a instalação.
 
-O renderer é carregado por URL durante o desenvolvimento e por `file://` no pacote de produção. Os caminhos de assets do HTML são relativos.
+O renderer é carregado por URL durante o desenvolvimento e por `file://` no pacote desktop de produção. Os caminhos de assets do HTML são relativos — no build web eles resolvem para `dist-web/scenes/...`, `dist-web/audio/...` e assim por diante, inclusive quando publicados sob `/jogo/`.
 
 ## Segurança do Electron
 

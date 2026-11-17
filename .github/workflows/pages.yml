@@ -1,11 +1,12 @@
-# Publica a vitrine de doc/ no GitHub Pages.
+# Publica a vitrine de doc/ e o jogo web (dist-web/) no GitHub Pages.
 #
-# O site é HTML, CSS e JavaScript puros: não existe passo de compilação,
-# e por isso também não existe Jekyll. Passar o site pelo Jekyll só
-# acrescentaria risco — Liquid interpretando o HTML, o trailer de 19 MB
+# A vitrine é HTML, CSS e JavaScript puros: não existe passo de compilação
+# para ela, e por isso também não existe Jekyll. Passar o site pelo Jekyll
+# só acrescentaria risco — Liquid interpretando o HTML, o trailer de 19 MB
 # atravessando um gerador de site estático, a saída `_site` criada dentro
 # da própria pasta de entrada — para produzir exatamente os mesmos
-# arquivos que já estão versionados no repositório.
+# arquivos que já estão versionados no repositório. O jogo, sim, precisa
+# de build: Vite compila o renderer Phaser para `_site/jogo/`.
 #
 # Este arquivo substitui o `pages-build-deployment` que o GitHub cria
 # sozinho ao habilitar Pages. Ele vive em `dynamic/pages/`, fora do
@@ -57,15 +58,32 @@ jobs:
       # publicado sob um prefixo de repositório, em vez da raiz do domínio.
       - uses: actions/configure-pages@v5
 
-      # Só o que a página precisa. O `doc/README.md` documenta o site para
-      # quem mexe nele e não é conteúdo servido; deixá-lo no ar não quebra
-      # nada, mas coloca um arquivo de desenvolvimento na vitrine pública.
+      # O mesmo renderer Phaser do pacote desktop, compilado como site
+      # estático. O `base: './'` do vite.web.config.ts faz o bundle
+      # funcionar sob o prefixo do repositório sem ajustar caminhos.
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Compilar o jogo para a web
+        run: npm run build:web
+
+      # A vitrine fica na raiz e o jogo jogável em `/jogo/`. O `base`
+      # relativo do build web é o que permite essa convivência. O
+      # `doc/README.md` documenta o site para quem mexe nele e não é
+      # conteúdo servido; deixá-lo no ar não quebra nada, mas coloca um
+      # arquivo de desenvolvimento na vitrine pública.
       - name: Montar o site
         run: |
-          mkdir -p _site
+          mkdir -p _site/jogo
           cp -R doc/. _site/
           rm -f _site/README.md
-          ls -lh _site _site/assets
+          cp -R dist-web/. _site/jogo/
+          ls -lh _site _site/assets _site/jogo
 
       # O deploy-pages só publica o que este passo empacotar, e é ele quem
       # faz o upload das fontes do Google e do trailer de 19 MB: o Pages não

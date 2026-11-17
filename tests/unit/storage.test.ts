@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { DEFAULT_MUSIC_VOLUME, STORAGE_KEYS, loadMusicVolume, saveMusicVolume } from '../../src/game/storage'
+import {
+  DEFAULT_MUSIC_VOLUME,
+  STORAGE_KEYS,
+  isMuted,
+  loadMusicVolume,
+  saveMusicVolume,
+  setMuted,
+} from '../../src/game/storage'
 
 function installLocalStorage(initial: Record<string, string> = {}): Map<string, string> {
   const values = new Map(Object.entries(initial))
@@ -52,5 +59,24 @@ describe('volume da música', () => {
   it('arredonda preferências com casas decimais extras', () => {
     installLocalStorage({ [STORAGE_KEYS.MUSIC_VOLUME]: '0.456' })
     expect(loadMusicVolume()).toBe(0.46)
+  })
+})
+
+describe('preferência de mudo', () => {
+  it('salva no formato que isMuted lê', () => {
+    const values = installLocalStorage()
+
+    setMuted(true)
+    expect(values.get(STORAGE_KEYS.MUTED)).toBe('1')
+    expect(isMuted()).toBe(true)
+
+    setMuted(false)
+    expect(values.get(STORAGE_KEYS.MUTED)).toBe('0')
+    expect(isMuted()).toBe(false)
+  })
+
+  it('ainda lê o formato legado true gravado por versões antigas', () => {
+    installLocalStorage({ [STORAGE_KEYS.MUTED]: 'true' })
+    expect(isMuted()).toBe(true)
   })
 })

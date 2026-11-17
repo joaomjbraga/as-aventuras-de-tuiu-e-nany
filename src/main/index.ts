@@ -1,6 +1,7 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, screen, shell } from 'electron'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { computeWindowSize } from './windowBounds'
 
 const APP_ID = 'br.com.joaomjbraga.asaventurasdetuiue_nany'
 const RENDERER_INDEX = join(__dirname, '../renderer/index.html')
@@ -8,6 +9,16 @@ const PRELOAD_SCRIPT = join(__dirname, '../preload/index.cjs')
 const DEV_WINDOW_ICON = app.isPackaged ? undefined : join(__dirname, '../../public/Icon.png')
 const DEV_RENDERER_URL = app.isPackaged ? undefined : process.env.ELECTRON_RENDERER_URL
 const FILE_RENDERER_URL = pathToFileURL(RENDERER_INDEX).toString()
+
+// Em Linux com Mesa/VAAPI antigos, o processo de GPU do Chromium pode falhar na
+// inicialização ("GPU process isn't usable. Goodbye."), deixando a janela
+// preta ou impedindo que ela apareça. O jogo é 2D e roda bem com rasterização
+// por software, então desligamos a aceleração somente nesta plataforma.
+if (process.platform === 'linux') {
+  app.disableHardwareAcceleration()
+  app.commandLine.appendSwitch('disable-gpu-compositing')
+  app.commandLine.appendSwitch('in-process-gpu')
+}
 
 let mainWindow: BrowserWindow | null = null
 
@@ -29,11 +40,14 @@ function openExternalUrl(url: string): void {
 }
 
 function createWindow(): void {
+  // `screen` só é seguro depois de `app.whenReady()`, que é onde esta função
+  // é chamada. Respeitar a área útil evita barra de título fora da tela no
+  // Linux, onde o gerenciador de janelas não corrige automaticamente.
+  const bounds = computeWindowSize(screen.getPrimaryDisplay().workAreaSize)
+
   const window = new BrowserWindow({
-    width: 1920,
-    height: 1080,
-    minWidth: 1280,
-    minHeight: 720,
+    ...bounds,
+    center: true,
     show: false,
     autoHideMenuBar: true,
     backgroundColor: '#151a22',
@@ -47,10 +61,21 @@ function createWindow(): void {
     },
   })
 
+  // A barra de menu padrão não serve para um jogo e no Linux aparece mesmo com
+  // `autoHideMenuBar` (só some ao pressionar Alt).
+  window.setMenu(null)
+
   mainWindow = window
 
-  window.once('ready-to-show', () => window.show())
+  const reveal = (): void => {
+    if (!window.isDestroyed() && !window.isVisible()) window.show()
+  }
+  window.once('ready-to-show', reveal)
+  // Alguns WMs Linux não disparam `ready-to-show` se o renderer demora (ou se
+  // o processo de GPU falha). Sem isso a janela ficaria invisível para sempre.
+  const revealFallback = setTimeout(reveal, 2000)
   window.on('closed', () => {
+    clearTimeout(revealFallback)
     if (mainWindow === window) mainWindow = null
   })
 
@@ -102,5 +127,11 @@ if (!hasSingleInstanceLock) {
 
   ipcMain.on('desktop:quit', () => {
     app.quit()
+  })
+
+  ipcMain.on('desktop:toggle-fullscreen', () => {
+    const window = BrowserWindow.getFocusedWindow() ?? mainWindow
+    if (!window) return
+    window.setFullScreen(!window.isFullScreen())
   })
 }

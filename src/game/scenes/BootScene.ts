@@ -1,4 +1,6 @@
 import Phaser from 'phaser'
+import { applyMute } from '../audio'
+import { installKeyboardState } from '../keyboardState'
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -6,8 +8,10 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
-    // Ponto inicial do jogo: nada a carregar aqui ainda.
-    // Eventualmente dá para pré-configurar o sistema de input etc.
+    // O gerenciador de som é global: aplicar a preferência aqui evita que a
+    // música da tela inicial toque antes de a MainScene/PauseScene sincronizar.
+    applyMute(this)
+    installKeyboardState()
     this.scene.start('PreloadScene')
   }
 }

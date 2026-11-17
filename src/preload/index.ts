@@ -9,4 +9,5 @@ contextBridge.exposeInMainWorld('desktop', {
   isElectron: true,
   platform: process.platform,
   quit: () => ipcRenderer.send('desktop:quit'),
+  toggleFullscreen: () => ipcRenderer.send('desktop:toggle-fullscreen'),
 })

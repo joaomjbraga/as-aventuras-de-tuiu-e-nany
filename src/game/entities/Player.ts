@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import { CHARACTER_FOOT_INSET, FRAME_LAYOUT, getAnimConfigs } from '../sprites'
 import { CONTROL_SCHEMES, type ControlSchemeId } from '../controls'
 import { canTriggerDoubleJump, doubleJumpVelocityY, isNewJumpPress, resolveJumpAction } from '../jump'
+import { isKeyPhysicallyDown } from '../keyboardState'
 
 export const PLAYER_DAMAGE_INVULNERABILITY_MS = 1500
 
@@ -262,6 +263,20 @@ export class Player {
     return this.jumpJustPressed()
   }
 
+  /**
+   * O Phaser reseta as Key objects ao pausar e não vê o `keyup` disparado
+   * durante o menu. Sincronizamos com o estado físico real das teclas para
+   * retomar o movimento sem "fantasmas" nem travar quem ainda está segurando.
+   */
+  restoreKeyState(): void {
+    this.keys.left.isDown = isKeyPhysicallyDown(this.keys.left.keyCode)
+    this.keys.right.isDown = isKeyPhysicallyDown(this.keys.right.keyCode)
+    this.keys.jump.forEach((key) => {
+      key.isDown = isKeyPhysicallyDown(key.keyCode)
+    })
+    this.wasJumpDown = this.keys.jump.some((key) => key.isDown)
+  }
+
   /** Ressuscita o jogador em (x, y) com vida cheia e invulnerabilidade curta. */
   revive(x: number, y: number): void {
     this.hp = this.maxHp
@@ -277,7 +292,9 @@ export class Player {
     this.sprite.setVelocity(0, 0)
     this.jumpsUsed = 0
     this.doubleJumpBuffered = false
-    this.wasJumpDown = false
+    // A tecla de revive continua pressionada no frame seguinte. Zerar
+    // `wasJumpDown` faria o mesmo input virar um pulo automático.
+    this.wasJumpDown = this.keys.jump.some((key) => key.isDown)
     this.setState('idle')
   }
 

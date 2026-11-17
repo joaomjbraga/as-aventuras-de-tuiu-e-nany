@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import { DEFAULT_ZOMBIE_SPEED } from '../difficulty'
+import { isKnockbackActive, knockbackDirection, ZOMBIE_KNOCKBACK_MS, ZOMBIE_KNOCKBACK_SPEED } from '../knockback'
 import { zombieTextureKey } from '../sprites'
 import { Player } from './Player'
 
@@ -33,6 +34,9 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
   protected players: Player[]
   private onKilled?: () => void
   private hurtCooldownUntil = 0
+  /** Recuo após um pisão: o movimento normal não pode sobrescrevê-lo. */
+  private knockbackDir = 0
+  private knockbackUntil = 0
   protected readonly textureKey: string
 
   constructor(scene: Phaser.Scene, config: ZombieConfig) {
@@ -82,10 +86,26 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
     this.play(`${this.textureKey}-walk`, true)
   }
 
+  /** Usado pelo Boss para não sobrescrever o recuo com a velocidade do dash. */
+  protected isKnockbackActive(): boolean {
+    return isKnockbackActive(this.scene.time.now, this.knockbackUntil)
+  }
+
+  private startKnockback(fromX: number): void {
+    this.knockbackDir = knockbackDirection(this.x, fromX)
+    this.knockbackUntil = this.scene.time.now + ZOMBIE_KNOCKBACK_MS
+    this.setVelocityX(this.knockbackDir * ZOMBIE_KNOCKBACK_SPEED)
+  }
+
   preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta)
 
     if (this.isDying) return
+
+    if (this.isKnockbackActive()) {
+      this.setVelocityX(this.knockbackDir * ZOMBIE_KNOCKBACK_SPEED)
+      return
+    }
 
     const target = this.findNearestPlayer()
     if (!target) {
@@ -117,9 +137,9 @@ export class Zombie extends Phaser.Physics.Arcade.Sprite {
 
     this.hp = Math.max(0, this.hp - amount)
 
-    // Recuo para longe de quem bateu
-    const dir = Math.sign(this.x - fromX) || 1
-    this.setVelocityX(dir * 240)
+    // Recuo para longe de quem bateu; `preUpdate` o mantém ativo por alguns
+    // frames em vez de substituí-lo pela velocidade de caminhada.
+    this.startKnockback(fromX)
 
     // Flash branco ao levar dano
     this.setTintFill(0xffffff)

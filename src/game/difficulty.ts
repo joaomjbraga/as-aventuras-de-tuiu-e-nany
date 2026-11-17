@@ -49,6 +49,15 @@ export function canSpawnZombie(activeZombies: number, max = DEFAULT_DIFFICULTY.m
   return activeZombies < max
 }
 
+/**
+ * Conta os zumbis que ainda ocupam vaga de spawn. Um zumbi morto mantém
+ * `active === true` durante a animação de morte, então `Group.countActive`
+ * sozinho faz o spawner parar antes do devido.
+ */
+export function countLivingZombies(zombies: readonly { active: boolean; isDying: boolean }[]): number {
+  return zombies.reduce((total, zombie) => total + (zombie.active && !zombie.isDying ? 1 : 0), 0)
+}
+
 /** Atingiu a condição de vitória da fase? */
 export function hasWon(kills: number, target = VICTORY_KILLS): boolean {
   return kills >= target

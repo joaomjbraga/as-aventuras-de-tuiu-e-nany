@@ -116,6 +116,24 @@ export function zombieTextureKey(variant: number, exists: (key: string) => boole
   return exists(key) ? key : 'zombie'
 }
 
+/** Informações mínimas de uma textura para validar um spritesheet carregado. */
+export interface SpritesheetInfo {
+  /** Inclui o frame `__BASE` do Phaser, além dos frames numerados. */
+  frameTotal: number
+  get(name?: string | number): { realWidth: number; realHeight: number }
+}
+
+/**
+ * Confere se a textura carregada corresponde ao layout esperado do
+ * spritesheet. Existir a chave não basta: um PNG com outro tamanho de frame
+ * carrega "com sucesso" e gera animações apontando para frames inexistentes.
+ */
+export function hasExpectedSpritesheet(texture: SpritesheetInfo, def: SpritesheetDef, expectedFrames: number): boolean {
+  if (texture.frameTotal !== expectedFrames + 1) return false
+  const frame = texture.get(0)
+  return frame.realWidth === def.frameWidth && frame.realHeight === def.frameHeight
+}
+
 /**
  * Explosão de abate dos zumbis: 6 frames individuais (PNGs de tamanhos
  * variados) empacotados em runtime num spritesheet quadrado normalizado

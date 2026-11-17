@@ -6,9 +6,10 @@ import { CHARACTER_FOOT_INSET, CHARACTERS, ZOMBIE_TARGET_HEIGHT, zombieTextureKe
 import { advanceSessionLevel, getSession, getSessionLevel, setSessionPlayers, type PlayerId } from '../session'
 import { buildScene, type SceneResult } from '../scenery'
 import { AUDIO, applyMute, playBgm, toggleMute } from '../audio'
+import { toggleFullscreen } from '../runtime'
 import { createButton } from '../ui'
 import { groundTopFor, spawnXFor, spriteCenterYForGround } from '../layout'
-import { canSpawnZombie, hasWon, spawnIntervalMs } from '../difficulty'
+import { canSpawnZombie, countLivingZombies, hasWon, spawnIntervalMs } from '../difficulty'
 import { allLevelsCompleted, randomNextLevel } from '../levels'
 import type { ResolvedMatchLevel } from '../difficultyPresets'
 import {
@@ -42,6 +43,12 @@ interface PlayerZombieContactSnapshot {
   zombieSpriteHeight: number
 }
 
+/** Duração real do hit-stop (o Clock da cena fica mais lento, não o relógio do OS). */
+const HIT_STOP_MS = 180
+const HIT_STOP_TIME_SCALE = 0.25
+/** Altura do aviso de revive em relação ao sprite do jogador caído. */
+const REVIVE_PROMPT_OFFSET_Y = 74
+
 export class MainScene extends Phaser.Scene {
   private level!: ResolvedMatchLevel
   private players: Player[] = []
@@ -52,6 +59,8 @@ export class MainScene extends Phaser.Scene {
 
   private kills = 0
   private bestKills = 0
+  /** Recorde no início da partida; usado para destacar apenas recordes novos. */
+  private recordAtMatchStart = 0
   private score = 0
   private combo = 0
   private mult = 1
@@ -63,6 +72,8 @@ export class MainScene extends Phaser.Scene {
   private gameOver = false
   private victory = false
   private spawnerTimer?: Phaser.Time.TimerEvent
+  /** Timer de tempo real do hit-stop (não usa o Clock escalado da cena). */
+  private hitStopTimer?: ReturnType<typeof setTimeout>
   private matchStartTime = 0
   private enterKey!: Phaser.Input.Keyboard.Key
   private escKey!: Phaser.Input.Keyboard.Key
@@ -110,11 +121,16 @@ export class MainScene extends Phaser.Scene {
     this.victory = false
     this.kills = 0
     this.bestKills = loadBestKills()
+    this.recordAtMatchStart = this.bestKills
     this.score = 0
     this.combo = 0
     this.mult = 1
     this.bestScore = loadBestScore()
     this.spawnerTimer = undefined
+    if (this.hitStopTimer !== undefined) {
+      clearTimeout(this.hitStopTimer)
+      this.hitStopTimer = undefined
+    }
     this.joinButton = undefined
     this.lastPickupAt = this.time.now
     this.boss = undefined
@@ -125,6 +141,14 @@ export class MainScene extends Phaser.Scene {
     this.lastBossVisible = false
     this.lastBossHp = -1
     this.playerContactSnapshots = new WeakMap()
+
+    // O Phaser não chama automaticamente um método `shutdown()` da subclasse:
+    // ele apenas emite o evento. Registrar aqui garante a limpeza em restart,
+    // troca de cena e saída para o título.
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this)
+    // A KeyboardPlugin reseta as teclas ao pausar; restauramos o estado real
+    // ao voltar para não travar o movimento de quem estava segurando uma seta.
+    this.events.on(Phaser.Scenes.Events.RESUME, this.restorePlayerInput, this)
 
     // Fase atual da campanha (vinda da sessão: seleção/avanço de fase).
     this.level = getSessionLevel()
@@ -165,26 +189,22 @@ export class MainScene extends Phaser.Scene {
     // (restart/replay criava um novo addEvent sem remover o anterior,
     // acumulando timers a cada "JOGAR NOVAMENTE").
     this.spawnerTimer?.remove()
+    this.events.off(Phaser.Scenes.Events.RESUME, this.restorePlayerInput, this)
     this.sound.stopByKey(AUDIO.BGM)
     this.sound.stopByKey(AUDIO.GAME_OVER)
 
-    // Garante que um hit-stop pendente (timeScale 0.25) nunca vaze para a
-    // próxima partida Clock.shutdown destrói os timers mas não reseta o scale.
+    // Cancela o timer de tempo real para ele não mexer no Clock da próxima
+    // partida depois que esta cena já foi encerrada.
+    if (this.hitStopTimer !== undefined) {
+      clearTimeout(this.hitStopTimer)
+      this.hitStopTimer = undefined
+    }
     this.time.timeScale = 1
   }
 
-  /**
-   * Alterna o modo tela cheia do renderer Electron.
-   */
-  private toggleFullscreen(): void {
-    const doc = document.documentElement
-    if (!document.fullscreenElement) {
-      doc.requestFullscreen().catch(() => {
-        // O renderer Electron rejeitou silencioso
-      })
-    } else {
-      document.exitFullscreen()
-    }
+  /** Restaura o estado físico das teclas quando a partida volta da pausa. */
+  private restorePlayerInput(): void {
+    this.players.forEach((player) => player.restoreKeyState())
   }
 
   private openPauseMenu(): void {
@@ -199,9 +219,9 @@ export class MainScene extends Phaser.Scene {
       toggleMute(this)
     }
 
-    // F11 alterna o modo tela cheia do renderer Electron.
+    // F11 alterna tela cheia via IPC no desktop; na web usa a API do DOM.
     if (Phaser.Input.Keyboard.JustDown(this.f11Key)) {
-      this.toggleFullscreen()
+      toggleFullscreen()
     }
 
     // Pausa (ESC): abre o menu de pausa
@@ -245,7 +265,7 @@ export class MainScene extends Phaser.Scene {
       } else if (!player.isAlive) {
         // O morto escolhe: mantém o aviso acompanhando o corpo até ele decidir
         const prompt = this.revivePrompts.get(player.id)
-        if (prompt) prompt.setPosition(player.sprite.x, player.sprite.y - 74)
+        if (prompt) prompt.setPosition(player.sprite.x, player.sprite.y - REVIVE_PROMPT_OFFSET_Y)
         if (player.isRevivePressed()) {
           this.hideRevivePrompt(player.id)
           this.pendingRespawn.delete(player.id)
@@ -425,7 +445,8 @@ export class MainScene extends Phaser.Scene {
     // do contrário a 2ª partida já abriria no teto de dificuldade). O próximo
     // ciclo re-agenda com o delay novo. Os parâmetros vêm da fase atual.
     const tick = () => {
-      if (!canSpawnZombie(this.zombieGroup.countActive(true), diff.maxSimultaneousZombies)) return
+      const living = countLivingZombies(this.zombieGroup.getChildren() as Zombie[])
+      if (!canSpawnZombie(living, diff.maxSimultaneousZombies)) return
       const side = Phaser.Math.Between(0, 1)
       this.spawnZombie(side === 0 ? -16 : width + 16)
       this.spawnerTimer?.reset({
@@ -483,12 +504,16 @@ export class MainScene extends Phaser.Scene {
 
     const pickup = object2 as Phaser.Physics.Arcade.Image
     const kind = pickup.getData('kind') as PickupKind
+    const { x, y } = pickup
 
     this.applyHeartPickup(player)
+    // O tween de flutuação é infinito: sem isso ele continua vivo após o
+    // destroy() e atualiza um objeto que não existe mais.
+    this.tweens.killTweensOf(pickup)
     pickup.destroy()
 
     // Pequena explosão de partículas na coleta
-    const emitter = this.add.particles(pickup.x, pickup.y, 'pixel', {
+    const emitter = this.add.particles(x, y, 'pixel', {
       speedX: { min: -100, max: 100 },
       speedY: { min: -160, max: -40 },
       gravityY: 680,
@@ -767,10 +792,17 @@ export class MainScene extends Phaser.Scene {
 
   /** Micro-congelamento (hit-stop) ao abater um zumbi para dar "peso" ao golpe. */
   private hitStop(): void {
-    this.time.timeScale = 0.25
-    this.time.delayedCall(180, () => {
+    // O Clock da cena tem o timeScale reduzido, então um delayedCall nele
+    // duraria 180 / 0.25 = 720ms reais. O reset usa um timer de tempo real.
+    if (this.hitStopTimer !== undefined) {
+      clearTimeout(this.hitStopTimer)
+    } else {
+      this.time.timeScale = HIT_STOP_TIME_SCALE
+    }
+    this.hitStopTimer = setTimeout(() => {
+      this.hitStopTimer = undefined
       this.time.timeScale = 1
-    })
+    }, HIT_STOP_MS)
   }
 
   // ------------------------------------------------------------------
@@ -783,7 +815,7 @@ export class MainScene extends Phaser.Scene {
     const prompt = this.add
       .text(
         player.sprite.x,
-        player.sprite.y - 148,
+        player.sprite.y - REVIVE_PROMPT_OFFSET_Y,
         `${player.name.toUpperCase()} CAIU!\nAPERTE ${label} PARA REVIVER`,
         {
           fontFamily: FONT.family,
@@ -802,7 +834,11 @@ export class MainScene extends Phaser.Scene {
 
   private hideRevivePrompt(playerId: string): void {
     const prompt = this.revivePrompts.get(playerId)
-    if (prompt) prompt.destroy()
+    if (prompt) {
+      // Piscada é um tween infinito: matá-lo evita acumular um por revive.
+      this.tweens.killTweensOf(prompt)
+      prompt.destroy()
+    }
     this.revivePrompts.delete(playerId)
   }
 
@@ -950,9 +986,10 @@ export class MainScene extends Phaser.Scene {
       }
     })
 
-    // Realça o placar: dourado quando o recorde da sessão está à frente/igual,
-    // ou quando o multiplicador de combo está acima de x1
-    const isRecord = this.kills > 0 && this.kills >= this.bestKills
+    // Realça o placar quando a partida supera o recorde existente no início
+    // dela (não o recorde que a própria partida acabou de atualizar), ou
+    // quando o multiplicador de combo está acima de x1.
+    const isRecord = this.kills > this.recordAtMatchStart
     const boosted = this.mult > 1
     const color = isRecord || boosted ? TEXT.accent : TEXT.primary
     const label = `ZOMBIES: ${this.kills}${boosted ? `  x${this.mult}` : ''}`
@@ -988,7 +1025,7 @@ export class MainScene extends Phaser.Scene {
     if (show && this.boss && this.bossBarFill) {
       const hp = this.boss.hp
       if (hp !== this.lastBossHp) {
-        this.bossBarFill.width = Math.max(1, 340 * (hp / this.boss.hpMax))
+        this.bossBarFill.setSize(Math.max(1, 340 * (hp / this.boss.hpMax)), 10)
         this.lastBossHp = hp
       }
     }
